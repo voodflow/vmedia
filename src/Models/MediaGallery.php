@@ -46,10 +46,10 @@ class MediaGallery extends Model
 
     public function getSlugOptions(): SlugOptions
     {
+        // Unique by default (suffix -1, -2…); call allowDuplicateSlugs() to opt out.
         return SlugOptions::create()
             ->generateSlugsFrom('name')
             ->saveSlugsTo('slug')
-            ->slugsShouldBeUnique()
             ->doNotGenerateSlugsOnUpdate();
     }
 
