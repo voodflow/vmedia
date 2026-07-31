@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Voodflow\VoodbuilderMedia\Support;
 
 use Illuminate\Http\UploadedFile;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Illuminate\Support\Collection;
 use Voodflow\VoodbuilderMedia\Models\MediaGallery;
+use Voodflow\VoodbuilderMedia\Models\MediaItem;
+use Voodflow\VoodbuilderMedia\Models\MediaVault;
 
 /**
  * Shared list/store helpers for admin + VoodBuilder editor Asset Manager.
@@ -14,12 +16,39 @@ use Voodflow\VoodbuilderMedia\Models\MediaGallery;
 final class MediaLibrary
 {
     /**
-     * @return list<array{src: string, type: string, name: string, uuid: string, id: int, gallery_id: int}>
+     * @return list<array{id: int, name: string, slug: string, is_default: bool, is_public: bool, media_count: int}>
+     */
+    public static function listGalleries(?string $type = null): array
+    {
+        $query = MediaGallery::query()
+            ->withCount(['mediaItems as media_count' => function ($builder) use ($type): void {
+                if ($type === 'image') {
+                    $builder->where('collection_name', MediaGallery::COLLECTION_IMAGES);
+                } elseif ($type === 'video') {
+                    $builder->where('collection_name', MediaGallery::COLLECTION_VIDEOS);
+                }
+            }])
+            ->orderBy('sort_order')
+            ->orderBy('id');
+
+        return $query->get()->map(static fn (MediaGallery $gallery): array => [
+            'id' => (int) $gallery->getKey(),
+            'name' => (string) $gallery->name,
+            'slug' => (string) $gallery->slug,
+            'is_default' => (bool) $gallery->is_default,
+            'is_public' => (bool) $gallery->is_public,
+            'media_count' => (int) ($gallery->media_count ?? 0),
+        ])->all();
+    }
+
+    /**
+     * @return list<array{src: string, type: string, name: string, uuid: string, id: int, gallery_ids: list<int>}>
      */
     public static function listAssets(?string $type = null, ?int $galleryId = null): array
     {
-        $query = Media::query()
-            ->where('model_type', (new MediaGallery)->getMorphClass())
+        $query = MediaItem::query()
+            ->with('galleries:id,name')
+            ->where('model_type', (new MediaVault)->getMorphClass())
             ->whereIn('collection_name', [
                 MediaGallery::COLLECTION_IMAGES,
                 MediaGallery::COLLECTION_VIDEOS,
@@ -27,7 +56,7 @@ final class MediaLibrary
             ->latest('id');
 
         if ($galleryId !== null) {
-            $query->where('model_id', $galleryId);
+            $query->whereHas('galleries', static fn ($builder) => $builder->whereKey($galleryId));
         }
 
         if ($type === 'image') {
@@ -45,42 +74,129 @@ final class MediaLibrary
         return $assets;
     }
 
-    public static function store(UploadedFile $file, ?MediaGallery $gallery = null): Media
+    /**
+     * Store on the vault and attach to one or more galleries (default when empty).
+     *
+     * @param  iterable<int|MediaGallery>|null  $galleries
+     */
+    public static function store(UploadedFile $file, iterable|MediaGallery|null $galleries = null): MediaItem
     {
-        $gallery ??= MediaGallery::default();
+        $targets = self::normalizeGalleries($galleries);
         $mime = (string) ($file->getMimeType() ?? '');
         $isVideo = str_starts_with($mime, 'video/');
         $collection = $isVideo ? MediaGallery::COLLECTION_VIDEOS : MediaGallery::COLLECTION_IMAGES;
 
-        return $gallery
+        /** @var \Spatie\MediaLibrary\MediaCollections\Models\Media $stored */
+        $stored = MediaVault::current()
             ->addMedia($file)
             ->usingName(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) ?: $file->hashName())
             ->usingFileName($file->hashName())
             ->toMediaCollection($collection);
+
+        $media = MediaItem::query()->findOrFail($stored->getKey());
+
+        foreach ($targets as $gallery) {
+            $gallery->attachMedia([$media]);
+        }
+
+        return $media->load('galleries');
     }
 
     /**
-     * @return array{src: string, type: string, name: string, uuid: string, id: int, gallery_id: int}
+     * @param  Collection<int, MediaItem>|iterable<MediaItem>  $media
+     * @param  list<int>  $galleryIds
      */
-    public static function toAssetPayload(Media $media): array
+    public static function assignGalleries(iterable $media, array $galleryIds, bool $replace = false): void
     {
-        $type = str_starts_with((string) $media->mime_type, 'video/')
-            || $media->collection_name === MediaGallery::COLLECTION_VIDEOS
-            ? 'video'
-            : 'image';
+        $galleryIds = array_values(array_unique(array_filter(array_map('intval', $galleryIds))));
+
+        foreach ($media as $item) {
+            if (! $item instanceof MediaItem) {
+                continue;
+            }
+
+            if ($replace) {
+                $item->galleries()->sync($galleryIds);
+
+                continue;
+            }
+
+            $item->galleries()->syncWithoutDetaching($galleryIds);
+        }
+    }
+
+    /**
+     * @param  Collection<int, MediaItem>|iterable<MediaItem>  $media
+     */
+    public static function createGalleryWithMedia(string $name, iterable $media, ?string $description = null): MediaGallery
+    {
+        $gallery = MediaGallery::query()->create([
+            'name' => $name,
+            'description' => $description,
+            'is_default' => false,
+            'is_public' => true,
+            'sort_order' => (int) (MediaGallery::query()->max('sort_order') ?? 0) + 1,
+        ]);
+
+        $gallery->attachMedia($media);
+
+        return $gallery;
+    }
+
+    /**
+     * @return array{src: string, type: string, name: string, uuid: string, id: int, gallery_ids: list<int>}
+     */
+    public static function toAssetPayload(MediaItem $media): array
+    {
+        if (! $media->relationLoaded('galleries')) {
+            $media->load('galleries:id');
+        }
 
         return [
             'src' => self::publicUrl($media),
-            'type' => $type,
+            'type' => $media->isVideo() ? 'video' : 'image',
             'name' => (string) ($media->name ?: $media->file_name),
             'uuid' => (string) $media->uuid,
             'id' => (int) $media->getKey(),
-            'gallery_id' => (int) $media->model_id,
+            'gallery_ids' => $media->galleries->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
         ];
     }
 
-    public static function publicUrl(Media $media): string
+    public static function publicUrl(MediaItem $media): string
     {
         return '/storage/'.ltrim(str_replace('\\', '/', (string) $media->getPathRelativeToRoot()), '/');
+    }
+
+    /**
+     * @param  iterable<int|MediaGallery>|MediaGallery|null  $galleries
+     * @return list<MediaGallery>
+     */
+    protected static function normalizeGalleries(iterable|MediaGallery|null $galleries): array
+    {
+        if ($galleries instanceof MediaGallery) {
+            return [$galleries];
+        }
+
+        if ($galleries === null) {
+            return [MediaGallery::default()];
+        }
+
+        $resolved = [];
+
+        foreach ($galleries as $gallery) {
+            if ($gallery instanceof MediaGallery) {
+                $resolved[] = $gallery;
+
+                continue;
+            }
+
+            $found = MediaGallery::query()->find((int) $gallery);
+
+            if ($found !== null) {
+                $resolved[] = $found;
+            }
+        }
+
+        return $resolved !== [] ? $resolved : [MediaGallery::default()];
     }
 }

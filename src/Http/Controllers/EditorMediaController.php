@@ -8,13 +8,27 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Validation\Rules\File;
+use Voodflow\VoodbuilderMedia\Models\MediaGallery;
 use Voodflow\VoodbuilderMedia\Support\MediaLibrary;
 
 /**
- * VoodBuilder editor Asset Manager endpoints (list + upload → Spatie galleries).
+ * VoodBuilder editor Asset Manager endpoints (galleries + list + upload → default gallery).
  */
 class EditorMediaController extends Controller
 {
+    public function galleries(Request $request): JsonResponse
+    {
+        $type = $request->query('type');
+        $type = is_string($type) && in_array($type, ['image', 'video'], true) ? $type : null;
+        $default = MediaGallery::default();
+
+        return response()->json([
+            'data' => MediaLibrary::listGalleries($type),
+            'default_gallery_id' => (int) $default->getKey(),
+            'upload_gallery_id' => (int) $default->getKey(),
+        ]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $type = $request->query('type');
@@ -30,10 +44,12 @@ class EditorMediaController extends Controller
                     'name' => $asset['name'],
                     'uuid' => $asset['uuid'],
                     'id' => $asset['id'],
-                    'gallery_id' => $asset['gallery_id'],
+                    'gallery_ids' => $asset['gallery_ids'],
                 ],
                 MediaLibrary::listAssets($type, $galleryId),
             ),
+            'default_gallery_id' => (int) MediaGallery::default()->getKey(),
+            'upload_gallery_id' => (int) MediaGallery::default()->getKey(),
         ]);
     }
 
@@ -56,7 +72,8 @@ class EditorMediaController extends Controller
             ],
         ]);
 
-        $media = MediaLibrary::store($validated['file']);
+        // Frontend / editor uploads always land in the default gallery (membership).
+        $media = MediaLibrary::store($validated['file'], MediaGallery::default());
         $payload = MediaLibrary::toAssetPayload($media);
 
         return response()->json([

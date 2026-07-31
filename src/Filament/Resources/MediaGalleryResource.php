@@ -13,11 +13,13 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Str;
 use Voodflow\VoodbuilderMedia\Filament\Resources\MediaGalleryResource\Pages\CreateMediaGallery;
 use Voodflow\VoodbuilderMedia\Filament\Resources\MediaGalleryResource\Pages\EditMediaGallery;
 use Voodflow\VoodbuilderMedia\Filament\Resources\MediaGalleryResource\Pages\ListMediaGalleries;
@@ -62,11 +64,27 @@ class MediaGalleryResource extends Resource
                         ->label(__('voodbuilder-media::admin.galleries.fields.name'))
                         ->required()
                         ->maxLength(120)
-                        ->live(onBlur: true),
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (?string $state, Set $set, ?MediaGallery $record): void {
+                            if ($record !== null) {
+                                return;
+                            }
+
+                            $set('slug_preview', filled($state) ? Str::slug($state) : null);
+                        }),
+                    TextInput::make('slug_preview')
+                        ->label(__('voodbuilder-media::admin.galleries.fields.slug'))
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->placeholder(__('voodbuilder-media::admin.galleries.helpers.slug_auto'))
+                        ->helperText(__('voodbuilder-media::admin.galleries.helpers.slug_auto'))
+                        ->visibleOn('create'),
                     TextInput::make('slug')
                         ->label(__('voodbuilder-media::admin.galleries.fields.slug'))
-                        ->maxLength(120)
-                        ->unique(ignoreRecord: true),
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->helperText(__('voodbuilder-media::admin.galleries.helpers.slug_locked'))
+                        ->visibleOn('edit'),
                     Textarea::make('description')
                         ->label(__('voodbuilder-media::admin.galleries.fields.description'))
                         ->rows(3)
@@ -105,9 +123,9 @@ class MediaGalleryResource extends Resource
                 IconColumn::make('is_public')
                     ->label(__('voodbuilder-media::admin.galleries.fields.is_public'))
                     ->boolean(),
-                TextColumn::make('media_count')
+                TextColumn::make('media_items_count')
                     ->label(__('voodbuilder-media::admin.galleries.fields.media_count'))
-                    ->counts('media'),
+                    ->counts('mediaItems'),
                 TextColumn::make('sort_order')
                     ->label(__('voodbuilder-media::admin.galleries.fields.sort_order'))
                     ->sortable(),

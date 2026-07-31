@@ -30,5 +30,7 @@ return [
 
     'tables' => [
         'galleries' => 'voodbuilder_media_galleries',
+        'vaults' => 'voodbuilder_media_vaults',
+        'gallery_media' => 'voodbuilder_media_gallery_media',
     ],
 ];

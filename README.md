@@ -4,6 +4,12 @@ Reusable **media library & galleries** for Filament 5, backed by [Spatie Media L
 
 Works **standalone** (admin galleries + library). With [VoodBuilder](https://github.com/voodflow/voodbuilder) it also powers the editor Asset Manager (Choose / upload).
 
+## Model
+
+- **Vault** — singleton Spatie owner of every file on disk (one storage copy)
+- **Galleries** — many-to-many membership (a photo/video can sit in several galleries)
+- **Default gallery** — only target for editor/frontend uploads; Choose can browse any gallery
+
 ## Install
 
 ```bash
@@ -21,15 +27,25 @@ Register on the Filament panel:
 ])
 ```
 
-When this companion is installed, Core’s built-in Media library resource and editor media routes are skipped so there is a single source of truth.
+When this companion is installed, Core’s built-in Media library resource and editor media list/upload routes are skipped.
 
-## Features (base)
+## Admin UX
 
-- **Galleries** — name, slug, description, default gallery, public flag, sort order
-- **Media library** — flat table of all Spatie media across galleries (preview, filter, upload, delete)
-- **Collections** — `images` / `videos` on each gallery
-- **Migration** — moves legacy Core `voodbuilder_media_library` media onto the default gallery
-- **Editor API** — `GET/POST /voodbuilder/editor/media` + `upload` when VoodBuilder is present
+- **Photos vs videos** — type badge + filter (`images` / `videos` collections)
+- **Galleries** — name, auto unique slug, description, default, public, sort
+- **Library** — preview, multi-gallery badges; no per-row reassignment
+- **Bulk** — assign/add galleries, replace memberships, or create a new gallery from the selection
+- **Upload** — pick one or more galleries for membership (files always stored in the vault)
+
+## Editor API
+
+| Method | Path | Role |
+|--------|------|------|
+| `GET` | `/voodbuilder/editor/media/galleries` | Gallery list + counts |
+| `GET` | `/voodbuilder/editor/media?gallery_id=&type=` | Assets (optional gallery filter) |
+| `POST` | `/voodbuilder/editor/upload` | Upload → **default gallery only** |
+
+Choose opens with gallery chips: browse any gallery; uploads still land in default.
 
 ## Config
 
@@ -38,9 +54,9 @@ When this companion is installed, Core’s built-in Media library resource and e
 | `enabled` | `true` | Toggle package |
 | `navigation.group` | `Media` | Filament nav group |
 | `disk` | `public` | Spatie collection disk |
-| `upload.image_max_kb` | `8192` | Max image size |
+| `upload.image_max_kb` | `8192` | Max photo size |
 | `upload.video_max_kb` | `51200` | Max video size |
-| `voodbuilder.editor_routes` | `true` | Register editor list/upload routes |
+| `voodbuilder.editor_routes` | `true` | Register editor routes |
 
 ```env
 VOODBUILDER_MEDIA_ENABLED=true

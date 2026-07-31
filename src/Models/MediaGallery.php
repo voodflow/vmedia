@@ -5,18 +5,17 @@ declare(strict_types=1);
 namespace Voodflow\VoodbuilderMedia\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- * Gallery / album that owns reusable Spatie media (images + videos).
+ * Gallery / album: organizational membership of media (many-to-many).
+ * Files themselves live on {@see MediaVault}.
  */
-class MediaGallery extends Model implements HasMedia
+class MediaGallery extends Model
 {
     use HasSlug;
-    use InteractsWithMedia;
 
     public const COLLECTION_IMAGES = 'images';
 
@@ -49,7 +48,9 @@ class MediaGallery extends Model implements HasMedia
     {
         return SlugOptions::create()
             ->generateSlugsFrom('name')
-            ->saveSlugsTo('slug');
+            ->saveSlugsTo('slug')
+            ->slugsShouldBeUnique()
+            ->doNotGenerateSlugsOnUpdate();
     }
 
     public static function default(): self
@@ -92,15 +93,41 @@ class MediaGallery extends Model implements HasMedia
         });
     }
 
-    public function registerMediaCollections(): void
+    /**
+     * @return BelongsToMany<MediaItem, $this>
+     */
+    public function mediaItems(): BelongsToMany
     {
-        $disk = (string) config('voodbuilder-media.disk', 'public');
-
-        $this->addMediaCollection(self::COLLECTION_IMAGES)
-            ->useDisk($disk);
-
-        $this->addMediaCollection(self::COLLECTION_VIDEOS)
-            ->useDisk($disk);
+        return $this->belongsToMany(
+            MediaItem::class,
+            (string) config('voodbuilder-media.tables.gallery_media', 'voodbuilder_media_gallery_media'),
+            'gallery_id',
+            'media_id',
+        )
+            ->withPivot(['sort_order'])
+            ->withTimestamps()
+            ->orderByPivot('sort_order');
     }
 
+    /**
+     * Attach media without detaching others (idempotent).
+     *
+     * @param  iterable<int|MediaItem>  $media
+     */
+    public function attachMedia(iterable $media): void
+    {
+        $ids = [];
+
+        foreach ($media as $item) {
+            $ids[] = $item instanceof MediaItem ? (int) $item->getKey() : (int) $item;
+        }
+
+        $ids = array_values(array_unique(array_filter($ids)));
+
+        if ($ids === []) {
+            return;
+        }
+
+        $this->mediaItems()->syncWithoutDetaching($ids);
+    }
 }

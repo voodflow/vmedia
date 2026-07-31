@@ -11,6 +11,7 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Voodflow\VoodbuilderMedia\Console\InstallCommand;
 use Voodflow\VoodbuilderMedia\Http\Controllers\EditorMediaController;
 use Voodflow\VoodbuilderMedia\Models\MediaGallery;
+use Voodflow\VoodbuilderMedia\Models\MediaVault;
 
 class VoodbuilderMediaServiceProvider extends PackageServiceProvider
 {
@@ -34,6 +35,7 @@ class VoodbuilderMediaServiceProvider extends PackageServiceProvider
     {
         Relation::morphMap([
             'voodbuilder_media_gallery' => MediaGallery::class,
+            'voodbuilder_media_vault' => MediaVault::class,
         ]);
 
         if (
@@ -52,6 +54,7 @@ class VoodbuilderMediaServiceProvider extends PackageServiceProvider
             ->name('voodbuilder.editor.')
             ->group(function (): void {
                 // Override Core media index/upload when this companion is installed.
+                Route::get('media/galleries', [EditorMediaController::class, 'galleries'])->name('media.galleries');
                 Route::get('media', [EditorMediaController::class, 'index'])->name('media.index');
                 Route::post('upload', [EditorMediaController::class, 'store'])->name('upload');
             });
