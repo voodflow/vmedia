@@ -55,6 +55,18 @@ class MediaGalleryResource extends Resource
         return __('voodbuilder-media::admin.galleries.plural');
     }
 
+    public static function libraryUrlForGallery(MediaGallery|int|string $gallery): string
+    {
+        $id = $gallery instanceof MediaGallery ? $gallery->getKey() : $gallery;
+
+        // Filament 5 ListRecords binds filters via #[Url(as: 'filters')], not tableFilters.
+        return MediaItemResource::getUrl('index', [
+            'filters' => [
+                'gallery_id' => ['value' => $id],
+            ],
+        ]);
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -135,11 +147,7 @@ class MediaGalleryResource extends Resource
                 Action::make('browse')
                     ->label(__('voodbuilder-media::admin.galleries.browse_media'))
                     ->icon('heroicon-o-photo')
-                    ->url(fn (MediaGallery $record): string => MediaItemResource::getUrl('index', [
-                        'tableFilters' => [
-                            'gallery_id' => ['value' => $record->getKey()],
-                        ],
-                    ])),
+                    ->url(fn (MediaGallery $record): string => static::libraryUrlForGallery($record)),
                 DeleteAction::make()
                     ->disabled(fn (MediaGallery $record): bool => $record->is_default),
             ])

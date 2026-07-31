@@ -10,7 +10,10 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
@@ -24,6 +27,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\File;
+use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Voodflow\VoodbuilderMedia\Filament\Resources\MediaItemResource\Pages\ManageMediaItems;
 use Voodflow\VoodbuilderMedia\Models\MediaGallery;
@@ -96,37 +100,44 @@ class MediaItemResource extends Resource
 
                         return (string) $record->getPathRelativeToRoot();
                     }),
+                TextColumn::make('name')
+                    ->label(__('voodbuilder-media::admin.library.name'))
+                    ->searchable()
+                    ->sortable()
+                    ->description(function (MediaItem $record): string {
+                        $parts = [(string) $record->file_name];
+                        $caption = $record->caption();
+
+                        if ($caption !== null) {
+                            $parts[] = $caption;
+                        }
+
+                        return implode(' — ', $parts);
+                    }),
+                TextColumn::make('galleries.name')
+                    ->label(__('voodbuilder-media::admin.library.galleries'))
+                    ->badge()
+                    ->separator(',')
+                    ->placeholder('—'),
                 IconColumn::make('is_video')
-                    ->label('')
+                    ->label(__('voodbuilder-media::admin.library.type'))
                     ->state(fn (MediaItem $record): bool => $record->isVideo())
                     ->boolean()
                     ->trueIcon('heroicon-o-film')
                     ->falseIcon('heroicon-o-photo')
                     ->trueColor('warning')
                     ->falseColor('success')
+                    ->tooltip(fn (MediaItem $record): string => $record->kindLabel())
                     ->alignCenter(),
-                TextColumn::make('name')
-                    ->label(__('voodbuilder-media::admin.library.name'))
-                    ->searchable()
-                    ->sortable()
-                    ->description(fn (MediaItem $record): string => (string) $record->file_name),
-                TextColumn::make('galleries.name')
-                    ->label(__('voodbuilder-media::admin.library.galleries'))
-                    ->badge()
-                    ->separator(',')
-                    ->placeholder('—'),
-                TextColumn::make('collection_name')
-                    ->label(__('voodbuilder-media::admin.library.type'))
-                    ->badge()
-                    ->formatStateUsing(fn (MediaItem $record): string => $record->kindLabel())
-                    ->color(fn (MediaItem $record): string => $record->isVideo() ? 'warning' : 'success'),
                 TextColumn::make('human_readable_size')
                     ->label(__('voodbuilder-media::admin.library.size'))
-                    ->state(fn (MediaItem $record): string => $record->human_readable_size),
+                    ->state(fn (MediaItem $record): string => $record->human_readable_size)
+                    ->toggleable(),
                 TextColumn::make('created_at')
                     ->label(__('voodbuilder-media::admin.library.uploaded_at'))
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('gallery_id')
@@ -149,6 +160,7 @@ class MediaItemResource extends Resource
                     ]),
             ])
             ->recordActions([
+                static::editDetailsAction(),
                 Action::make('open')
                     ->label(__('voodbuilder-media::admin.library.open'))
                     ->icon('heroicon-o-arrow-top-right-on-square')
@@ -159,6 +171,31 @@ class MediaItemResource extends Resource
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('editMeta')
+                        ->label(__('voodbuilder-media::admin.library.bulk_edit_meta'))
+                        ->icon('heroicon-o-pencil-square')
+                        ->schema([
+                            Repeater::make('items')
+                                ->label(__('voodbuilder-media::admin.library.refine_items'))
+                                ->schema(static::metaFieldsSchema())
+                                ->addable(false)
+                                ->deletable(false)
+                                ->reorderable(false)
+                                ->columns(2)
+                                ->columnSpanFull(),
+                        ])
+                        ->fillForm(fn (Collection $records): array => [
+                            'items' => $records->map(fn (MediaItem $record): array => static::metaFormState($record))->values()->all(),
+                        ])
+                        ->action(function (array $data): void {
+                            static::persistMetaItems($data['items'] ?? []);
+
+                            Notification::make()
+                                ->success()
+                                ->title(__('voodbuilder-media::admin.library.meta_saved'))
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     BulkAction::make('assignGalleries')
                         ->label(__('voodbuilder-media::admin.library.bulk_assign'))
                         ->icon('heroicon-o-folder-open')
@@ -220,6 +257,166 @@ class MediaItemResource extends Resource
             ]);
     }
 
+    /**
+     * @return list<\Filament\Forms\Components\Component>
+     */
+    public static function metaFieldsSchema(): array
+    {
+        return [
+            Hidden::make('id')->required(),
+            TextInput::make('name')
+                ->label(__('voodbuilder-media::admin.library.name'))
+                ->required()
+                ->maxLength(255)
+                ->helperText(__('voodbuilder-media::admin.library.name_help')),
+            Textarea::make('caption')
+                ->label(__('voodbuilder-media::admin.library.caption'))
+                ->rows(2)
+                ->maxLength(1000)
+                ->helperText(__('voodbuilder-media::admin.library.caption_help')),
+            TextInput::make('file_name')
+                ->label(__('voodbuilder-media::admin.library.storage_name'))
+                ->disabled()
+                ->dehydrated(false),
+        ];
+    }
+
+    /**
+     * @return array{id: int, name: string, caption: string|null, file_name: string}
+     */
+    public static function metaFormState(MediaItem $record): array
+    {
+        return [
+            'id' => (int) $record->getKey(),
+            'name' => $record->displayTitle(),
+            'caption' => $record->caption(),
+            'file_name' => (string) $record->file_name,
+        ];
+    }
+
+    /**
+     * @param  list<array{id?: int|string, name?: string, caption?: string|null}>  $items
+     */
+    public static function persistMetaItems(array $items): void
+    {
+        foreach ($items as $item) {
+            $id = (int) ($item['id'] ?? 0);
+
+            if ($id < 1) {
+                continue;
+            }
+
+            $record = MediaItem::query()->find($id);
+
+            if ($record === null) {
+                continue;
+            }
+
+            $record->name = trim((string) ($item['name'] ?? $record->displayTitle()));
+            $record->setCaption(isset($item['caption']) ? (string) $item['caption'] : null);
+            $record->save();
+        }
+    }
+
+    public static function editDetailsAction(): Action
+    {
+        return Action::make('editDetails')
+            ->label(__('voodbuilder-media::admin.library.edit'))
+            ->icon('heroicon-o-pencil-square')
+            ->fillForm(fn (MediaItem $record): array => static::metaFormState($record))
+            ->schema(static::metaFieldsSchema())
+            ->action(function (MediaItem $record, array $data): void {
+                static::persistMetaItems([[
+                    'id' => (int) $record->getKey(),
+                    'name' => (string) ($data['name'] ?? ''),
+                    'caption' => $data['caption'] ?? null,
+                ]]);
+
+                Notification::make()
+                    ->success()
+                    ->title(__('voodbuilder-media::admin.library.meta_saved'))
+                    ->send();
+            });
+    }
+
+    public static function refineUploadedAction(): Action
+    {
+        return Action::make('refineUploaded')
+            ->label(__('voodbuilder-media::admin.library.refine_title'))
+            ->modalHeading(__('voodbuilder-media::admin.library.refine_title'))
+            ->modalDescription(__('voodbuilder-media::admin.library.refine_body'))
+            ->modalSubmitActionLabel(__('voodbuilder-media::admin.library.refine_save'))
+            ->visible(false)
+            ->schema([
+                Repeater::make('items')
+                    ->label(__('voodbuilder-media::admin.library.refine_items'))
+                    ->schema(static::metaFieldsSchema())
+                    ->addable(false)
+                    ->deletable(false)
+                    ->reorderable(false)
+                    ->columns(2)
+                    ->columnSpanFull(),
+            ])
+            ->fillForm(fn (array $arguments): array => [
+                'items' => $arguments['items'] ?? [],
+            ])
+            ->action(function (array $data): void {
+                static::persistMetaItems($data['items'] ?? []);
+
+                Notification::make()
+                    ->success()
+                    ->title(__('voodbuilder-media::admin.library.meta_saved'))
+                    ->send();
+            });
+    }
+
+    /**
+     * @param  array{gallery_ids?: list<int|string>, files?: mixed}  $data
+     * @return list<MediaItem>
+     */
+    public static function storeUploadedFiles(array $data): array
+    {
+        $galleryIds = array_map('intval', $data['gallery_ids'] ?? []);
+        $galleries = MediaGallery::query()->whereIn('id', $galleryIds)->get();
+        $files = $data['files'] ?? [];
+        $stored = [];
+
+        if (! is_array($files)) {
+            $files = [$files];
+        }
+
+        foreach ($files as $file) {
+            if ($file instanceof TemporaryUploadedFile) {
+                $stored[] = MediaLibrary::store($file, $galleries);
+
+                continue;
+            }
+
+            if (! is_string($file) || $file === '') {
+                continue;
+            }
+
+            $disk = (string) (config('livewire.temporary_file_upload.disk') ?: config('filesystems.default'));
+            $absolute = Storage::disk($disk)->path($file);
+
+            if (! is_file($absolute)) {
+                continue;
+            }
+
+            $uploaded = new \Illuminate\Http\UploadedFile(
+                $absolute,
+                basename($file),
+                mime_content_type($absolute) ?: null,
+                null,
+                true,
+            );
+
+            $stored[] = MediaLibrary::store($uploaded, $galleries);
+        }
+
+        return $stored;
+    }
+
     public static function uploadAction(): Action
     {
         $imageMaxKb = (int) config('voodbuilder-media.upload.image_max_kb', 8192);
@@ -255,42 +452,22 @@ class MediaItemResource extends Resource
                     ])
                     ->helperText(__('voodbuilder-media::admin.library.upload_help')),
             ])
-            ->action(function (array $data): void {
-                $galleryIds = array_map('intval', $data['gallery_ids'] ?? []);
-                $galleries = MediaGallery::query()->whereIn('id', $galleryIds)->get();
-                $files = $data['files'] ?? [];
+            ->action(function (array $data, Action $action): void {
+                $stored = static::storeUploadedFiles($data);
 
-                if (! is_array($files)) {
-                    $files = [$files];
+                if ($stored === []) {
+                    return;
                 }
 
-                foreach ($files as $file) {
-                    if ($file instanceof TemporaryUploadedFile) {
-                        MediaLibrary::store($file, $galleries);
+                $livewire = $action->getLivewire();
 
-                        continue;
-                    }
-
-                    if (! is_string($file) || $file === '') {
-                        continue;
-                    }
-
-                    $disk = (string) (config('livewire.temporary_file_upload.disk') ?: config('filesystems.default'));
-                    $absolute = Storage::disk($disk)->path($file);
-
-                    if (! is_file($absolute)) {
-                        continue;
-                    }
-
-                    $uploaded = new \Illuminate\Http\UploadedFile(
-                        $absolute,
-                        basename($file),
-                        mime_content_type($absolute) ?: null,
-                        null,
-                        true,
-                    );
-
-                    MediaLibrary::store($uploaded, $galleries);
+                if ($livewire instanceof Component && method_exists($livewire, 'mountAction')) {
+                    $livewire->mountAction('refineUploaded', [
+                        'items' => array_map(
+                            static fn (MediaItem $media): array => static::metaFormState($media),
+                            $stored,
+                        ),
+                    ]);
                 }
             })
             ->successNotificationTitle(__('voodbuilder-media::admin.library.uploaded'));

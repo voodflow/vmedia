@@ -67,9 +67,16 @@ class EditorMediaController extends Controller
                     'mp4', 'webm', 'ogg', 'mov', 'm4v',
                 ])->max($isVideo ? $videoMaxKb : $imageMaxKb),
             ],
+            'name' => ['nullable', 'string', 'max:255'],
+            'caption' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $media = MediaLibrary::store($validated['file'], MediaGallery::default());
+        $media = MediaLibrary::store(
+            $validated['file'],
+            MediaGallery::default(),
+            isset($validated['name']) ? (string) $validated['name'] : null,
+            isset($validated['caption']) ? (string) $validated['caption'] : null,
+        );
         $payload = MediaLibrary::toAssetPayload($media);
 
         return response()->json([

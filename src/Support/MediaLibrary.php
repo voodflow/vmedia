@@ -43,7 +43,7 @@ final class MediaLibrary
 
     /**
      * @return array{
-     *   data: list<array{src: string, type: string, name: string, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null}>,
+     *   data: list<array{src: string, type: string, name: string, caption: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null}>,
      *   meta: array{current_page: int, last_page: int, per_page: int, total: int, has_more: bool}
      * }
      */
@@ -81,7 +81,8 @@ final class MediaLibrary
             $query->where(function ($builder) use ($term): void {
                 $builder
                     ->where('name', 'like', $term)
-                    ->orWhere('file_name', 'like', $term);
+                    ->orWhere('file_name', 'like', $term)
+                    ->orWhere('custom_properties->caption', 'like', $term);
             });
         }
 
@@ -103,7 +104,7 @@ final class MediaLibrary
     }
 
     /**
-     * @return list<array{src: string, type: string, name: string, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null}>
+     * @return list<array{src: string, type: string, name: string, caption: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null}>
      */
     public static function listAssets(?string $type = null, ?int $galleryId = null): array
     {
@@ -111,7 +112,7 @@ final class MediaLibrary
     }
 
     /**
-     * @return array{src: string, type: string, name: string, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null}
+     * @return array{src: string, type: string, name: string, caption: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null}
      */
     public static function toAssetPayload(MediaItem $media): array
     {
@@ -125,7 +126,8 @@ final class MediaLibrary
         return [
             'src' => $src,
             'type' => $isVideo ? 'video' : 'image',
-            'name' => (string) ($media->name ?: $media->file_name),
+            'name' => $media->displayTitle(),
+            'caption' => $media->caption(),
             'uuid' => (string) $media->uuid,
             'id' => (int) $media->getKey(),
             'gallery_ids' => $media->galleries->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
@@ -137,21 +139,35 @@ final class MediaLibrary
     /**
      * Store on the vault and attach to one or more galleries (default when empty).
      *
+     * Display title (`name`) stays human-readable; `file_name` is always a storage hash.
+     *
      * @param  iterable<int|MediaGallery>|null  $galleries
      */
-    public static function store(UploadedFile $file, iterable|MediaGallery|null $galleries = null): MediaItem
-    {
+    public static function store(
+        UploadedFile $file,
+        iterable|MediaGallery|null $galleries = null,
+        ?string $name = null,
+        ?string $caption = null,
+    ): MediaItem {
         $targets = self::normalizeGalleries($galleries);
         $mime = (string) ($file->getMimeType() ?? '');
         $isVideo = str_starts_with($mime, 'video/');
         $collection = $isVideo ? MediaGallery::COLLECTION_VIDEOS : MediaGallery::COLLECTION_IMAGES;
+        $displayName = self::resolveDisplayName($file, $name);
+
+        $adder = MediaVault::current()
+            ->addMedia($file)
+            ->usingName($displayName)
+            ->usingFileName($file->hashName());
+
+        if (filled($caption)) {
+            $adder->withCustomProperties([
+                MediaItem::CUSTOM_CAPTION => trim($caption),
+            ]);
+        }
 
         /** @var \Spatie\MediaLibrary\MediaCollections\Models\Media $stored */
-        $stored = MediaVault::current()
-            ->addMedia($file)
-            ->usingName(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) ?: $file->hashName())
-            ->usingFileName($file->hashName())
-            ->toMediaCollection($collection);
+        $stored = $adder->toMediaCollection($collection);
 
         $media = MediaItem::query()->findOrFail($stored->getKey());
 
@@ -160,6 +176,30 @@ final class MediaLibrary
         }
 
         return $media->load('galleries');
+    }
+
+    /**
+     * Prefer an explicit title, then the client filename stem (never a bare "edited").
+     */
+    public static function resolveDisplayName(UploadedFile $file, ?string $name = null): string
+    {
+        $explicit = is_string($name) ? trim($name) : '';
+
+        if ($explicit !== '') {
+            return pathinfo($explicit, PATHINFO_FILENAME) ?: $explicit;
+        }
+
+        $fromClient = trim((string) pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
+
+        if ($fromClient !== '' && ! preg_match('/^edited(?:[-_.].*)?$/i', $fromClient)) {
+            return $fromClient;
+        }
+
+        if ($fromClient !== '' && preg_match('/^edited[-_.](.+)$/i', $fromClient, $matches)) {
+            return 'edited-'.$matches[1];
+        }
+
+        return 'image';
     }
 
     /**

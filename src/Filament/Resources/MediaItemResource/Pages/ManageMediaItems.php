@@ -23,6 +23,7 @@ class ManageMediaItems extends ManageRecords
     {
         return [
             MediaItemResource::uploadAction(),
+            MediaItemResource::refineUploadedAction(),
         ];
     }
 

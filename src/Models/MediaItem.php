@@ -9,9 +9,16 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * Spatie Media row with gallery memberships (many-to-many).
+ *
+ * Naming:
+ * - `name` — human-readable display title (original client filename stem or custom title)
+ * - `file_name` — storage filename on disk (usually a hash from Spatie)
+ * - `custom_properties.caption` — optional library caption (fallback for page/block captions)
  */
 class MediaItem extends Media
 {
+    public const CUSTOM_CAPTION = 'caption';
+
     /**
      * @return BelongsToMany<MediaGallery, $this>
      */
@@ -37,7 +44,51 @@ class MediaItem extends Media
     public function kindLabel(): string
     {
         return $this->isVideo()
-            ? (string) __('voodbuilder-media::admin.library.videos')
-            : (string) __('voodbuilder-media::admin.library.photos');
+            ? (string) __('voodbuilder-media::admin.library.video')
+            : (string) __('voodbuilder-media::admin.library.photo');
+    }
+
+    /**
+     * Stable human-readable title shown in admin / editor.
+     */
+    public function displayTitle(): string
+    {
+        $name = trim((string) $this->name);
+
+        if ($name !== '') {
+            return $name;
+        }
+
+        $file = trim((string) $this->file_name);
+
+        return $file !== ''
+            ? (string) pathinfo($file, PATHINFO_FILENAME)
+            : 'media';
+    }
+
+    public function caption(): ?string
+    {
+        $caption = $this->getCustomProperty(self::CUSTOM_CAPTION);
+
+        if (! is_string($caption)) {
+            return null;
+        }
+
+        $caption = trim($caption);
+
+        return $caption !== '' ? $caption : null;
+    }
+
+    public function setCaption(?string $caption): static
+    {
+        $trimmed = is_string($caption) ? trim($caption) : '';
+
+        if ($trimmed === '') {
+            $this->forgetCustomProperty(self::CUSTOM_CAPTION);
+        } else {
+            $this->setCustomProperty(self::CUSTOM_CAPTION, $trimmed);
+        }
+
+        return $this;
     }
 }

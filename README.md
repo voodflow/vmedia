@@ -31,7 +31,7 @@ When this companion is installed, Core’s built-in Media library resource and e
 
 ## Admin UX
 
-- **Photos vs videos** — type badge + filter (`images` / `videos` collections)
+- **Photos vs videos** — type icon in the library table + filter (`images` / `videos` collections)
 - **Galleries** — name, auto unique slug, description, default, public, sort
 - **Library** — preview, multi-gallery badges; no per-row reassignment
 - **Bulk** — assign/add galleries, replace memberships, or create a new gallery from the selection
