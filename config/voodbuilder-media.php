@@ -33,4 +33,8 @@ return [
         'vaults' => 'voodbuilder_media_vaults',
         'gallery_media' => 'voodbuilder_media_gallery_media',
     ],
+
+    'browser' => [
+        'per_page' => (int) env('VOODBUILDER_MEDIA_BROWSER_PER_PAGE', 48),
+    ],
 ];

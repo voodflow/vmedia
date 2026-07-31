@@ -12,7 +12,7 @@ use Voodflow\VoodbuilderMedia\Models\MediaGallery;
 use Voodflow\VoodbuilderMedia\Support\MediaLibrary;
 
 /**
- * VoodBuilder editor Asset Manager endpoints (galleries + list + upload → default gallery).
+ * VoodBuilder editor media browser endpoints (galleries + paginated list + upload → default).
  */
 class EditorMediaController extends Controller
 {
@@ -35,19 +35,16 @@ class EditorMediaController extends Controller
         $type = is_string($type) && in_array($type, ['image', 'video'], true) ? $type : null;
         $galleryId = $request->query('gallery_id');
         $galleryId = is_numeric($galleryId) ? (int) $galleryId : null;
+        $search = $request->query('q');
+        $search = is_string($search) ? trim($search) : null;
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = (int) $request->query('per_page', config('voodbuilder-media.browser.per_page', 48));
+
+        $result = MediaLibrary::paginateAssets($type, $galleryId, $search !== '' ? $search : null, $page, $perPage);
 
         return response()->json([
-            'data' => array_map(
-                static fn (array $asset): array => [
-                    'src' => $asset['src'],
-                    'type' => $asset['type'],
-                    'name' => $asset['name'],
-                    'uuid' => $asset['uuid'],
-                    'id' => $asset['id'],
-                    'gallery_ids' => $asset['gallery_ids'],
-                ],
-                MediaLibrary::listAssets($type, $galleryId),
-            ),
+            'data' => $result['data'],
+            'meta' => $result['meta'],
             'default_gallery_id' => (int) MediaGallery::default()->getKey(),
             'upload_gallery_id' => (int) MediaGallery::default()->getKey(),
         ]);
@@ -72,7 +69,6 @@ class EditorMediaController extends Controller
             ],
         ]);
 
-        // Frontend / editor uploads always land in the default gallery (membership).
         $media = MediaLibrary::store($validated['file'], MediaGallery::default());
         $payload = MediaLibrary::toAssetPayload($media);
 

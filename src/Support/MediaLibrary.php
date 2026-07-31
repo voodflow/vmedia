@@ -42,10 +42,21 @@ final class MediaLibrary
     }
 
     /**
-     * @return list<array{src: string, type: string, name: string, uuid: string, id: int, gallery_ids: list<int>}>
+     * @return array{
+     *   data: list<array{src: string, type: string, name: string, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null}>,
+     *   meta: array{current_page: int, last_page: int, per_page: int, total: int, has_more: bool}
+     * }
      */
-    public static function listAssets(?string $type = null, ?int $galleryId = null): array
-    {
+    public static function paginateAssets(
+        ?string $type = null,
+        ?int $galleryId = null,
+        ?string $search = null,
+        int $page = 1,
+        int $perPage = 48,
+    ): array {
+        $page = max(1, $page);
+        $perPage = max(1, min(96, $perPage));
+
         $query = MediaItem::query()
             ->with('galleries:id,name')
             ->where('model_type', (new MediaVault)->getMorphClass())
@@ -65,13 +76,62 @@ final class MediaLibrary
             $query->where('collection_name', MediaGallery::COLLECTION_VIDEOS);
         }
 
-        $assets = [];
-
-        foreach ($query->get() as $media) {
-            $assets[] = self::toAssetPayload($media);
+        if (filled($search)) {
+            $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $search).'%';
+            $query->where(function ($builder) use ($term): void {
+                $builder
+                    ->where('name', 'like', $term)
+                    ->orWhere('file_name', 'like', $term);
+            });
         }
 
-        return $assets;
+        $paginator = $query->paginate(perPage: $perPage, page: $page);
+
+        return [
+            'data' => $paginator->getCollection()
+                ->map(static fn (MediaItem $media): array => self::toAssetPayload($media))
+                ->values()
+                ->all(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'has_more' => $paginator->hasMorePages(),
+            ],
+        ];
+    }
+
+    /**
+     * @return list<array{src: string, type: string, name: string, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null}>
+     */
+    public static function listAssets(?string $type = null, ?int $galleryId = null): array
+    {
+        return self::paginateAssets($type, $galleryId, null, 1, 5000)['data'];
+    }
+
+    /**
+     * @return array{src: string, type: string, name: string, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null}
+     */
+    public static function toAssetPayload(MediaItem $media): array
+    {
+        if (! $media->relationLoaded('galleries')) {
+            $media->load('galleries:id');
+        }
+
+        $src = self::publicUrl($media);
+        $isVideo = $media->isVideo();
+
+        return [
+            'src' => $src,
+            'type' => $isVideo ? 'video' : 'image',
+            'name' => (string) ($media->name ?: $media->file_name),
+            'uuid' => (string) $media->uuid,
+            'id' => (int) $media->getKey(),
+            'gallery_ids' => $media->galleries->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
+            // Images: same URL (browser lazy-loads). Videos: null — show icon until selected.
+            'thumb' => $isVideo ? null : $src,
+        ];
     }
 
     /**
@@ -141,25 +201,6 @@ final class MediaLibrary
         $gallery->attachMedia($media);
 
         return $gallery;
-    }
-
-    /**
-     * @return array{src: string, type: string, name: string, uuid: string, id: int, gallery_ids: list<int>}
-     */
-    public static function toAssetPayload(MediaItem $media): array
-    {
-        if (! $media->relationLoaded('galleries')) {
-            $media->load('galleries:id');
-        }
-
-        return [
-            'src' => self::publicUrl($media),
-            'type' => $media->isVideo() ? 'video' : 'image',
-            'name' => (string) ($media->name ?: $media->file_name),
-            'uuid' => (string) $media->uuid,
-            'id' => (int) $media->getKey(),
-            'gallery_ids' => $media->galleries->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
-        ];
     }
 
     public static function publicUrl(MediaItem $media): string

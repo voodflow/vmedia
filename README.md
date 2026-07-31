@@ -42,10 +42,10 @@ When this companion is installed, Core’s built-in Media library resource and e
 | Method | Path | Role |
 |--------|------|------|
 | `GET` | `/voodbuilder/editor/media/galleries` | Gallery list + counts |
-| `GET` | `/voodbuilder/editor/media?gallery_id=&type=` | Assets (optional gallery filter) |
+| `GET` | `/voodbuilder/editor/media?page=&per_page=&gallery_id=&type=&q=` | Paginated assets |
 | `POST` | `/voodbuilder/editor/upload` | Upload → **default gallery only** |
 
-Choose opens with gallery chips: browse any gallery; uploads still land in default.
+The editor **Choose** dialog is a custom media browser (not GrapesJS AM): gallery sidebar, photo/video filter, search, infinite scroll, lazy thumbnails, compact upload dropzone. Dark/light and mobile layouts use editor theme tokens.
 
 ## Config
 
