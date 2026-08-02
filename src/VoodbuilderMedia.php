@@ -5,15 +5,23 @@ declare(strict_types=1);
 namespace Voodflow\VoodbuilderMedia;
 
 /**
- * Runtime activation flag for the media companion (mirrors Elements/Popups style).
+ * Runtime activation for the Filament media companion.
+ *
+ * Installing the Composer package alone is not enough: the host must register
+ * VoodbuilderMediaPlugin on a Filament panel (unless auto_register is on).
  */
 final class VoodbuilderMedia
 {
-    protected static bool $active = false;
+    private static bool $active = false;
 
     public static function activate(): void
     {
+        if (self::$active) {
+            return;
+        }
+
         self::$active = true;
+        VoodbuilderMediaEditorRoutes::register();
     }
 
     public static function reset(): void

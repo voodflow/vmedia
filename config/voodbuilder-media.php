@@ -21,12 +21,18 @@ return [
     ],
 
     /*
-    | When true and voodflow/voodbuilder is installed, register editor media routes
-    | that feed the GrapesJS Asset Manager (Choose / upload).
+    | When true and the companion is activated, register editor media routes
+    | (galleries browser + vault upload) that replace Core GrapesJS Asset Manager list/upload.
     */
     'voodbuilder' => [
         'editor_routes' => env('VOODBUILDER_MEDIA_EDITOR_ROUTES', true),
     ],
+
+    /*
+    | Activate without registering VoodbuilderMediaPlugin on a Filament panel.
+    | Prefer the Filament plugin in host apps so commenting it out restores Core media UX.
+    */
+    'auto_register' => env('VOODBUILDER_MEDIA_AUTO_REGISTER', false),
 
     'tables' => [
         'galleries' => 'voodbuilder_media_galleries',
