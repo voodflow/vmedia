@@ -1,0 +1,27 @@
+Voodflow Source-Available License
+
+Copyright (c) Voodflow
+
+Documentation: https://docs.voodflow.com
+
+This repository's source code is made available for viewing, auditing, and local modification under the terms below. It is not Open Source. Production use requires a paid license from Voodflow (see https://docs.voodflow.com).
+
+Permissions
+
+You may:
+
+View and copy the source code for internal evaluation and development.
+Modify the source code for use within your own application(s).
+
+Restrictions
+
+You may not:
+
+Redistribute the source code (modified or unmodified) publicly or privately, except as part of your own compiled/bundled application that does not expose the source.
+Publish the source code in any public repository, package registry, or marketplace.
+Offer the Software (or a substantial portion of it) as a hosted or managed service (SaaS) without a separate written agreement from Voodflow.
+Remove or alter license, attribution, or proprietary notices.
+
+No Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
