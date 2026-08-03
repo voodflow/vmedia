@@ -21,7 +21,7 @@ final class Vmedia
         }
 
         self::$active = true;
-        VmediaRoutes::register();
+        self::registerRoutesOutsideFilamentGroup();
     }
 
     public static function reset(): void
@@ -33,5 +33,25 @@ final class Vmedia
     public static function isActive(): bool
     {
         return self::$active && (bool) config('vmedia.enabled', true);
+    }
+
+    /**
+     * Filament resolves panels while loading routes under Route::name('filament.').
+     * Plugin::register() therefore runs inside that group — defer HTTP routes so
+     * names stay `vmedia.*` / `voodbuilder.editor.*` instead of `filament.vmedia.*`.
+     */
+    private static function registerRoutesOutsideFilamentGroup(): void
+    {
+        $register = static function (): void {
+            VmediaRoutes::register();
+        };
+
+        if (app()->isBooted()) {
+            $register();
+
+            return;
+        }
+
+        app()->booted($register);
     }
 }

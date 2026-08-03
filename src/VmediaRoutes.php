@@ -20,7 +20,9 @@ final class VmediaRoutes
 
     public static function register(): void
     {
-        if (self::$registered) {
+        // Application refresh (e.g. Testbench) clears routes but static flags may linger.
+        // Also re-register when a prior call nested under Filament's `filament.` name group.
+        if (self::$registered && Route::has('vmedia.media.index')) {
             return;
         }
 
