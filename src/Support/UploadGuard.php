@@ -70,9 +70,7 @@ final class UploadGuard
         $normalized = ltrim(str_replace('\\', '/', $relative), '/');
 
         if ($normalized === '' || self::containsPathTraversal($normalized) || str_contains($normalized, '..')) {
-            throw ValidationException::withMessages([
-                'path' => ['Invalid media path.'],
-            ]);
+            throw new \InvalidArgumentException('Invalid media path.');
         }
 
         return $normalized;

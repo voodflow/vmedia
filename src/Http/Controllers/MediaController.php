@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Voodflow\Vmedia\Http\Controllers;
 
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -18,6 +19,7 @@ use Voodflow\Vmedia\Support\UploadGuard;
  */
 class MediaController extends Controller
 {
+    use AuthorizesRequests;
     public function galleries(Request $request): JsonResponse
     {
         $this->authorize('viewAny', MediaGallery::class);
