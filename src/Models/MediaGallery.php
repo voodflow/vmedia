@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Voodflow\VoodbuilderMedia\Models;
+namespace Voodflow\Vmedia\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -41,7 +41,15 @@ class MediaGallery extends Model
 
     public function getTable(): string
     {
-        return (string) config('voodbuilder-media.tables.galleries', 'voodbuilder_media_galleries');
+        return (string) config('vmedia.tables.galleries', 'voodbuilder_media_galleries');
+    }
+
+    /**
+     * Stable morph alias (kept for legacy migrations / existing rows).
+     */
+    public function getMorphClass(): string
+    {
+        return 'voodbuilder_media_gallery';
     }
 
     public function getSlugOptions(): SlugOptions
@@ -100,7 +108,7 @@ class MediaGallery extends Model
     {
         return $this->belongsToMany(
             MediaItem::class,
-            (string) config('voodbuilder-media.tables.gallery_media', 'voodbuilder_media_gallery_media'),
+            (string) config('vmedia.tables.gallery_media', 'voodbuilder_media_gallery_media'),
             'gallery_id',
             'media_id',
         )

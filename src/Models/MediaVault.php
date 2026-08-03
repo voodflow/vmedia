@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Voodflow\VoodbuilderMedia\Models;
+namespace Voodflow\Vmedia\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Spatie\MediaLibrary\HasMedia;
@@ -21,7 +21,15 @@ class MediaVault extends Model implements HasMedia
 
     public function getTable(): string
     {
-        return (string) config('voodbuilder-media.tables.vaults', 'voodbuilder_media_vaults');
+        return (string) config('vmedia.tables.vaults', 'voodbuilder_media_vaults');
+    }
+
+    /**
+     * Stable morph alias (kept for existing Spatie media rows).
+     */
+    public function getMorphClass(): string
+    {
+        return 'voodbuilder_media_vault';
     }
 
     public static function current(): self
@@ -39,7 +47,7 @@ class MediaVault extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $disk = (string) config('voodbuilder-media.disk', 'public');
+        $disk = (string) config('vmedia.disk', 'public');
 
         $this->addMediaCollection('images')
             ->useDisk($disk);

@@ -2,36 +2,36 @@
 
 declare(strict_types=1);
 
-namespace Voodflow\VoodbuilderMedia\Console;
+namespace Voodflow\Vmedia\Console;
 
 use Composer\InstalledVersions;
 use Illuminate\Console\Command;
 
 class InstallCommand extends Command
 {
-    protected $signature = 'voodbuilder-media:install
+    protected $signature = 'vmedia:install
                             {--force : Overwrite already published files}
                             {--skip-migrate : Publish without running migrate}';
 
-    protected $description = 'Publish voodbuilder-media config/migrations (and Spatie media table if missing)';
+    protected $description = 'Publish vmedia config/migrations (and Spatie media table if missing)';
 
     /** @var array<string, string> */
     protected array $publishTags = [
         'medialibrary-config' => 'spatie/laravel-medialibrary',
         'medialibrary-migrations' => 'spatie/laravel-medialibrary',
-        'voodbuilder-media-config' => 'voodflow/voodbuilder-media',
+        'vmedia-config' => 'voodflow/vmedia',
     ];
 
     public function handle(): int
     {
-        $this->components->info('Installing voodflow/voodbuilder-media...');
+        $this->components->info('Installing voodflow/vmedia...');
 
         $publishOptions = array_filter([
             '--force' => $this->option('force'),
         ]);
 
         foreach ($this->publishTags as $tag => $package) {
-            if ($package !== 'voodflow/voodbuilder-media' && ! InstalledVersions::isInstalled($package)) {
+            if ($package !== 'voodflow/vmedia' && ! InstalledVersions::isInstalled($package)) {
                 $this->components->warn("Skipping {$tag}: package {$package} is not installed.");
 
                 continue;
@@ -67,7 +67,7 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
-        $this->components->success('voodflow/voodbuilder-media installed.');
+        $this->components->success('voodflow/vmedia installed.');
         $this->printNextSteps();
 
         return self::SUCCESS;
@@ -89,7 +89,7 @@ class InstallCommand extends Command
         $this->newLine();
         $this->line('  Register on your Filament panel:');
         $this->line('    ->plugins([');
-        $this->line('        \\Voodflow\\VoodbuilderMedia\\VoodbuilderMediaPlugin::make(),');
+        $this->line('        \\Voodflow\\Vmedia\\VmediaPlugin::make(),');
         $this->line('    ])');
         $this->newLine();
     }

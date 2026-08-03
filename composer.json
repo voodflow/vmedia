@@ -1,18 +1,18 @@
 {
-    "name": "voodflow/voodbuilder-media",
-    "description": "Reusable media library & galleries for Filament 5 (Spatie Media Library). Works standalone; first-class VoodBuilder editor integration.",
-    "version": "0.0.1",
+    "name": "voodflow/vmedia",
+    "description": "Reusable media library & galleries for Filament 5 (Spatie Media Library). Works standalone; optional page-builder editor integration.",
+    "version": "0.1.0",
     "type": "library",
     "license": "proprietary",
     "keywords": [
         "laravel",
         "filament",
         "filamentphp",
-        "voodbuilder",
         "media",
         "gallery",
         "spatie",
-        "voodflow"
+        "voodflow",
+        "vmedia"
     ],
     "require": {
         "php": "^8.4",
@@ -24,26 +24,26 @@
         "spatie/laravel-sluggable": "^3.0"
     },
     "suggest": {
-        "voodflow/voodbuilder": "Page builder integration: editor Asset Manager lists/uploads into galleries."
+        "voodflow/voodbuilder": "Optional: page builder Asset Manager lists/uploads into galleries."
     },
     "autoload": {
         "psr-4": {
-            "Voodflow\\VoodbuilderMedia\\": "src/"
+            "Voodflow\\Vmedia\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Voodflow\\VoodbuilderMedia\\Tests\\": "tests/"
+            "Voodflow\\Vmedia\\Tests\\": "tests/"
         }
     },
     "require-dev": {
         "orchestra/testbench": "^10.0|^11.0",
-        "phpunit/phpunit": "^11.0"
+        "phpunit/phpunit": "^11.0|^12.0"
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Voodflow\\VoodbuilderMedia\\VoodbuilderMediaServiceProvider"
+                "Voodflow\\Vmedia\\VmediaServiceProvider"
             ]
         }
     },

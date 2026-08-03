@@ -2,22 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Voodflow\VoodbuilderMedia\Http\Controllers;
+namespace Voodflow\Vmedia\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Validation\Rules\File;
-use Voodflow\VoodbuilderMedia\Models\MediaGallery;
-use Voodflow\VoodbuilderMedia\Support\MediaLibrary;
+use Voodflow\Vmedia\Models\MediaGallery;
+use Voodflow\Vmedia\Models\MediaItem;
+use Voodflow\Vmedia\Support\MediaLibrary;
+use Voodflow\Vmedia\Support\UploadGuard;
 
 /**
- * VoodBuilder editor media browser endpoints (galleries + paginated list + upload → default).
+ * Package-owned media browser endpoints (galleries + paginated list + upload + delete).
  */
-class EditorMediaController extends Controller
+class MediaController extends Controller
 {
     public function galleries(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', MediaGallery::class);
+
         $type = $request->query('type');
         $type = is_string($type) && in_array($type, ['image', 'video'], true) ? $type : null;
         $default = MediaGallery::default();
@@ -31,6 +35,8 @@ class EditorMediaController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', MediaItem::class);
+
         $type = $request->query('type');
         $type = is_string($type) && in_array($type, ['image', 'video'], true) ? $type : null;
         $galleryId = $request->query('gallery_id');
@@ -38,7 +44,7 @@ class EditorMediaController extends Controller
         $search = $request->query('q');
         $search = is_string($search) ? trim($search) : null;
         $page = max(1, (int) $request->query('page', 1));
-        $perPage = (int) $request->query('per_page', config('voodbuilder-media.browser.per_page', 48));
+        $perPage = (int) $request->query('per_page', config('vmedia.browser.per_page', 48));
 
         $result = MediaLibrary::paginateAssets($type, $galleryId, $search !== '' ? $search : null, $page, $perPage);
 
@@ -52,9 +58,15 @@ class EditorMediaController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $imageMaxKb = (int) config('voodbuilder-media.upload.image_max_kb', 8192);
-        $videoMaxKb = (int) config('voodbuilder-media.upload.video_max_kb', 51200);
+        $this->authorize('create', MediaItem::class);
+
+        $imageMaxKb = (int) config('vmedia.upload.image_max_kb', 8192);
+        $videoMaxKb = (int) config('vmedia.upload.video_max_kb', 51200);
+        $extensions = (array) config('vmedia.upload.allowed_extensions', []);
         $uploaded = $request->file('file');
+
+        UploadGuard::assertSafeUpload($uploaded);
+
         $mime = (string) ($uploaded?->getMimeType() ?? '');
         $isVideo = str_starts_with($mime, 'video/');
 
@@ -62,14 +74,13 @@ class EditorMediaController extends Controller
             'file' => [
                 'required',
                 'file',
-                File::types([
-                    'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif',
-                    'mp4', 'webm', 'ogg', 'mov', 'm4v',
-                ])->max($isVideo ? $videoMaxKb : $imageMaxKb),
+                File::types($extensions)->max($isVideo ? $videoMaxKb : $imageMaxKb),
             ],
             'name' => ['nullable', 'string', 'max:255'],
             'caption' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        UploadGuard::assertAllowedMime($validated['file']);
 
         $media = MediaLibrary::store(
             $validated['file'],
@@ -82,6 +93,19 @@ class EditorMediaController extends Controller
         return response()->json([
             'data' => [$payload['src']],
             'media' => $payload,
-        ]);
+        ], 201);
+    }
+
+    public function destroy(MediaItem $media): JsonResponse
+    {
+        $this->authorize('delete', $media);
+
+        if (! MediaLibrary::isVaultMedia($media)) {
+            abort(404);
+        }
+
+        $media->delete();
+
+        return response()->json(['deleted' => true]);
     }
 }

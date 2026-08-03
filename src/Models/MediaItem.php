@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Voodflow\VoodbuilderMedia\Models;
+namespace Voodflow\Vmedia\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -26,7 +26,7 @@ class MediaItem extends Media
     {
         return $this->belongsToMany(
             MediaGallery::class,
-            (string) config('voodbuilder-media.tables.gallery_media', 'voodbuilder_media_gallery_media'),
+            (string) config('vmedia.tables.gallery_media', 'voodbuilder_media_gallery_media'),
             'media_id',
             'gallery_id',
         )
@@ -44,8 +44,8 @@ class MediaItem extends Media
     public function kindLabel(): string
     {
         return $this->isVideo()
-            ? (string) __('voodbuilder-media::admin.library.video')
-            : (string) __('voodbuilder-media::admin.library.photo');
+            ? (string) __('vmedia::admin.library.video')
+            : (string) __('vmedia::admin.library.photo');
     }
 
     /**

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Voodflow\VoodbuilderMedia\Filament\Resources\MediaGalleryResource\Pages;
+namespace Voodflow\Vmedia\Filament\Resources\MediaGalleryResource\Pages;
 
 use Filament\Resources\Pages\CreateRecord;
-use Voodflow\VoodbuilderMedia\Filament\Resources\MediaGalleryResource;
+use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource;
 
 class CreateMediaGallery extends CreateRecord
 {

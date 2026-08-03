@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Voodflow\VoodbuilderMedia\Support;
+namespace Voodflow\Vmedia\Support;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
-use Voodflow\VoodbuilderMedia\Models\MediaGallery;
-use Voodflow\VoodbuilderMedia\Models\MediaItem;
-use Voodflow\VoodbuilderMedia\Models\MediaVault;
+use Voodflow\Vmedia\Models\MediaGallery;
+use Voodflow\Vmedia\Models\MediaItem;
+use Voodflow\Vmedia\Models\MediaVault;
 
 /**
- * Shared list/store helpers for admin + VoodBuilder editor Asset Manager.
+ * Shared list/store helpers for admin + optional page-builder Asset Manager.
  */
 final class MediaLibrary
 {
@@ -149,6 +149,9 @@ final class MediaLibrary
         ?string $name = null,
         ?string $caption = null,
     ): MediaItem {
+        UploadGuard::assertSafeUpload($file);
+        UploadGuard::assertAllowedMime($file);
+
         $targets = self::normalizeGalleries($galleries);
         $mime = (string) ($file->getMimeType() ?? '');
         $isVideo = str_starts_with($mime, 'video/');
@@ -186,10 +189,16 @@ final class MediaLibrary
         $explicit = is_string($name) ? trim($name) : '';
 
         if ($explicit !== '') {
-            return pathinfo($explicit, PATHINFO_FILENAME) ?: $explicit;
+            $safe = UploadGuard::containsPathTraversal($explicit) ? 'image' : $explicit;
+
+            return pathinfo($safe, PATHINFO_FILENAME) ?: $safe;
         }
 
         $fromClient = trim((string) pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
+
+        if (UploadGuard::containsPathTraversal($fromClient)) {
+            return 'image';
+        }
 
         if ($fromClient !== '' && ! preg_match('/^edited(?:[-_.].*)?$/i', $fromClient)) {
             return $fromClient;
@@ -245,7 +254,20 @@ final class MediaLibrary
 
     public static function publicUrl(MediaItem $media): string
     {
-        return '/storage/'.ltrim(str_replace('\\', '/', (string) $media->getPathRelativeToRoot()), '/');
+        $relative = UploadGuard::assertSafeRelativePath((string) $media->getPathRelativeToRoot());
+
+        return '/storage/'.$relative;
+    }
+
+    public static function isVaultMedia(MediaItem $media): bool
+    {
+        $vaultMorph = (new MediaVault)->getMorphClass();
+
+        return (string) $media->model_type === $vaultMorph
+            && in_array($media->collection_name, [
+                MediaGallery::COLLECTION_IMAGES,
+                MediaGallery::COLLECTION_VIDEOS,
+            ], true);
     }
 
     /**

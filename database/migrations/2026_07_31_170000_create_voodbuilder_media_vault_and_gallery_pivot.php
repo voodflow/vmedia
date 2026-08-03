@@ -11,9 +11,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $vaults = (string) config('voodbuilder-media.tables.vaults', 'voodbuilder_media_vaults');
-        $pivot = (string) config('voodbuilder-media.tables.gallery_media', 'voodbuilder_media_gallery_media');
-        $galleries = (string) config('voodbuilder-media.tables.galleries', 'voodbuilder_media_galleries');
+        $vaults = (string) config('vmedia.tables.vaults', 'voodbuilder_media_vaults');
+        $pivot = (string) config('vmedia.tables.gallery_media', 'voodbuilder_media_gallery_media');
+        $galleries = (string) config('vmedia.tables.galleries', 'voodbuilder_media_galleries');
 
         if (! Schema::hasTable($vaults)) {
             Schema::create($vaults, function (Blueprint $table): void {
@@ -42,8 +42,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        $pivot = (string) config('voodbuilder-media.tables.gallery_media', 'voodbuilder_media_gallery_media');
-        $vaults = (string) config('voodbuilder-media.tables.vaults', 'voodbuilder_media_vaults');
+        $pivot = (string) config('vmedia.tables.gallery_media', 'voodbuilder_media_gallery_media');
+        $vaults = (string) config('vmedia.tables.vaults', 'voodbuilder_media_vaults');
 
         Schema::dropIfExists($pivot);
         Schema::dropIfExists($vaults);

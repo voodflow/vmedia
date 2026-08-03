@@ -11,7 +11,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $table = (string) config('voodbuilder-media.tables.galleries', 'voodbuilder_media_galleries');
+        $table = (string) config('vmedia.tables.galleries', 'voodbuilder_media_galleries');
 
         if (! Schema::hasTable($table)) {
             Schema::create($table, function (Blueprint $blueprint): void {
@@ -32,7 +32,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        $table = (string) config('voodbuilder-media.tables.galleries', 'voodbuilder_media_galleries');
+        $table = (string) config('vmedia.tables.galleries', 'voodbuilder_media_galleries');
         Schema::dropIfExists($table);
     }
 

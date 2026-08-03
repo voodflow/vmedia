@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Voodflow\VoodbuilderMedia\Filament\Resources\MediaGalleryResource\Pages;
+namespace Voodflow\Vmedia\Filament\Resources\MediaGalleryResource\Pages;
 
 use Filament\Resources\Pages\ListRecords;
 use Filament\Actions\CreateAction;
-use Voodflow\VoodbuilderMedia\Filament\Resources\MediaGalleryResource;
+use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource;
 
 class ListMediaGalleries extends ListRecords
 {

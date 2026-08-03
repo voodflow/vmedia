@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Voodflow\VoodbuilderMedia;
+namespace Voodflow\Vmedia;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
-use Voodflow\VoodbuilderMedia\Filament\Resources\MediaGalleryResource;
-use Voodflow\VoodbuilderMedia\Filament\Resources\MediaItemResource;
+use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource;
+use Voodflow\Vmedia\Filament\Resources\MediaItemResource;
 
 /**
  * Filament plugin: reusable media library & galleries (Spatie Media Library).
  *
- * Register alone for a standalone media admin, or next to VoodbuilderPlugin
+ * Register alone for a standalone media admin, or next to a page builder
  * for editor Asset Manager integration.
  */
-class VoodbuilderMediaPlugin implements Plugin
+class VmediaPlugin implements Plugin
 {
     public static function make(): static
     {
@@ -32,16 +32,16 @@ class VoodbuilderMediaPlugin implements Plugin
 
     public function getId(): string
     {
-        return 'voodbuilder-media';
+        return 'vmedia';
     }
 
     public function register(Panel $panel): void
     {
-        if (! (bool) config('voodbuilder-media.enabled', true)) {
+        if (! (bool) config('vmedia.enabled', true)) {
             return;
         }
 
-        VoodbuilderMedia::activate();
+        Vmedia::activate();
 
         $panel->resources([
             MediaGalleryResource::class,
