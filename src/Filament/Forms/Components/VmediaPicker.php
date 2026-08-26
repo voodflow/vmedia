@@ -85,14 +85,19 @@ class VmediaPicker extends Field
                         ->label(__('vmedia::admin.library.gallery'))
                         ->options(fn (): array => MediaGallery::query()->orderBy('sort_order')->pluck('name', 'id')->all())
                         ->searchable()
+                        ->live()
                         ->nullable(),
                     Select::make('media_uuids')
                         ->label(__('vmedia::admin.picker.items'))
                         ->multiple()
                         ->searchable()
-                        ->options(fn (?callable $get) => $component->pickerOptions(
-                            is_numeric($get('gallery_id') ?? null) ? (int) $get('gallery_id') : null,
-                        ))
+                        ->options(function (VmediaPicker $component, $get): array {
+                            $galleryId = $get('gallery_id');
+
+                            return $component->pickerOptions(
+                                is_numeric($galleryId) ? (int) $galleryId : null,
+                            );
+                        })
                         ->getOptionLabelsUsing(fn (array $values): array => $component->labelsForUuids($values))
                         ->required(),
                 ])

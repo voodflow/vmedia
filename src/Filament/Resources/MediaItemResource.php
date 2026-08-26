@@ -9,6 +9,10 @@ use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\ForceDeleteBulkAction;
+use Filament\Actions\RestoreAction;
+use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
@@ -22,12 +26,15 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Voodflow\Vmedia\Filament\Resources\MediaItemResource\Pages\ManageMediaItems;
@@ -35,7 +42,9 @@ use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaVault;
 use Voodflow\Vmedia\Support\MediaLibrary;
+use Voodflow\Vmedia\Support\MediaUsage;
 use Voodflow\Vmedia\Support\UploadGuard;
+use Voodflow\Vmedia\Support\ZipImporter;
 
 /**
  * Flat library of vault media with gallery memberships (no per-row reassignment).
@@ -76,11 +85,15 @@ class MediaItemResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ])
             ->with(['galleries:id,name'])
             ->where('model_type', (new MediaVault)->getMorphClass())
             ->whereIn('collection_name', [
                 MediaGallery::COLLECTION_IMAGES,
                 MediaGallery::COLLECTION_VIDEOS,
+                MediaGallery::COLLECTION_FILES,
             ]);
     }
 
@@ -99,11 +112,13 @@ class MediaItemResource extends Resource
                     ->square()
                     ->visibility('public')
                     ->state(function (MediaItem $record): ?string {
-                        if ($record->isVideo()) {
+                        $thumb = MediaLibrary::thumbUrl($record);
+
+                        if ($thumb === null) {
                             return null;
                         }
 
-                        return (string) $record->getPathRelativeToRoot();
+                        return ltrim(str_replace('/storage/', '', $thumb), '/');
                     }),
                 TextColumn::make('name')
                     ->label(__('vmedia::admin.library.name'))
@@ -112,9 +127,14 @@ class MediaItemResource extends Resource
                     ->description(function (MediaItem $record): string {
                         $parts = [(string) $record->file_name];
                         $caption = $record->caption();
+                        $alt = $record->alt();
 
                         if ($caption !== null) {
                             $parts[] = $caption;
+                        }
+
+                        if ($alt !== null) {
+                            $parts[] = 'alt: '.$alt;
                         }
 
                         return implode(' — ', $parts);
@@ -124,14 +144,25 @@ class MediaItemResource extends Resource
                     ->badge()
                     ->separator(',')
                     ->placeholder('—'),
-                IconColumn::make('is_video')
+                TextColumn::make('usage')
+                    ->label(__('vmedia::admin.library.usage'))
+                    ->state(fn (MediaItem $record): string => (string) MediaUsage::attachmentCount($record))
+                    ->badge()
+                    ->color(fn (string $state): string => ((int) $state) > 0 ? 'warning' : 'gray')
+                    ->tooltip(__('vmedia::admin.library.usage_help')),
+                IconColumn::make('kind')
                     ->label(__('vmedia::admin.library.type'))
-                    ->state(fn (MediaItem $record): bool => $record->isVideo())
-                    ->boolean()
-                    ->trueIcon('heroicon-o-film')
-                    ->falseIcon('heroicon-o-photo')
-                    ->trueColor('warning')
-                    ->falseColor('success')
+                    ->state(fn (MediaItem $record): string => MediaLibrary::assetType($record))
+                    ->icon(fn (string $state): string => match ($state) {
+                        'video' => 'heroicon-o-film',
+                        'file' => 'heroicon-o-document',
+                        default => 'heroicon-o-photo',
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'video' => 'warning',
+                        'file' => 'gray',
+                        default => 'success',
+                    })
                     ->tooltip(fn (MediaItem $record): string => $record->kindLabel())
                     ->alignCenter(),
                 TextColumn::make('human_readable_size')
@@ -143,6 +174,10 @@ class MediaItemResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),
+                TextColumn::make('deleted_at')
+                    ->label(__('vmedia::admin.library.trashed_at'))
+                    ->dateTime()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('gallery_id')
@@ -162,7 +197,9 @@ class MediaItemResource extends Resource
                     ->options([
                         MediaGallery::COLLECTION_IMAGES => __('vmedia::admin.library.photos'),
                         MediaGallery::COLLECTION_VIDEOS => __('vmedia::admin.library.videos'),
+                        MediaGallery::COLLECTION_FILES => __('vmedia::admin.library.documents'),
                     ]),
+                TrashedFilter::make(),
             ])
             ->recordActions([
                 static::editDetailsAction(),
@@ -172,7 +209,26 @@ class MediaItemResource extends Resource
                     ->url(fn (MediaItem $record): string => MediaLibrary::publicUrl($record))
                     ->openUrlInNewTab(),
                 DeleteAction::make()
-                    ->successNotificationTitle(__('vmedia::admin.library.deleted')),
+                    ->successNotificationTitle(__('vmedia::admin.library.deleted'))
+                    ->using(function (MediaItem $record): void {
+                        try {
+                            MediaLibrary::delete($record, force: false);
+                        } catch (ValidationException $exception) {
+                            Notification::make()
+                                ->danger()
+                                ->title($exception->getMessage())
+                                ->body(collect($exception->errors())->flatten()->implode(' '))
+                                ->send();
+
+                            throw $exception;
+                        }
+                    }),
+                RestoreAction::make()
+                    ->using(fn (MediaItem $record) => MediaLibrary::restore($record)),
+                ForceDeleteAction::make()
+                    ->using(function (MediaItem $record): void {
+                        MediaLibrary::delete($record, force: true);
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -252,7 +308,36 @@ class MediaItemResource extends Resource
                                 ->send();
                         })
                         ->deselectRecordsAfterCompletion(),
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->using(function (Collection $records): void {
+                            foreach ($records as $record) {
+                                if (! $record instanceof MediaItem) {
+                                    continue;
+                                }
+
+                                try {
+                                    MediaLibrary::delete($record, force: false);
+                                } catch (ValidationException) {
+                                    // Skip protected rows; UI still completes for the rest.
+                                }
+                            }
+                        }),
+                    RestoreBulkAction::make()
+                        ->using(function (Collection $records): void {
+                            foreach ($records as $record) {
+                                if ($record instanceof MediaItem) {
+                                    MediaLibrary::restore($record);
+                                }
+                            }
+                        }),
+                    ForceDeleteBulkAction::make()
+                        ->using(function (Collection $records): void {
+                            foreach ($records as $record) {
+                                if ($record instanceof MediaItem) {
+                                    MediaLibrary::delete($record, force: true);
+                                }
+                            }
+                        }),
                 ]),
             ])
             ->emptyStateHeading(__('vmedia::admin.library.empty_heading'))
@@ -274,11 +359,44 @@ class MediaItemResource extends Resource
                 ->required()
                 ->maxLength(255)
                 ->helperText(__('vmedia::admin.library.name_help')),
+            TextInput::make('alt')
+                ->label(__('vmedia::admin.library.alt'))
+                ->maxLength(255)
+                ->helperText(__('vmedia::admin.library.alt_help')),
             Textarea::make('caption')
                 ->label(__('vmedia::admin.library.caption'))
                 ->rows(2)
                 ->maxLength(1000)
                 ->helperText(__('vmedia::admin.library.caption_help')),
+            TextInput::make('credits')
+                ->label(__('vmedia::admin.library.credits'))
+                ->maxLength(255)
+                ->helperText(__('vmedia::admin.library.credits_help')),
+            TextInput::make('focal_x')
+                ->label(__('vmedia::admin.library.focal_x'))
+                ->numeric()
+                ->minValue(0)
+                ->maxValue(100)
+                ->helperText(__('vmedia::admin.library.focal_help')),
+            TextInput::make('focal_y')
+                ->label(__('vmedia::admin.library.focal_y'))
+                ->numeric()
+                ->minValue(0)
+                ->maxValue(100),
+            Select::make('poster_uuid')
+                ->label(__('vmedia::admin.library.poster'))
+                ->helperText(__('vmedia::admin.library.poster_help'))
+                ->searchable()
+                ->nullable()
+                ->options(fn (): array => MediaItem::query()
+                    ->where('collection_name', MediaGallery::COLLECTION_IMAGES)
+                    ->orderByDesc('id')
+                    ->limit(100)
+                    ->get()
+                    ->mapWithKeys(fn (MediaItem $media): array => [
+                        (string) $media->uuid => $media->displayTitle(),
+                    ])
+                    ->all()),
             TextInput::make('file_name')
                 ->label(__('vmedia::admin.library.storage_name'))
                 ->disabled()
@@ -287,7 +405,7 @@ class MediaItemResource extends Resource
     }
 
     /**
-     * @return array{id: int, name: string, caption: string|null, file_name: string}
+     * @return array{id: int, name: string, caption: string|null, alt: string|null, credits: string|null, focal_x: float|null, focal_y: float|null, poster_uuid: string|null, file_name: string}
      */
     public static function metaFormState(MediaItem $record): array
     {
@@ -295,12 +413,17 @@ class MediaItemResource extends Resource
             'id' => (int) $record->getKey(),
             'name' => $record->displayTitle(),
             'caption' => $record->caption(),
+            'alt' => $record->alt(),
+            'credits' => $record->credits(),
+            'focal_x' => $record->focalX(),
+            'focal_y' => $record->focalY(),
+            'poster_uuid' => $record->posterUuid(),
             'file_name' => (string) $record->file_name,
         ];
     }
 
     /**
-     * @param  list<array{id?: int|string, name?: string, caption?: string|null}>  $items
+     * @param  list<array<string, mixed>>  $items
      */
     public static function persistMetaItems(array $items): void
     {
@@ -319,6 +442,13 @@ class MediaItemResource extends Resource
 
             $record->name = trim((string) ($item['name'] ?? $record->displayTitle()));
             $record->setCaption(isset($item['caption']) ? (string) $item['caption'] : null);
+            $record->setAlt(isset($item['alt']) ? (string) $item['alt'] : null);
+            $record->setCredits(isset($item['credits']) ? (string) $item['credits'] : null);
+            $record->setFocalPoint(
+                isset($item['focal_x']) && is_numeric($item['focal_x']) ? (float) $item['focal_x'] : null,
+                isset($item['focal_y']) && is_numeric($item['focal_y']) ? (float) $item['focal_y'] : null,
+            );
+            $record->setPosterUuid(isset($item['poster_uuid']) ? (string) $item['poster_uuid'] : null);
             $record->save();
         }
     }
@@ -333,8 +463,7 @@ class MediaItemResource extends Resource
             ->action(function (MediaItem $record, array $data): void {
                 static::persistMetaItems([[
                     'id' => (int) $record->getKey(),
-                    'name' => (string) ($data['name'] ?? ''),
-                    'caption' => $data['caption'] ?? null,
+                    ...$data,
                 ]]);
 
                 Notification::make()
@@ -431,9 +560,11 @@ class MediaItemResource extends Resource
     {
         $imageMaxKb = (int) config('vmedia.upload.image_max_kb', 8192);
         $videoMaxKb = (int) config('vmedia.upload.video_max_kb', 51200);
+        $fileMaxKb = (int) config('vmedia.upload.file_max_kb', 20480);
         $mimes = array_merge(
             (array) config('vmedia.upload.allowed_image_mimes', []),
             (array) config('vmedia.upload.allowed_video_mimes', []),
+            (array) config('vmedia.upload.allowed_file_mimes', []),
         );
         $extensions = (array) config('vmedia.upload.allowed_extensions', []);
 
@@ -457,7 +588,7 @@ class MediaItemResource extends Resource
                     ->imagePreviewHeight('120')
                     ->acceptedFileTypes($mimes)
                     ->rules([
-                        File::types($extensions)->max(max($imageMaxKb, $videoMaxKb)),
+                        File::types($extensions)->max(max($imageMaxKb, $videoMaxKb, $fileMaxKb)),
                     ])
                     ->helperText(__('vmedia::admin.library.upload_help')),
             ])
@@ -480,6 +611,66 @@ class MediaItemResource extends Resource
                 }
             })
             ->successNotificationTitle(__('vmedia::admin.library.uploaded'));
+    }
+
+    public static function importZipAction(): Action
+    {
+        return Action::make('importZip')
+            ->label(__('vmedia::admin.library.import_zip'))
+            ->icon('heroicon-o-archive-box-arrow-down')
+            ->schema([
+                Select::make('gallery_ids')
+                    ->label(__('vmedia::admin.library.galleries'))
+                    ->options(fn (): array => MediaGallery::query()->orderBy('sort_order')->pluck('name', 'id')->all())
+                    ->default(fn (): array => [(int) MediaGallery::default()->getKey()])
+                    ->multiple()
+                    ->required()
+                    ->searchable(),
+                FileUpload::make('zip')
+                    ->label(__('vmedia::admin.library.zip_file'))
+                    ->required()
+                    ->storeFiles(false)
+                    ->acceptedFileTypes([
+                        'application/zip',
+                        'application/x-zip-compressed',
+                    ])
+                    ->helperText(__('vmedia::admin.library.import_zip_help')),
+            ])
+            ->action(function (array $data, Action $action): void {
+                $galleryIds = array_map('intval', $data['gallery_ids'] ?? []);
+                $galleries = MediaGallery::query()->whereIn('id', $galleryIds)->get();
+                $zip = $data['zip'] ?? null;
+
+                if (is_array($zip)) {
+                    $zip = reset($zip);
+                }
+
+                if (! $zip instanceof TemporaryUploadedFile) {
+                    return;
+                }
+
+                $stored = ZipImporter::import($zip, $galleries);
+
+                Notification::make()
+                    ->success()
+                    ->title(__('vmedia::admin.library.import_zip_done', ['count' => count($stored)]))
+                    ->send();
+
+                if ($stored === []) {
+                    return;
+                }
+
+                $livewire = $action->getLivewire();
+
+                if ($livewire instanceof Component && method_exists($livewire, 'mountAction')) {
+                    $livewire->mountAction('refineUploaded', [
+                        'items' => array_map(
+                            static fn (MediaItem $media): array => static::metaFormState($media),
+                            $stored,
+                        ),
+                    ]);
+                }
+            });
     }
 
     public static function getPages(): array

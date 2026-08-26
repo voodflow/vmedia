@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\ValidationException;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Support\MediaLibrary;
@@ -26,7 +27,7 @@ class MediaController extends Controller
         $this->authorize('viewAny', MediaGallery::class);
 
         $type = $request->query('type');
-        $type = is_string($type) && in_array($type, ['image', 'video'], true) ? $type : null;
+        $type = is_string($type) && in_array($type, ['image', 'video', 'file'], true) ? $type : null;
         $default = MediaGallery::default();
 
         return response()->json([
@@ -41,7 +42,7 @@ class MediaController extends Controller
         $this->authorize('viewAny', MediaItem::class);
 
         $type = $request->query('type');
-        $type = is_string($type) && in_array($type, ['image', 'video'], true) ? $type : null;
+        $type = is_string($type) && in_array($type, ['image', 'video', 'file'], true) ? $type : null;
         $galleryId = $request->query('gallery_id');
         $galleryId = is_numeric($galleryId) ? (int) $galleryId : null;
         $search = $request->query('q');
@@ -65,31 +66,44 @@ class MediaController extends Controller
 
         $imageMaxKb = (int) config('vmedia.upload.image_max_kb', 8192);
         $videoMaxKb = (int) config('vmedia.upload.video_max_kb', 51200);
+        $fileMaxKb = (int) config('vmedia.upload.file_max_kb', 20480);
         $extensions = (array) config('vmedia.upload.allowed_extensions', []);
         $uploaded = $request->file('file');
 
         UploadGuard::assertSafeUpload($uploaded);
 
         $mime = (string) ($uploaded?->getMimeType() ?? '');
-        $isVideo = str_starts_with($mime, 'video/');
+        $maxKb = match (true) {
+            str_starts_with($mime, 'video/') => $videoMaxKb,
+            str_starts_with($mime, 'image/') => $imageMaxKb,
+            default => $fileMaxKb,
+        };
 
         $validated = $request->validate([
             'file' => [
                 'required',
                 'file',
-                File::types($extensions)->max($isVideo ? $videoMaxKb : $imageMaxKb),
+                File::types($extensions)->max($maxKb),
             ],
             'name' => ['nullable', 'string', 'max:255'],
             'caption' => ['nullable', 'string', 'max:1000'],
+            'alt' => ['nullable', 'string', 'max:255'],
         ]);
 
         UploadGuard::assertAllowedMime($validated['file']);
+
+        $custom = [];
+
+        if (filled($validated['alt'] ?? null)) {
+            $custom[MediaItem::CUSTOM_ALT] = trim((string) $validated['alt']);
+        }
 
         $media = MediaLibrary::store(
             $validated['file'],
             MediaGallery::default(),
             isset($validated['name']) ? (string) $validated['name'] : null,
             isset($validated['caption']) ? (string) $validated['caption'] : null,
+            $custom,
         );
         $payload = MediaLibrary::toAssetPayload($media);
 
@@ -99,7 +113,7 @@ class MediaController extends Controller
         ], 201);
     }
 
-    public function destroy(MediaItem $media): JsonResponse
+    public function destroy(Request $request, MediaItem $media): JsonResponse
     {
         $this->authorize('delete', $media);
 
@@ -107,8 +121,17 @@ class MediaController extends Controller
             abort(404);
         }
 
-        $media->delete();
+        $force = $request->boolean('force');
 
-        return response()->json(['deleted' => true]);
+        try {
+            MediaLibrary::delete($media, force: $force);
+        } catch (ValidationException $exception) {
+            return response()->json([
+                'message' => collect($exception->errors())->flatten()->first(),
+                'errors' => $exception->errors(),
+            ], 422);
+        }
+
+        return response()->json(['deleted' => true, 'force' => $force]);
     }
 }
