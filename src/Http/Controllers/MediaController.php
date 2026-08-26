@@ -20,6 +20,7 @@ use Voodflow\Vmedia\Support\UploadGuard;
 class MediaController extends Controller
 {
     use AuthorizesRequests;
+
     public function galleries(Request $request): JsonResponse
     {
         $this->authorize('viewAny', MediaGallery::class);

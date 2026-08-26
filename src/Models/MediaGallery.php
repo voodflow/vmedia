@@ -21,6 +21,8 @@ class MediaGallery extends Model
 
     public const COLLECTION_VIDEOS = 'videos';
 
+    public const COLLECTION_FILES = 'files';
+
     protected $fillable = [
         'name',
         'slug',

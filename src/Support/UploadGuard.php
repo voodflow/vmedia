@@ -37,6 +37,7 @@ final class UploadGuard
             array_merge(
                 (array) config('vmedia.upload.allowed_image_mimes', []),
                 (array) config('vmedia.upload.allowed_video_mimes', []),
+                (array) config('vmedia.upload.allowed_file_mimes', []),
             ),
         );
 

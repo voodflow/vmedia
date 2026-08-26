@@ -1,0 +1,13 @@
+---
+description: Filament 5 patterns for Vmedia admin
+globs: packages/voodflow/vmedia/src/Filament/**/*
+alwaysApply: false
+---
+
+# Filament 5
+
+- Library and gallery resources/pages only via `VmediaPlugin`.
+- Companion forms: `VmediaFileUpload` (not Spatie `SpatieMediaLibraryFileUpload`).
+- Forms: `Filament\Forms\*`; layout: `Filament\Schemas\*`; actions: `Filament\Actions\*`.
+- Default gallery rules are product invariants — enforce in policies and actions.
+- Bulk gallery assign/replace should reuse `MediaLibrary` helpers, not raw pivots in UI code.

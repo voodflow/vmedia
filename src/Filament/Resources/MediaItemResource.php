@@ -25,6 +25,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\File;
 use Livewire\Component;
@@ -97,7 +98,7 @@ class MediaItemResource extends Resource
                     ->width(48)
                     ->square()
                     ->visibility('public')
-                    ->state(function (MediaItem $record) use ($disk): ?string {
+                    ->state(function (MediaItem $record): ?string {
                         if ($record->isVideo()) {
                             return null;
                         }
@@ -412,7 +413,7 @@ class MediaItemResource extends Resource
                 continue;
             }
 
-            $uploaded = new \Illuminate\Http\UploadedFile(
+            $uploaded = new UploadedFile(
                 $absolute,
                 basename($file),
                 mime_content_type($absolute) ?: null,

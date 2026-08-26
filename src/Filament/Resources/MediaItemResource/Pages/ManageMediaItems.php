@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Voodflow\Vmedia\Filament\Resources\MediaItemResource\Pages;
 
 use Filament\Resources\Pages\ManageRecords;
+use Illuminate\Contracts\Support\Htmlable;
 use Voodflow\Vmedia\Filament\Resources\MediaItemResource;
 use Voodflow\Vmedia\Models\MediaGallery;
 
@@ -27,12 +28,12 @@ class ManageMediaItems extends ManageRecords
         ];
     }
 
-    public function getTitle(): string|\Illuminate\Contracts\Support\Htmlable
+    public function getTitle(): string|Htmlable
     {
         return __('vmedia::admin.library.plural');
     }
 
-    public function getSubheading(): string|\Illuminate\Contracts\Support\Htmlable|null
+    public function getSubheading(): string|Htmlable|null
     {
         return __('vmedia::admin.library.intro');
     }

@@ -31,6 +31,8 @@ Alternatively set `VMEDIA_AUTO_REGISTER=true` (prefer the plugin so commenting i
 | `MediaVault` | Singleton Spatie `HasMedia` owner |
 | `MediaGallery` | Album / membership |
 | `MediaItem` | Spatie `Media` subclass + gallery pivot |
+| `HasAttachedMedia` | Trait for companions: logical collections on `vmedia_attachments` |
+| `VmediaFileUpload` | Filament field that stores in the vault and attaches |
 | `MediaLibrary` | Shared list/store helpers |
 | `UploadGuard` | MIME allow-list + path-traversal checks |
 | Policies | Authz for gallery/media CRUD |
@@ -73,3 +75,4 @@ See `tests/Feature/MediaSecurityTest.php` for authz, MIME, and path-traversal co
 2. Register `VmediaPlugin` on the admin panel.
 3. Update page-builder code that referenced `Voodflow\VoodbuilderMedia\*` → `Voodflow\Vmedia\*` / `Vmedia::isActive()`.
 4. Prefer `vmedia.*` route names; keep compat aliases until the builder is updated.
+5. Domain models that need uploads should `use HasAttachedMedia` and `VmediaFileUpload` — do not put Spatie `HasMedia` on those models.

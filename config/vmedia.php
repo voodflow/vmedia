@@ -14,13 +14,14 @@ return [
     ],
 
     /*
-    | Disk used for Spatie collections (images / videos).
+    | Disk used for Spatie collections (images / videos / files).
     */
     'disk' => env('VMEDIA_DISK', 'public'),
 
     'upload' => [
         'image_max_kb' => (int) env('VMEDIA_IMAGE_MAX_KB', 12288),
         'video_max_kb' => (int) env('VMEDIA_VIDEO_MAX_KB', 51200),
+        'file_max_kb' => (int) env('VMEDIA_FILE_MAX_KB', 20480),
         'allowed_image_mimes' => [
             'image/jpeg',
             'image/png',
@@ -36,10 +37,60 @@ return [
             'video/quicktime',
             'video/x-m4v',
         ],
+        'allowed_file_mimes' => [
+            'application/pdf',
+            'application/zip',
+            'application/x-zip-compressed',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/plain',
+            'text/csv',
+        ],
         'allowed_extensions' => [
             'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif',
             'mp4', 'webm', 'ogg', 'mov', 'm4v',
+            'pdf', 'zip', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'csv',
         ],
+    ],
+
+    'conversions' => [
+        'enabled' => env('VMEDIA_CONVERSIONS', true),
+        'queued' => env('VMEDIA_CONVERSIONS_QUEUED', false),
+        'thumb' => [
+            'width' => (int) env('VMEDIA_THUMB_WIDTH', 400),
+            'height' => (int) env('VMEDIA_THUMB_HEIGHT', 400),
+            'format' => env('VMEDIA_THUMB_FORMAT', 'webp'),
+        ],
+    ],
+
+    'duplicates' => [
+        'detect' => env('VMEDIA_DETECT_DUPLICATES', true),
+        /*
+        | When true, store() reuses the existing vault row instead of uploading again.
+        | Galleries from the new upload are still attached.
+        */
+        'reuse' => env('VMEDIA_REUSE_DUPLICATES', true),
+    ],
+
+    'usage' => [
+        /*
+        | Block delete when the media is attached to domain models, unless force is used.
+        */
+        'protect_delete' => env('VMEDIA_PROTECT_DELETE', true),
+    ],
+
+    'soft_deletes' => env('VMEDIA_SOFT_DELETES', true),
+
+    'zip' => [
+        'max_files' => (int) env('VMEDIA_ZIP_MAX_FILES', 100),
+    ],
+
+    'public' => [
+        'enabled' => env('VMEDIA_PUBLIC_GALLERIES', true),
+        'prefix' => env('VMEDIA_PUBLIC_PREFIX', 'galleries'),
+        'middleware' => ['web'],
     ],
 
     /*
@@ -85,6 +136,7 @@ return [
         'galleries' => 'voodbuilder_media_galleries',
         'vaults' => 'voodbuilder_media_vaults',
         'gallery_media' => 'voodbuilder_media_gallery_media',
+        'attachments' => 'vmedia_attachments',
     ],
 
     'browser' => [

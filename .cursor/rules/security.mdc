@@ -1,0 +1,13 @@
+---
+description: Vmedia upload and API security
+globs: packages/voodflow/vmedia/**/*.{php,blade.php}
+alwaysApply: false
+---
+
+# Security
+
+- All media HTTP routes require authentication (+ throttle); optional `VMEDIA_ABILITY`.
+- Uploads: allow-listed MIME only; reject `../` in client filenames; sanitize relative paths (`UploadGuard`).
+- Delete/open only vault-owned image/video collections.
+- Do not serve private disks as public URLs without intentional visibility.
+- Companion builder aliases must keep the same auth middleware as `vmedia.*` routes.

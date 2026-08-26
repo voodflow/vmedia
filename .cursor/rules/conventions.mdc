@@ -1,0 +1,14 @@
+---
+description: Vmedia conventions and namespaces
+globs: packages/voodflow/vmedia/**/*
+alwaysApply: false
+---
+
+# Vmedia conventions
+
+- Namespace: `Voodflow\Vmedia`. Composer: `voodflow/vmedia`. Plugin: `VmediaPlugin`.
+- Vault + galleries architecture — one disk object, many memberships.
+- Domain companions attach via `HasAttachedMedia` + `VmediaFileUpload`; do not put Spatie `HasMedia` on those models.
+- Prefer `vmedia.*` route names; keep builder aliases behind config until hosts migrate.
+- Own Filament **Media** nav group — not under page-builder settings.
+- Docs: `docs/sales`, `docs/developer`, `docs/manual/*`, `docs/RELEASE_CHECKLIST.md`.

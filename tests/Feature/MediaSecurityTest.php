@@ -7,6 +7,7 @@ namespace Voodflow\Vmedia\Tests\Feature;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Support\MediaLibrary;
@@ -80,7 +81,7 @@ class MediaSecurityTest extends TestCase
             true,
         );
 
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectException(ValidationException::class);
         UploadGuard::assertSafeUpload($evil);
     }
 

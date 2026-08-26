@@ -7,6 +7,7 @@ namespace Voodflow\Vmedia\Models;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * Singleton Spatie owner for all library files (galleries are membership only).
@@ -49,10 +50,35 @@ class MediaVault extends Model implements HasMedia
     {
         $disk = (string) config('vmedia.disk', 'public');
 
-        $this->addMediaCollection('images')
+        $this->addMediaCollection(MediaGallery::COLLECTION_IMAGES)
             ->useDisk($disk);
 
-        $this->addMediaCollection('videos')
+        $this->addMediaCollection(MediaGallery::COLLECTION_VIDEOS)
             ->useDisk($disk);
+
+        $this->addMediaCollection(MediaGallery::COLLECTION_FILES)
+            ->useDisk($disk);
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        if (! (bool) config('vmedia.conversions.enabled', true)) {
+            return;
+        }
+
+        $width = (int) config('vmedia.conversions.thumb.width', 400);
+        $height = (int) config('vmedia.conversions.thumb.height', 400);
+        $format = (string) config('vmedia.conversions.thumb.format', 'webp');
+
+        $conversion = $this->addMediaConversion('thumb')
+            ->width(max(1, $width))
+            ->height(max(1, $height))
+            ->format($format)
+            ->performOnCollections(MediaGallery::COLLECTION_IMAGES)
+            ->nonQueued();
+
+        if ((bool) config('vmedia.conversions.queued', false)) {
+            $conversion->queued();
+        }
     }
 }

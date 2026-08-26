@@ -6,6 +6,7 @@ namespace Voodflow\Vmedia\Support;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaVault;
@@ -142,20 +143,21 @@ final class MediaLibrary
      * Display title (`name`) stays human-readable; `file_name` is always a storage hash.
      *
      * @param  iterable<int|MediaGallery>|null  $galleries
+     * @param  array<string, mixed>  $customProperties
      */
     public static function store(
         UploadedFile $file,
         iterable|MediaGallery|null $galleries = null,
         ?string $name = null,
         ?string $caption = null,
+        array $customProperties = [],
     ): MediaItem {
         UploadGuard::assertSafeUpload($file);
         UploadGuard::assertAllowedMime($file);
 
         $targets = self::normalizeGalleries($galleries);
         $mime = (string) ($file->getMimeType() ?? '');
-        $isVideo = str_starts_with($mime, 'video/');
-        $collection = $isVideo ? MediaGallery::COLLECTION_VIDEOS : MediaGallery::COLLECTION_IMAGES;
+        $collection = self::collectionForMime($mime);
         $displayName = self::resolveDisplayName($file, $name);
 
         $adder = MediaVault::current()
@@ -163,13 +165,15 @@ final class MediaLibrary
             ->usingName($displayName)
             ->usingFileName($file->hashName());
 
-        if (filled($caption)) {
-            $adder->withCustomProperties([
-                MediaItem::CUSTOM_CAPTION => trim($caption),
-            ]);
+        if (filled($caption) && ! array_key_exists(MediaItem::CUSTOM_CAPTION, $customProperties)) {
+            $customProperties[MediaItem::CUSTOM_CAPTION] = trim($caption);
         }
 
-        /** @var \Spatie\MediaLibrary\MediaCollections\Models\Media $stored */
+        if ($customProperties !== []) {
+            $adder->withCustomProperties($customProperties);
+        }
+
+        /** @var Media $stored */
         $stored = $adder->toMediaCollection($collection);
 
         $media = MediaItem::query()->findOrFail($stored->getKey());
@@ -267,7 +271,21 @@ final class MediaLibrary
             && in_array($media->collection_name, [
                 MediaGallery::COLLECTION_IMAGES,
                 MediaGallery::COLLECTION_VIDEOS,
+                MediaGallery::COLLECTION_FILES,
             ], true);
+    }
+
+    public static function collectionForMime(string $mime): string
+    {
+        if (str_starts_with($mime, 'video/')) {
+            return MediaGallery::COLLECTION_VIDEOS;
+        }
+
+        if (str_starts_with($mime, 'image/')) {
+            return MediaGallery::COLLECTION_IMAGES;
+        }
+
+        return MediaGallery::COLLECTION_FILES;
     }
 
     /**

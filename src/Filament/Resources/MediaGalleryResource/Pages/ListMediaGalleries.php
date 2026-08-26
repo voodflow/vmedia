@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Voodflow\Vmedia\Filament\Resources\MediaGalleryResource\Pages;
 
-use Filament\Resources\Pages\ListRecords;
 use Filament\Actions\CreateAction;
+use Filament\Resources\Pages\ListRecords;
 use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource;
 
 class ListMediaGalleries extends ListRecords
