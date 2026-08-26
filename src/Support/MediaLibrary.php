@@ -6,7 +6,10 @@ namespace Voodflow\Vmedia\Support;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Illuminate\Validation\ValidationException;
+use Voodflow\Vmedia\Events\MediaDeleted;
+use Voodflow\Vmedia\Events\MediaRestored;
+use Voodflow\Vmedia\Events\MediaStored;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaVault;
@@ -27,6 +30,8 @@ final class MediaLibrary
                     $builder->where('collection_name', MediaGallery::COLLECTION_IMAGES);
                 } elseif ($type === 'video') {
                     $builder->where('collection_name', MediaGallery::COLLECTION_VIDEOS);
+                } elseif ($type === 'file') {
+                    $builder->where('collection_name', MediaGallery::COLLECTION_FILES);
                 }
             }])
             ->orderBy('sort_order')
@@ -44,7 +49,7 @@ final class MediaLibrary
 
     /**
      * @return array{
-     *   data: list<array{src: string, type: string, name: string, caption: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null}>,
+     *   data: list<array{src: string, type: string, name: string, caption: string|null, alt: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null, poster: string|null, object_position: string|null}>,
      *   meta: array{current_page: int, last_page: int, per_page: int, total: int, has_more: bool}
      * }
      */
@@ -64,6 +69,7 @@ final class MediaLibrary
             ->whereIn('collection_name', [
                 MediaGallery::COLLECTION_IMAGES,
                 MediaGallery::COLLECTION_VIDEOS,
+                MediaGallery::COLLECTION_FILES,
             ])
             ->latest('id');
 
@@ -75,6 +81,8 @@ final class MediaLibrary
             $query->where('collection_name', MediaGallery::COLLECTION_IMAGES);
         } elseif ($type === 'video') {
             $query->where('collection_name', MediaGallery::COLLECTION_VIDEOS);
+        } elseif ($type === 'file') {
+            $query->where('collection_name', MediaGallery::COLLECTION_FILES);
         }
 
         if (filled($search)) {
@@ -83,7 +91,8 @@ final class MediaLibrary
                 $builder
                     ->where('name', 'like', $term)
                     ->orWhere('file_name', 'like', $term)
-                    ->orWhere('custom_properties->caption', 'like', $term);
+                    ->orWhere('custom_properties->caption', 'like', $term)
+                    ->orWhere('custom_properties->alt', 'like', $term);
             });
         }
 
@@ -105,7 +114,7 @@ final class MediaLibrary
     }
 
     /**
-     * @return list<array{src: string, type: string, name: string, caption: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null}>
+     * @return list<array{src: string, type: string, name: string, caption: string|null, alt: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null, poster: string|null, object_position: string|null}>
      */
     public static function listAssets(?string $type = null, ?int $galleryId = null): array
     {
@@ -113,7 +122,7 @@ final class MediaLibrary
     }
 
     /**
-     * @return array{src: string, type: string, name: string, caption: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null}
+     * @return array{src: string, type: string, name: string, caption: string|null, alt: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null, poster: string|null, object_position: string|null}
      */
     public static function toAssetPayload(MediaItem $media): array
     {
@@ -122,19 +131,34 @@ final class MediaLibrary
         }
 
         $src = self::publicUrl($media);
-        $isVideo = $media->isVideo();
+        $type = self::assetType($media);
 
         return [
             'src' => $src,
-            'type' => $isVideo ? 'video' : 'image',
+            'type' => $type,
             'name' => $media->displayTitle(),
             'caption' => $media->caption(),
+            'alt' => $media->alt(),
             'uuid' => (string) $media->uuid,
             'id' => (int) $media->getKey(),
             'gallery_ids' => $media->galleries->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
-            // Images: same URL (browser lazy-loads). Videos: null — show icon until selected.
-            'thumb' => $isVideo ? null : $src,
+            'thumb' => self::thumbUrl($media),
+            'poster' => self::posterUrl($media),
+            'object_position' => $media->objectPositionCss(),
         ];
+    }
+
+    public static function assetType(MediaItem $media): string
+    {
+        if ($media->isVideo()) {
+            return 'video';
+        }
+
+        if ($media->isFile()) {
+            return 'file';
+        }
+
+        return 'image';
     }
 
     /**
@@ -156,9 +180,31 @@ final class MediaLibrary
         UploadGuard::assertAllowedMime($file);
 
         $targets = self::normalizeGalleries($galleries);
+        $hash = self::contentHashForUpload($file);
+
+        if (
+            $hash !== null
+            && (bool) config('vmedia.duplicates.detect', true)
+            && (bool) config('vmedia.duplicates.reuse', true)
+        ) {
+            $existing = self::findByContentHash($hash);
+
+            if ($existing !== null) {
+                foreach ($targets as $gallery) {
+                    $gallery->attachMedia([$existing]);
+                }
+
+                return $existing->load('galleries');
+            }
+        }
+
         $mime = (string) ($file->getMimeType() ?? '');
         $collection = self::collectionForMime($mime);
         $displayName = self::resolveDisplayName($file, $name);
+
+        if ($hash !== null && ! array_key_exists(MediaItem::CUSTOM_CONTENT_HASH, $customProperties)) {
+            $customProperties[MediaItem::CUSTOM_CONTENT_HASH] = $hash;
+        }
 
         $adder = MediaVault::current()
             ->addMedia($file)
@@ -173,7 +219,7 @@ final class MediaLibrary
             $adder->withCustomProperties($customProperties);
         }
 
-        /** @var Media $stored */
+        /** @var \Spatie\MediaLibrary\MediaCollections\Models\Media $stored */
         $stored = $adder->toMediaCollection($collection);
 
         $media = MediaItem::query()->findOrFail($stored->getKey());
@@ -182,7 +228,35 @@ final class MediaLibrary
             $gallery->attachMedia([$media]);
         }
 
-        return $media->load('galleries');
+        $media = $media->load('galleries');
+        MediaStored::dispatch($media);
+
+        return $media;
+    }
+
+    public static function findByContentHash(string $hash): ?MediaItem
+    {
+        return MediaItem::query()
+            ->where('model_type', (new MediaVault)->getMorphClass())
+            ->where('custom_properties->'.MediaItem::CUSTOM_CONTENT_HASH, $hash)
+            ->first();
+    }
+
+    public static function contentHashForUpload(UploadedFile $file): ?string
+    {
+        if (! (bool) config('vmedia.duplicates.detect', true)) {
+            return null;
+        }
+
+        $path = $file->getRealPath();
+
+        if (! is_string($path) || $path === '' || ! is_file($path)) {
+            return null;
+        }
+
+        $hash = hash_file('sha256', $path);
+
+        return is_string($hash) ? $hash : null;
     }
 
     /**
@@ -261,6 +335,96 @@ final class MediaLibrary
         $relative = UploadGuard::assertSafeRelativePath((string) $media->getPathRelativeToRoot());
 
         return '/storage/'.$relative;
+    }
+
+    public static function thumbUrl(MediaItem $media): ?string
+    {
+        if ($media->isVideo() || $media->isFile()) {
+            return self::posterUrl($media);
+        }
+
+        if (
+            (bool) config('vmedia.conversions.enabled', true)
+            && $media->hasGeneratedConversion('thumb')
+        ) {
+            try {
+                $relative = UploadGuard::assertSafeRelativePath(
+                    (string) $media->getPathRelativeToRoot('thumb'),
+                );
+
+                return '/storage/'.$relative;
+            } catch (\Throwable) {
+                // Fall through to original.
+            }
+        }
+
+        return self::publicUrl($media);
+    }
+
+    public static function posterUrl(MediaItem $media): ?string
+    {
+        $uuid = $media->posterUuid();
+
+        if ($uuid === null) {
+            return null;
+        }
+
+        $poster = MediaItem::query()->where('uuid', $uuid)->first();
+
+        if ($poster === null || $poster->isVideo() || $poster->isFile()) {
+            return null;
+        }
+
+        return self::thumbUrl($poster) ?? self::publicUrl($poster);
+    }
+
+    public static function delete(MediaItem $media, bool $force = false): void
+    {
+        if (! self::isVaultMedia($media)) {
+            throw ValidationException::withMessages([
+                'media' => ['Not a vault media item.'],
+            ]);
+        }
+
+        if (
+            (bool) config('vmedia.usage.protect_delete', true)
+            && MediaUsage::isUsed($media)
+            && ! $force
+        ) {
+            throw ValidationException::withMessages([
+                'media' => [__('vmedia::admin.library.delete_blocked_used', [
+                    'count' => MediaUsage::attachmentCount($media),
+                ])],
+            ]);
+        }
+
+        if ($force) {
+            MediaUsage::detachAllAttachments($media);
+            $media->forceDelete();
+            MediaDeleted::dispatch($media, true);
+
+            return;
+        }
+
+        if ((bool) config('vmedia.soft_deletes', true)) {
+            $media->delete();
+            MediaDeleted::dispatch($media, false);
+
+            return;
+        }
+
+        $media->forceDelete();
+        MediaDeleted::dispatch($media, true);
+    }
+
+    public static function restore(MediaItem $media): void
+    {
+        if (! $media->trashed()) {
+            return;
+        }
+
+        $media->restore();
+        MediaRestored::dispatch($media);
     }
 
     public static function isVaultMedia(MediaItem $media): bool

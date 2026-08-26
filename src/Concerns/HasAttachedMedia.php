@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Voodflow\Vmedia\Concerns;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Voodflow\Vmedia\Events\MediaAttached;
+use Voodflow\Vmedia\Events\MediaDetached;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Support\MediaLibrary;
 
@@ -17,7 +17,7 @@ use Voodflow\Vmedia\Support\MediaLibrary;
  *
  * Logical collections (logo, gallery, …) live on the pivot; files stay on MediaVault.
  *
- * @mixin Model
+ * @mixin \Illuminate\Database\Eloquent\Model
  */
 trait HasAttachedMedia
 {
@@ -82,6 +82,7 @@ trait HasAttachedMedia
         ]);
 
         $this->unsetRelation('media');
+        MediaAttached::dispatch($this, $media, $collection);
     }
 
     /**
@@ -98,6 +99,12 @@ trait HasAttachedMedia
                 'collection' => $collection,
                 'sort_order' => $index,
             ]);
+
+            $media = MediaItem::query()->find($id);
+
+            if ($media !== null) {
+                MediaAttached::dispatch($this, $media, $collection);
+            }
         }
 
         $this->unsetRelation('media');
@@ -140,6 +147,8 @@ trait HasAttachedMedia
                     ->where('collection', $collection)
                     ->where('media_id', $item->getKey())
                     ->delete();
+
+                MediaDetached::dispatch($this, $item, $collection);
             });
 
         $this->unsetRelation('media');
@@ -147,11 +156,17 @@ trait HasAttachedMedia
 
     public function clearMediaCollection(string $collection): void
     {
+        $items = $this->getMedia($collection);
+
         $this->vmediaPivotQuery()
             ->where('collection', $collection)
             ->delete();
 
         $this->unsetRelation('media');
+
+        foreach ($items as $item) {
+            MediaDetached::dispatch($this, $item, $collection);
+        }
     }
 
     protected function vmediaAttachmentsTable(): string
@@ -160,7 +175,7 @@ trait HasAttachedMedia
     }
 
     /**
-     * @return Builder
+     * @return \Illuminate\Database\Query\Builder
      */
     protected function vmediaPivotQuery()
     {
