@@ -8,6 +8,7 @@ use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource;
 use Voodflow\Vmedia\Filament\Resources\MediaItemResource;
+use Voodflow\Vmedia\Filament\Widgets\MediaStatsWidget;
 
 /**
  * Filament plugin: reusable media library & galleries (Spatie Media Library).
@@ -43,10 +44,14 @@ class VmediaPlugin implements Plugin
 
         Vmedia::activate();
 
-        $panel->resources([
-            MediaGalleryResource::class,
-            MediaItemResource::class,
-        ]);
+        $panel
+            ->resources([
+                MediaGalleryResource::class,
+                MediaItemResource::class,
+            ])
+            ->widgets([
+                MediaStatsWidget::class,
+            ]);
     }
 
     public function boot(Panel $panel): void

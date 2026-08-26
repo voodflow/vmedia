@@ -260,6 +260,16 @@ class VmediaPicker extends Field
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function getViewData(): array
+    {
+        return [
+            'selected' => $this->selectedPayload(),
+        ];
+    }
+
+    /**
      * @phpstan-assert-if-true Model&HasAttachedMedia $record
      */
     protected static function usesAttachedMedia(Model $record): bool

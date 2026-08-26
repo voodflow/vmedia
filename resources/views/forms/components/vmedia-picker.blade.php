@@ -1,13 +1,13 @@
 @php
-    /** @var \Voodflow\Vmedia\Filament\Forms\Components\VmediaPicker $field */
-    $selected = $field->selectedPayload();
+    /** @var list<array{uuid: string, name: string, thumb: string|null, type: string}> $selected */
+    $selected = $selected ?? [];
 @endphp
 
 <x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
     <div
         {{
             $attributes
-                ->merge($field->getExtraAttributes(), escape: false)
+                ->merge($getExtraAttributes(), escape: false)
                 ->class(['vmedia-picker space-y-3'])
         }}
     >
@@ -40,10 +40,5 @@
                 @endforeach
             </ul>
         @endif
-
-        <input
-            type="hidden"
-            {{ $applyStateBindingModifiers('wire:model') }}="{{ $getStatePath() }}"
-        />
     </div>
 </x-dynamic-component>

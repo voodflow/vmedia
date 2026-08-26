@@ -6,9 +6,14 @@ namespace Voodflow\Vmedia;
 
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
+use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Voodflow\Vmedia\Console\InstallCommand;
+use Voodflow\Vmedia\Console\PruneOrphansCommand;
+use Voodflow\Vmedia\Console\StatsCommand;
+use Voodflow\Vmedia\Http\Livewire\PublicGallery;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaVault;
@@ -30,7 +35,11 @@ class VmediaServiceProvider extends PackageServiceProvider
             ->hasViews(static::$viewNamespace)
             ->discoversMigrations()
             ->runsMigrations()
-            ->hasCommand(InstallCommand::class);
+            ->hasCommands([
+                InstallCommand::class,
+                StatsCommand::class,
+                PruneOrphansCommand::class,
+            ]);
     }
 
     public function packageRegistered(): void
@@ -56,5 +65,27 @@ class VmediaServiceProvider extends PackageServiceProvider
 
         Gate::policy(MediaGallery::class, MediaGalleryPolicy::class);
         Gate::policy(MediaItem::class, MediaItemPolicy::class);
+
+        if (class_exists(Livewire::class)) {
+            Livewire::component('vmedia.public-gallery', PublicGallery::class);
+        }
+
+        $this->registerPublicRoutes();
+    }
+
+    protected function registerPublicRoutes(): void
+    {
+        if (! (bool) config('vmedia.public.enabled', true)) {
+            return;
+        }
+
+        $prefix = (string) config('vmedia.public.prefix', 'galleries');
+        $middleware = (array) config('vmedia.public.middleware', ['web']);
+
+        Route::middleware($middleware)
+            ->prefix($prefix)
+            ->group(function (): void {
+                Route::get('{slug}', PublicGallery::class)->name('vmedia.public.gallery');
+            });
     }
 }

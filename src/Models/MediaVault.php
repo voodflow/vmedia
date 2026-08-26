@@ -74,11 +74,10 @@ class MediaVault extends Model implements HasMedia
             ->width(max(1, $width))
             ->height(max(1, $height))
             ->format($format)
-            ->performOnCollections(MediaGallery::COLLECTION_IMAGES)
-            ->nonQueued();
+            ->performOnCollections(MediaGallery::COLLECTION_IMAGES);
 
-        if ((bool) config('vmedia.conversions.queued', false)) {
-            $conversion->queued();
+        if (! (bool) config('vmedia.conversions.queued', false)) {
+            $conversion->nonQueued();
         }
     }
 }
