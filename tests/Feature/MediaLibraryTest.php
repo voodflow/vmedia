@@ -27,6 +27,9 @@ class MediaLibraryTest extends TestCase
 
         $this->assertSame('Summer', $payload['name']);
         $this->assertSame('image', $payload['type']);
+        $this->assertArrayHasKey('alt', $payload);
+        $this->assertArrayHasKey('credits', $payload);
+        $this->assertArrayHasKey('file_name', $payload);
         $this->assertStringStartsWith('/storage/', $payload['src']);
         $this->assertStringNotContainsString('..', $payload['src']);
         $this->assertContains((int) MediaGallery::default()->getKey(), $payload['gallery_ids']);

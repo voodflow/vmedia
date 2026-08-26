@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Voodflow\Vmedia\Support;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaVault;
 
@@ -88,7 +90,7 @@ final class MediaUsage
             'images' => $images,
             'videos' => $videos,
             'files' => $files,
-            'galleries' => (int) \Voodflow\Vmedia\Models\MediaGallery::query()->count(),
+            'galleries' => (int) MediaGallery::query()->count(),
             'bytes' => $bytes,
             'orphans' => $orphanIds->count(),
             'trashed' => $trashed,
@@ -96,7 +98,7 @@ final class MediaUsage
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<MediaItem>
+     * @return Builder<MediaItem>
      */
     public static function orphanQuery()
     {

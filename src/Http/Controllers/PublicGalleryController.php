@@ -2,32 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Voodflow\Vmedia\Http\Livewire;
+namespace Voodflow\Vmedia\Http\Controllers;
 
 use Illuminate\Contracts\View\View;
-use Livewire\Component;
+use Illuminate\Routing\Controller;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Support\MediaLibrary;
 
-class PublicGallery extends Component
+class PublicGalleryController extends Controller
 {
-    public string $slug;
-
-    public function mount(string $slug): void
-    {
-        $this->slug = $slug;
-    }
-
-    public function render(): View
+    public function __invoke(string $slug): View
     {
         $gallery = MediaGallery::query()
-            ->where('slug', $this->slug)
+            ->where('slug', $slug)
             ->where('is_public', true)
             ->firstOrFail();
 
         $assets = MediaLibrary::listAssets(galleryId: (int) $gallery->getKey());
 
-        return view('vmedia::livewire.public-gallery', [
+        return view('vmedia::public.gallery', [
             'gallery' => $gallery,
             'assets' => $assets,
         ]);

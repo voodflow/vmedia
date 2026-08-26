@@ -2,33 +2,47 @@
 
 ## Missing for release
 
-- [ ] Marketplace listing from `docs/sales/README.md`
-- [ ] Confirm install command + migration story for fresh hosts
-- [ ] Document deprecation timeline for `voodbuilder/editor` aliases
+- [x] Marketplace / sales overview from `docs/sales/README.md`
+- [x] Install command + migration story for fresh hosts
+- [ ] Document deprecation timeline for `voodbuilder/editor` aliases (host-specific)
 
-## Nice-to-have
+## Shipped (sprints A–C)
 
-- [ ] More feature tests beyond security suite
-- [ ] Video poster / thumbnail UX polish
-- [ ] External storage (S3) buyer guide
+- [x] Media Picker Filament (`VmediaPicker`)
+- [x] Alt / credits / focal / poster metadata
+- [x] Thumb conversions (config-gated)
+- [x] Usage count + protect delete
+- [x] MIT LICENSE + README quick start
+- [x] Files UX (documents collection)
+- [x] Laravel events
+- [x] Stats widget + `vmedia:stats`
+- [x] Orphan prune command
+- [x] Public gallery page
+- [x] Video poster metadata
+- [x] Soft delete / trash
+- [x] Duplicate detection (SHA-256 reuse)
+- [x] ZIP import
+
+## Nice-to-have later
+
+- [ ] External storage (S3) buyer guide with sample `.env`
+- [ ] ffmpeg-based auto video poster frames
+- [ ] Livewire interactive public gallery
 
 ## Test status
 
-**Result (2026-08-25, Docker PHP 8.4 / package phpunit|pest):** PASS
+Run from package root:
 
-19 tests, 52 assertions.
-
-## Code quality vs Filament 5
-
-- Own navigation group; Filament 5 plugin registration
-- Spatie media integration aligned with Filament 5 plugin
+```bash
+./vendor/bin/phpunit
+```
 
 ## Security & vulnerability review
 
 | Area | Finding | Severity |
 |------|---------|----------|
 | Authz | auth + policies + optional Gate ability | OK |
-| Uploads | MIME allow-list, path traversal checks | OK |
+| Uploads | MIME allow-list, path traversal checks, ZIP entry sanitization | OK |
 | Mass assignment | Controlled via library helpers | OK |
 | XSS | Admin Filament; public URLs sanitized relative paths | OK |
 | CSRF | Filament/web middleware on mutating routes | OK |

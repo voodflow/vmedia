@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use Spatie\MediaLibrary\MediaLibraryServiceProvider;
+use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Vmedia;
 use Voodflow\Vmedia\VmediaServiceProvider;
 
@@ -25,6 +26,13 @@ abstract class TestCase extends BaseTestCase
         config()->set('vmedia.integrations.voodbuilder.editor_routes', true);
         config()->set('vmedia.authorization.ability', null);
         config()->set('vmedia.disk', 'public');
+        config()->set('vmedia.conversions.enabled', false);
+        config()->set('vmedia.duplicates.detect', true);
+        config()->set('vmedia.duplicates.reuse', true);
+        config()->set('vmedia.usage.protect_delete', true);
+        config()->set('vmedia.soft_deletes', true);
+        config()->set('vmedia.public.enabled', true);
+        config()->set('media-library.media_model', MediaItem::class);
         config()->set('filesystems.disks.public', [
             'driver' => 'local',
             'root' => storage_path('framework/testing/disks/public'),

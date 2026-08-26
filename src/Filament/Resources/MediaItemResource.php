@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Voodflow\Vmedia\Filament\Resources;
 
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -22,6 +23,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -41,6 +43,7 @@ use Voodflow\Vmedia\Filament\Resources\MediaItemResource\Pages\ManageMediaItems;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaVault;
+use Voodflow\Vmedia\Support\FileTypeIcon;
 use Voodflow\Vmedia\Support\MediaLibrary;
 use Voodflow\Vmedia\Support\MediaUsage;
 use Voodflow\Vmedia\Support\UploadGuard;
@@ -119,7 +122,8 @@ class MediaItemResource extends Resource
                         }
 
                         return ltrim(str_replace('/storage/', '', $thumb), '/');
-                    }),
+                    })
+                    ->defaultImageUrl(fn (MediaItem $record): string => FileTypeIcon::dataUriFor($record)),
                 TextColumn::make('name')
                     ->label(__('vmedia::admin.library.name'))
                     ->searchable()
@@ -128,6 +132,8 @@ class MediaItemResource extends Resource
                         $parts = [(string) $record->file_name];
                         $caption = $record->caption();
                         $alt = $record->alt();
+                        $icon = FileTypeIcon::forMedia($record);
+                        $parts[] = $icon['icon_label'];
 
                         if ($caption !== null) {
                             $parts[] = $caption;
@@ -202,34 +208,40 @@ class MediaItemResource extends Resource
                 TrashedFilter::make(),
             ])
             ->recordActions([
-                static::editDetailsAction(),
-                Action::make('open')
-                    ->label(__('vmedia::admin.library.open'))
-                    ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->url(fn (MediaItem $record): string => MediaLibrary::publicUrl($record))
-                    ->openUrlInNewTab(),
-                DeleteAction::make()
-                    ->successNotificationTitle(__('vmedia::admin.library.deleted'))
-                    ->using(function (MediaItem $record): void {
-                        try {
-                            MediaLibrary::delete($record, force: false);
-                        } catch (ValidationException $exception) {
-                            Notification::make()
-                                ->danger()
-                                ->title($exception->getMessage())
-                                ->body(collect($exception->errors())->flatten()->implode(' '))
-                                ->send();
+                ActionGroup::make([
+                    static::editDetailsAction(),
+                    Action::make('open')
+                        ->label(__('vmedia::admin.library.open'))
+                        ->icon('heroicon-o-arrow-top-right-on-square')
+                        ->url(fn (MediaItem $record): string => MediaLibrary::publicUrl($record))
+                        ->openUrlInNewTab(),
+                    DeleteAction::make()
+                        ->successNotificationTitle(__('vmedia::admin.library.deleted'))
+                        ->using(function (MediaItem $record): void {
+                            try {
+                                MediaLibrary::delete($record, force: false);
+                            } catch (ValidationException $exception) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title($exception->getMessage())
+                                    ->body(collect($exception->errors())->flatten()->implode(' '))
+                                    ->send();
 
-                            throw $exception;
-                        }
-                    }),
-                RestoreAction::make()
-                    ->using(fn (MediaItem $record) => MediaLibrary::restore($record)),
-                ForceDeleteAction::make()
-                    ->using(function (MediaItem $record): void {
-                        MediaLibrary::delete($record, force: true);
-                    }),
+                                throw $exception;
+                            }
+                        }),
+                    RestoreAction::make()
+                        ->using(fn (MediaItem $record) => MediaLibrary::restore($record)),
+                    ForceDeleteAction::make()
+                        ->using(function (MediaItem $record): void {
+                            MediaLibrary::delete($record, force: true);
+                        }),
+                ])
+                    ->icon('heroicon-m-ellipsis-vertical')
+                    ->iconButton()
+                    ->tooltip(__('vmedia::admin.galleries.media.actions')),
             ])
+            ->recordActionsColumnLabel(null)
             ->toolbarActions([
                 BulkActionGroup::make([
                     BulkAction::make('editMeta')
@@ -362,7 +374,8 @@ class MediaItemResource extends Resource
             TextInput::make('alt')
                 ->label(__('vmedia::admin.library.alt'))
                 ->maxLength(255)
-                ->helperText(__('vmedia::admin.library.alt_help')),
+                ->helperText(__('vmedia::admin.library.alt_help'))
+                ->visible(fn (?MediaItem $record, Get $get): bool => static::metaRecordIsImage($record, $get)),
             Textarea::make('caption')
                 ->label(__('vmedia::admin.library.caption'))
                 ->rows(2)
@@ -372,22 +385,12 @@ class MediaItemResource extends Resource
                 ->label(__('vmedia::admin.library.credits'))
                 ->maxLength(255)
                 ->helperText(__('vmedia::admin.library.credits_help')),
-            TextInput::make('focal_x')
-                ->label(__('vmedia::admin.library.focal_x'))
-                ->numeric()
-                ->minValue(0)
-                ->maxValue(100)
-                ->helperText(__('vmedia::admin.library.focal_help')),
-            TextInput::make('focal_y')
-                ->label(__('vmedia::admin.library.focal_y'))
-                ->numeric()
-                ->minValue(0)
-                ->maxValue(100),
             Select::make('poster_uuid')
                 ->label(__('vmedia::admin.library.poster'))
                 ->helperText(__('vmedia::admin.library.poster_help'))
                 ->searchable()
                 ->nullable()
+                ->visible(fn (?MediaItem $record, Get $get): bool => static::metaRecordIsVideo($record, $get))
                 ->options(fn (): array => MediaItem::query()
                     ->where('collection_name', MediaGallery::COLLECTION_IMAGES)
                     ->orderByDesc('id')
@@ -405,7 +408,7 @@ class MediaItemResource extends Resource
     }
 
     /**
-     * @return array{id: int, name: string, caption: string|null, alt: string|null, credits: string|null, focal_x: float|null, focal_y: float|null, poster_uuid: string|null, file_name: string}
+     * @return array{id: int, name: string, caption: string|null, alt: string|null, credits: string|null, poster_uuid: string|null, file_name: string}
      */
     public static function metaFormState(MediaItem $record): array
     {
@@ -415,9 +418,7 @@ class MediaItemResource extends Resource
             'caption' => $record->caption(),
             'alt' => $record->alt(),
             'credits' => $record->credits(),
-            'focal_x' => $record->focalX(),
-            'focal_y' => $record->focalY(),
-            'poster_uuid' => $record->posterUuid(),
+            'poster_uuid' => $record->isVideo() ? $record->posterUuid() : null,
             'file_name' => (string) $record->file_name,
         ];
     }
@@ -442,15 +443,48 @@ class MediaItemResource extends Resource
 
             $record->name = trim((string) ($item['name'] ?? $record->displayTitle()));
             $record->setCaption(isset($item['caption']) ? (string) $item['caption'] : null);
-            $record->setAlt(isset($item['alt']) ? (string) $item['alt'] : null);
             $record->setCredits(isset($item['credits']) ? (string) $item['credits'] : null);
-            $record->setFocalPoint(
-                isset($item['focal_x']) && is_numeric($item['focal_x']) ? (float) $item['focal_x'] : null,
-                isset($item['focal_y']) && is_numeric($item['focal_y']) ? (float) $item['focal_y'] : null,
-            );
-            $record->setPosterUuid(isset($item['poster_uuid']) ? (string) $item['poster_uuid'] : null);
+
+            if ($record->isImage()) {
+                $record->setAlt(isset($item['alt']) ? (string) $item['alt'] : null);
+            }
+
+            if ($record->isVideo()) {
+                $record->setPosterUuid(isset($item['poster_uuid']) ? (string) $item['poster_uuid'] : null);
+            }
+
             $record->save();
         }
+    }
+
+    protected static function metaRecordIsVideo(?MediaItem $record, Get $get): bool
+    {
+        if ($record instanceof MediaItem) {
+            return $record->isVideo();
+        }
+
+        $id = (int) ($get('id') ?? 0);
+
+        if ($id < 1) {
+            return false;
+        }
+
+        return MediaItem::query()->find($id)?->isVideo() ?? false;
+    }
+
+    protected static function metaRecordIsImage(?MediaItem $record, Get $get): bool
+    {
+        if ($record instanceof MediaItem) {
+            return $record->isImage();
+        }
+
+        $id = (int) ($get('id') ?? 0);
+
+        if ($id < 1) {
+            return false;
+        }
+
+        return MediaItem::query()->find($id)?->isImage() ?? false;
     }
 
     public static function editDetailsAction(): Action
@@ -649,11 +683,15 @@ class MediaItemResource extends Resource
                     return;
                 }
 
-                $stored = ZipImporter::import($zip, $galleries);
+                $result = ZipImporter::import($zip, $galleries);
+                $stored = $result['items'];
 
                 Notification::make()
                     ->success()
-                    ->title(__('vmedia::admin.library.import_zip_done', ['count' => count($stored)]))
+                    ->title(__('vmedia::admin.library.import_zip_done', [
+                        'count' => $result['imported'],
+                        'skipped' => $result['skipped'],
+                    ]))
                     ->send();
 
                 if ($stored === []) {

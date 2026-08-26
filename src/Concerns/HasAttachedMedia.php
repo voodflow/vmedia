@@ -4,20 +4,25 @@ declare(strict_types=1);
 
 namespace Voodflow\Vmedia\Concerns;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Voodflow\Vmedia\Events\MediaAttached;
 use Voodflow\Vmedia\Events\MediaDetached;
+use Voodflow\Vmedia\Models\MediaAttachment;
 use Voodflow\Vmedia\Models\MediaItem;
+use Voodflow\Vmedia\Support\AttachmentMeta;
 use Voodflow\Vmedia\Support\MediaLibrary;
 
 /**
  * Attach vault MediaItems to a domain model without Spatie HasMedia on that model.
  *
  * Logical collections (logo, gallery, …) live on the pivot; files stay on MediaVault.
+ * Per-attachment caption/alt/credits live in pivot `properties` (override vault defaults).
  *
- * @mixin \Illuminate\Database\Eloquent\Model
+ * @mixin Model
  */
 trait HasAttachedMedia
 {
@@ -33,7 +38,8 @@ trait HasAttachedMedia
             'attachable_id',
             'media_id',
         )
-            ->withPivot(['collection', 'sort_order'])
+            ->using(MediaAttachment::class)
+            ->withPivot(['collection', 'sort_order', 'properties'])
             ->withTimestamps()
             ->orderByPivot('sort_order');
     }
@@ -62,7 +68,7 @@ trait HasAttachedMedia
         return $media instanceof MediaItem ? MediaLibrary::publicUrl($media) : '';
     }
 
-    public function attachMediaItem(string $collection, MediaItem $media, bool $replace = false): void
+    public function attachMediaItem(string $collection, MediaItem $media, bool $replace = false, array $properties = []): void
     {
         if ($replace) {
             $this->clearMediaCollection($collection);
@@ -79,6 +85,7 @@ trait HasAttachedMedia
         $this->media()->attach((int) $media->getKey(), [
             'collection' => $collection,
             'sort_order' => $this->getMedia($collection)->count(),
+            'properties' => AttachmentMeta::normalizeProperties($properties) ?: null,
         ]);
 
         $this->unsetRelation('media');
@@ -86,21 +93,117 @@ trait HasAttachedMedia
     }
 
     /**
-     * @param  list<int>  $mediaIds
+     * Sync collection membership + optional per-attachment properties.
+     *
+     * Each entry may be a media id (int) or `['id' => int, 'properties' => array|null]`.
+     * When `properties` is omitted/null for an existing attachment, previous overrides are kept.
+     *
+     * @param  list<int|array{id: int, properties?: array<string, mixed>|null}>  $mediaIds
      */
     public function syncMediaCollection(string $collection, array $mediaIds): void
     {
-        $mediaIds = array_values(array_unique(array_filter(array_map('intval', $mediaIds))));
+        $normalized = [];
 
-        $this->clearMediaCollection($collection);
+        foreach ($mediaIds as $entry) {
+            if (is_array($entry)) {
+                $id = (int) ($entry['id'] ?? 0);
 
-        foreach ($mediaIds as $index => $id) {
-            $this->media()->attach($id, [
+                if ($id <= 0) {
+                    continue;
+                }
+
+                $normalized[] = [
+                    'id' => $id,
+                    'properties' => array_key_exists('properties', $entry)
+                        ? (is_array($entry['properties']) ? AttachmentMeta::normalizeProperties($entry['properties']) : [])
+                        : null,
+                ];
+
+                continue;
+            }
+
+            $id = (int) $entry;
+
+            if ($id <= 0) {
+                continue;
+            }
+
+            $normalized[] = [
+                'id' => $id,
+                'properties' => null,
+            ];
+        }
+
+        $unique = [];
+        foreach ($normalized as $row) {
+            $unique[$row['id']] = $row;
+        }
+        $normalized = array_values($unique);
+
+        $existing = $this->vmediaPivotQuery()
+            ->where('collection', $collection)
+            ->get()
+            ->keyBy(fn ($row): int => (int) $row->media_id);
+
+        $keepIds = array_map(static fn (array $row): int => $row['id'], $normalized);
+
+        foreach ($existing as $mediaId => $row) {
+            if (in_array((int) $mediaId, $keepIds, true)) {
+                continue;
+            }
+
+            $this->vmediaPivotQuery()
+                ->where('collection', $collection)
+                ->where('media_id', $mediaId)
+                ->delete();
+
+            $media = MediaItem::query()->find($mediaId);
+
+            if ($media !== null) {
+                MediaDetached::dispatch($this, $media, $collection);
+            }
+        }
+
+        foreach ($normalized as $index => $item) {
+            $existingRow = $existing->get($item['id']);
+            $properties = $item['properties'];
+
+            if ($properties === null) {
+                $decoded = null;
+
+                if ($existingRow !== null && isset($existingRow->properties)) {
+                    $decoded = is_string($existingRow->properties)
+                        ? json_decode($existingRow->properties, true)
+                        : $existingRow->properties;
+                }
+
+                $properties = is_array($decoded) ? $decoded : [];
+            }
+
+            $payload = [
                 'collection' => $collection,
                 'sort_order' => $index,
-            ]);
+                'properties' => $properties === [] ? null : $properties,
+            ];
 
-            $media = MediaItem::query()->find($id);
+            if ($existingRow !== null) {
+                $this->vmediaPivotQuery()
+                    ->where('collection', $collection)
+                    ->where('media_id', $item['id'])
+                    ->update([
+                        'sort_order' => $index,
+                        'properties' => $payload['properties'] === null
+                            ? null
+                            : json_encode($payload['properties']),
+                        'updated_at' => now(),
+                    ]);
+
+                continue;
+            }
+
+            $this->media()->attach($item['id'], $payload);
+
+            $media = MediaItem::query()->find($item['id']);
 
             if ($media !== null) {
                 MediaAttached::dispatch($this, $media, $collection);
@@ -175,7 +278,7 @@ trait HasAttachedMedia
     }
 
     /**
-     * @return \Illuminate\Database\Query\Builder
+     * @return Builder
      */
     protected function vmediaPivotQuery()
     {

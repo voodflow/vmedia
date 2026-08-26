@@ -2,9 +2,11 @@
 
 Reusable **media library and galleries** for Filament 5, backed by Spatie Media Library. One vault storage copy, many gallery memberships. Works standalone; optional page-builder Asset Manager integration.
 
+**Free MIT pilot** for the Voodflow ecosystem.
+
 ## Who it is for
 
-- Sites that need a shared photo/video library across products
+- Sites that need a shared photo/video/document library across products
 - Cosmolab hosts with Voodbuilder/Vpress editors that pick media
 - Teams replacing ad-hoc upload fields with a central vault
 
@@ -12,10 +14,14 @@ Reusable **media library and galleries** for Filament 5, backed by Spatie Media 
 
 - Media vault + galleries (default gallery for uploads)
 - Filament library and gallery admin (own **Media** nav group)
+- `VmediaPicker` + `VmediaFileUpload` for other plugins
+- Metadata: alt, caption, credits; video poster (videos only)
+- Thumb conversions, duplicate reuse, soft delete / trash
+- Usage protection + orphan prune + stats widget / `vmedia:stats`
+- ZIP import; public gallery page (`/galleries/{slug}`)
 - Authenticated HTTP API: list, upload, delete
 - MIME allow-list and path-traversal guards (`UploadGuard`)
-- Optional legacy `/voodbuilder/editor/*` route aliases
-- Photos vs videos filtering
+- Laravel events for attach/store/delete lifecycle
 
 ## High-level requirements
 

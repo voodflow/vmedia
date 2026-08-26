@@ -1,9 +1,9 @@
 {
     "name": "voodflow/vmedia",
     "description": "Reusable media library & galleries for Filament 5 (Spatie Media Library). Works standalone; optional page-builder editor integration.",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "type": "library",
-    "license": "proprietary",
+    "license": "MIT",
     "keywords": [
         "laravel",
         "filament",
@@ -29,7 +29,10 @@
     "autoload": {
         "psr-4": {
             "Voodflow\\Vmedia\\": "src/"
-        }
+        },
+        "files": [
+            "src/helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

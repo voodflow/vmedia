@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Voodflow\Vmedia\Filament\Resources;
 
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -16,14 +17,19 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
+use Voodflow\Vmedia\Filament\Forms\Components\GalleryMediaManager;
 use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource\Pages\CreateMediaGallery;
 use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource\Pages\EditMediaGallery;
 use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource\Pages\ListMediaGalleries;
 use Voodflow\Vmedia\Models\MediaGallery;
+use Voodflow\Vmedia\Models\MediaItem;
+use Voodflow\Vmedia\Support\FileTypeIcon;
+use Voodflow\Vmedia\Support\MediaLibrary;
 
 class MediaGalleryResource extends Resource
 {
@@ -116,6 +122,14 @@ class MediaGalleryResource extends Resource
                         ->default(0),
                 ])
                 ->columns(2),
+            Section::make(__('vmedia::admin.galleries.media.section'))
+                ->description(__('vmedia::admin.galleries.media.section_help'))
+                ->schema([
+                    GalleryMediaManager::make('gallery_media')
+                        ->hiddenLabel()
+                        ->dehydrated(true)
+                        ->columnSpanFull(),
+                ]),
         ]);
     }
 
@@ -146,14 +160,52 @@ class MediaGalleryResource extends Resource
                     ->sortable(),
             ])
             ->recordActions([
-                EditAction::make(),
-                Action::make('browse')
-                    ->label(__('vmedia::admin.galleries.browse_media'))
-                    ->icon('heroicon-o-photo')
-                    ->url(fn (MediaGallery $record): string => static::libraryUrlForGallery($record)),
-                DeleteAction::make()
-                    ->disabled(fn (MediaGallery $record): bool => $record->is_default),
+                ActionGroup::make([
+                    EditAction::make(),
+                    Action::make('slideshow')
+                        ->label(__('vmedia::admin.galleries.media.slideshow'))
+                        ->icon('heroicon-o-play')
+                        ->modalHeading(fn (MediaGallery $record): string => $record->name)
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel(__('vmedia::admin.galleries.media.close'))
+                        ->modalWidth(Width::FiveExtraLarge)
+                        ->modalContent(function (MediaGallery $record) {
+                            $slides = $record->mediaItems()
+                                ->get()
+                                ->map(function (MediaItem $media): array {
+                                    $icon = FileTypeIcon::forMedia($media);
+
+                                    return [
+                                        'uuid' => (string) $media->uuid,
+                                        'name' => $media->displayTitle(),
+                                        'thumb' => MediaLibrary::thumbUrl($media),
+                                        'src' => MediaLibrary::publicUrl($media),
+                                        'type' => MediaLibrary::assetType($media),
+                                        'icon' => $icon['icon'],
+                                        'icon_label' => $icon['icon_label'],
+                                        'caption' => $media->caption(),
+                                        'alt' => $media->alt(),
+                                    ];
+                                })
+                                ->values()
+                                ->all();
+
+                            return view('vmedia::filament.gallery-slideshow', [
+                                'slides' => $slides,
+                            ]);
+                        }),
+                    Action::make('browse')
+                        ->label(__('vmedia::admin.galleries.browse_media'))
+                        ->icon('heroicon-o-photo')
+                        ->url(fn (MediaGallery $record): string => static::libraryUrlForGallery($record)),
+                    DeleteAction::make()
+                        ->disabled(fn (MediaGallery $record): bool => $record->is_default),
+                ])
+                    ->icon('heroicon-m-ellipsis-vertical')
+                    ->iconButton()
+                    ->tooltip(__('vmedia::admin.galleries.media.actions')),
             ])
+            ->recordActionsColumnLabel(null)
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),

@@ -6,6 +6,7 @@ namespace Voodflow\Vmedia\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\DB;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -120,7 +121,7 @@ class MediaGallery extends Model
     }
 
     /**
-     * Attach media without detaching others (idempotent).
+     * Attach media without detaching others (idempotent). New items go at the end.
      *
      * @param  iterable<int|MediaItem>  $media
      */
@@ -138,6 +139,87 @@ class MediaGallery extends Model
             return;
         }
 
-        $this->mediaItems()->syncWithoutDetaching($ids);
+        $table = (string) config('vmedia.tables.gallery_media', 'voodbuilder_media_gallery_media');
+        $existingMax = (int) (DB::table($table)
+            ->where('gallery_id', $this->getKey())
+            ->max('sort_order') ?? -1);
+
+        $already = DB::table($table)
+            ->where('gallery_id', $this->getKey())
+            ->whereIn('media_id', $ids)
+            ->pluck('media_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $attach = [];
+        $order = $existingMax + 1;
+
+        foreach ($ids as $id) {
+            if (in_array($id, $already, true)) {
+                continue;
+            }
+
+            $attach[$id] = ['sort_order' => $order++];
+        }
+
+        if ($attach !== []) {
+            $this->mediaItems()->attach($attach);
+        }
+    }
+
+    /**
+     * Replace gallery membership preserving explicit order (index = sort_order).
+     *
+     * @param  list<int|string>  $mediaIdsOrUuids  media ids or UUIDs
+     */
+    public function syncOrderedMedia(array $mediaIdsOrUuids): void
+    {
+        $ids = [];
+
+        foreach ($mediaIdsOrUuids as $value) {
+            if (is_int($value) || (is_string($value) && ctype_digit($value))) {
+                $ids[] = (int) $value;
+
+                continue;
+            }
+
+            if (! is_string($value) || $value === '') {
+                continue;
+            }
+
+            $id = MediaItem::query()->where('uuid', $value)->value('id');
+
+            if ($id !== null) {
+                $ids[] = (int) $id;
+            }
+        }
+
+        $unique = [];
+        foreach ($ids as $id) {
+            if ($id > 0) {
+                $unique[$id] = $id;
+            }
+        }
+        $ids = array_values($unique);
+
+        $sync = [];
+        foreach ($ids as $index => $id) {
+            $sync[$id] = ['sort_order' => $index];
+        }
+
+        $this->mediaItems()->sync($sync);
+        $this->unsetRelation('mediaItems');
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function orderedMediaUuids(): array
+    {
+        return $this->mediaItems()
+            ->get()
+            ->map(fn (MediaItem $media): string => (string) $media->uuid)
+            ->values()
+            ->all();
     }
 }

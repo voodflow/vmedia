@@ -7,6 +7,7 @@ namespace Voodflow\Vmedia\Support;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Voodflow\Vmedia\Events\MediaDeleted;
 use Voodflow\Vmedia\Events\MediaRestored;
 use Voodflow\Vmedia\Events\MediaStored;
@@ -49,7 +50,7 @@ final class MediaLibrary
 
     /**
      * @return array{
-     *   data: list<array{src: string, type: string, name: string, caption: string|null, alt: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null, poster: string|null, object_position: string|null}>,
+     *   data: list<array{src: string, type: string, name: string, caption: string|null, alt: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null, poster: string|null, object_position: string|null, icon: string, icon_label: string}>,
      *   meta: array{current_page: int, last_page: int, per_page: int, total: int, has_more: bool}
      * }
      */
@@ -114,7 +115,7 @@ final class MediaLibrary
     }
 
     /**
-     * @return list<array{src: string, type: string, name: string, caption: string|null, alt: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null, poster: string|null, object_position: string|null}>
+     * @return list<array{src: string, type: string, name: string, caption: string|null, alt: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null, poster: string|null, object_position: string|null, icon: string, icon_label: string}>
      */
     public static function listAssets(?string $type = null, ?int $galleryId = null): array
     {
@@ -122,7 +123,7 @@ final class MediaLibrary
     }
 
     /**
-     * @return array{src: string, type: string, name: string, caption: string|null, alt: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null, poster: string|null, object_position: string|null}
+     * @return array{src: string, type: string, name: string, file_name: string, caption: string|null, alt: string|null, credits: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null, poster: string|null, object_position: string|null, icon: string, icon_label: string}
      */
     public static function toAssetPayload(MediaItem $media): array
     {
@@ -132,19 +133,43 @@ final class MediaLibrary
 
         $src = self::publicUrl($media);
         $type = self::assetType($media);
+        $icon = FileTypeIcon::forMedia($media);
 
         return [
             'src' => $src,
             'type' => $type,
             'name' => $media->displayTitle(),
+            'file_name' => (string) $media->file_name,
             'caption' => $media->caption(),
             'alt' => $media->alt(),
+            'credits' => $media->credits(),
             'uuid' => (string) $media->uuid,
             'id' => (int) $media->getKey(),
             'gallery_ids' => $media->galleries->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
             'thumb' => self::thumbUrl($media),
             'poster' => self::posterUrl($media),
             'object_position' => $media->objectPositionCss(),
+            'icon' => $icon['icon'],
+            'icon_label' => $icon['icon_label'],
+        ];
+    }
+
+    /**
+     * Slim payload for picker / gallery browse tiles.
+     *
+     * @param  array{uuid: string, name: string, thumb?: string|null, poster?: string|null, src: string, type: string, icon?: string, icon_label?: string}  $asset
+     * @return array{uuid: string, name: string, thumb: string|null, src: string, type: string, icon: string, icon_label: string}
+     */
+    public static function toBrowserTile(array $asset): array
+    {
+        return [
+            'uuid' => $asset['uuid'],
+            'name' => $asset['name'],
+            'thumb' => $asset['thumb'] ?? $asset['poster'] ?? null,
+            'src' => $asset['src'],
+            'type' => $asset['type'],
+            'icon' => $asset['icon'] ?? FileTypeIcon::FALLBACK,
+            'icon_label' => $asset['icon_label'] ?? 'FILE',
         ];
     }
 
@@ -219,7 +244,7 @@ final class MediaLibrary
             $adder->withCustomProperties($customProperties);
         }
 
-        /** @var \Spatie\MediaLibrary\MediaCollections\Models\Media $stored */
+        /** @var Media $stored */
         $stored = $adder->toMediaCollection($collection);
 
         $media = MediaItem::query()->findOrFail($stored->getKey());

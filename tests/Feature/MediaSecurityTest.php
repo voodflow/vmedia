@@ -134,7 +134,7 @@ class MediaSecurityTest extends TestCase
             ->assertOk()
             ->assertJson(['deleted' => true]);
 
-        $this->assertDatabaseMissing('media', ['id' => $media->getKey()]);
+        $this->assertSoftDeleted('media', ['id' => $media->getKey()]);
     }
 
     public function test_guest_cannot_delete_media(): void

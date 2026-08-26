@@ -6,6 +6,9 @@ namespace Voodflow\Vmedia;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Filament\Support\Assets\Css;
+use Filament\Support\Facades\FilamentAsset;
+use Illuminate\Support\Facades\File;
 use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource;
 use Voodflow\Vmedia\Filament\Resources\MediaItemResource;
 use Voodflow\Vmedia\Filament\Widgets\MediaStatsWidget;
@@ -44,6 +47,8 @@ class VmediaPlugin implements Plugin
 
         Vmedia::activate();
 
+        $this->registerAssets();
+
         $panel
             ->resources([
                 MediaGalleryResource::class,
@@ -57,5 +62,25 @@ class VmediaPlugin implements Plugin
     public function boot(Panel $panel): void
     {
         //
+    }
+
+    protected function registerAssets(): void
+    {
+        $source = dirname(__DIR__).'/resources/css/media-browser.css';
+
+        if (! is_file($source)) {
+            return;
+        }
+
+        $destination = public_path('css/vmedia/media-browser.css');
+        File::ensureDirectoryExists(dirname($destination));
+
+        if (! is_file($destination) || filemtime($source) > filemtime($destination)) {
+            File::copy($source, $destination);
+        }
+
+        FilamentAsset::register([
+            Css::make('media-browser', $source),
+        ], 'voodflow/vmedia');
     }
 }

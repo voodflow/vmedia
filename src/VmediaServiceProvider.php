@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace Voodflow\Vmedia;
 
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
-use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Voodflow\Vmedia\Console\InstallCommand;
 use Voodflow\Vmedia\Console\PruneOrphansCommand;
 use Voodflow\Vmedia\Console\StatsCommand;
-use Voodflow\Vmedia\Http\Livewire\PublicGallery;
+use Voodflow\Vmedia\Http\Controllers\PublicGalleryController;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaVault;
@@ -66,9 +66,15 @@ class VmediaServiceProvider extends PackageServiceProvider
         Gate::policy(MediaGallery::class, MediaGalleryPolicy::class);
         Gate::policy(MediaItem::class, MediaItemPolicy::class);
 
-        if (class_exists(Livewire::class)) {
-            Livewire::component('vmedia.public-gallery', PublicGallery::class);
-        }
+        config()->set('media-library.media_model', MediaItem::class);
+
+        Blade::directive('vmediaGallery', function (string $expression): string {
+            return "<?php echo \\vmedia_gallery({$expression}); ?>";
+        });
+
+        Blade::directive('renderWithVmediaGalleries', function (string $expression): string {
+            return "<?php echo \\render_with_vmedia_galleries({$expression}); ?>";
+        });
 
         $this->registerPublicRoutes();
     }
@@ -79,13 +85,17 @@ class VmediaServiceProvider extends PackageServiceProvider
             return;
         }
 
+        if (Route::has('vmedia.public.gallery')) {
+            return;
+        }
+
         $prefix = (string) config('vmedia.public.prefix', 'galleries');
         $middleware = (array) config('vmedia.public.middleware', ['web']);
 
         Route::middleware($middleware)
             ->prefix($prefix)
             ->group(function (): void {
-                Route::get('{slug}', PublicGallery::class)->name('vmedia.public.gallery');
+                Route::get('{slug}', PublicGalleryController::class)->name('vmedia.public.gallery');
             });
     }
 }

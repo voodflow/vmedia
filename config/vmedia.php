@@ -58,10 +58,19 @@ return [
     'conversions' => [
         'enabled' => env('VMEDIA_CONVERSIONS', true),
         'queued' => env('VMEDIA_CONVERSIONS_QUEUED', false),
+        'optimize' => env('VMEDIA_CONVERSIONS_OPTIMIZE', true),
         'thumb' => [
             'width' => (int) env('VMEDIA_THUMB_WIDTH', 400),
             'height' => (int) env('VMEDIA_THUMB_HEIGHT', 400),
             'format' => env('VMEDIA_THUMB_FORMAT', 'webp'),
+        ],
+        /*
+        | Optional larger preview (admin lightbox / embeds). Disabled when width is 0.
+        */
+        'preview' => [
+            'width' => (int) env('VMEDIA_PREVIEW_WIDTH', 1280),
+            'height' => (int) env('VMEDIA_PREVIEW_HEIGHT', 1280),
+            'format' => env('VMEDIA_PREVIEW_FORMAT', 'webp'),
         ],
     ],
 
@@ -85,6 +94,9 @@ return [
 
     'zip' => [
         'max_files' => (int) env('VMEDIA_ZIP_MAX_FILES', 100),
+        'max_archive_kb' => (int) env('VMEDIA_ZIP_MAX_ARCHIVE_KB', 51200), // 50 MB
+        'max_entry_kb' => (int) env('VMEDIA_ZIP_MAX_ENTRY_KB', 20480), // 20 MB per file
+        'max_total_uncompressed_kb' => (int) env('VMEDIA_ZIP_MAX_TOTAL_KB', 102400), // 100 MB
     ],
 
     'public' => [
@@ -141,5 +153,6 @@ return [
 
     'browser' => [
         'per_page' => (int) env('VMEDIA_BROWSER_PER_PAGE', 48),
+        'picker_per_page' => (int) env('VMEDIA_PICKER_PER_PAGE', 20),
     ],
 ];
