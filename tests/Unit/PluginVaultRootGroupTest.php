@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Voodflow\Vmedia\Tests\Unit;
 
 use Voodflow\Vmedia\Models\MediaGallery;
+use Voodflow\Vmedia\Support\Integration\PluginVaultLibraryGallery;
 use Voodflow\Vmedia\Support\Integration\PluginVaultRootBootstrap;
 use Voodflow\Vmedia\Support\Integration\PluginVaultRootGroup;
 use Voodflow\Vmedia\Support\Integration\SharedLogosGallery;
@@ -61,6 +62,17 @@ class PluginVaultRootGroupTest extends TestCase
 
         $this->assertNotNull($resolved);
         $this->assertSame((int) $eventsRoot->getKey(), (int) $resolved->getKey());
+    }
+
+    public function test_plugin_library_album_lives_under_plugin_root(): void
+    {
+        $album = PluginVaultLibraryGallery::album('vtuts');
+
+        $this->assertTrue($album->isAlbum());
+        $this->assertSame(
+            (int) PluginVaultRootGroup::vtuts()->getKey(),
+            (int) $album->parent_id,
+        );
     }
 
     protected function assertRoot(string $source, string $key, string $slug): void

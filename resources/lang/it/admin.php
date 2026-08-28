@@ -167,6 +167,11 @@ return [
         'vforms' => 'Moduli',
         'logos' => 'Loghi',
         'logos_library' => 'Libreria',
+        'library' => 'Libreria',
+    ],
+    'editor' => [
+        'modal_heading' => 'Inserisci dalla media library',
+        'attach_from_library' => 'Media library',
     ],
     'galleries' => [
         'navigation' => 'Gallerie',
