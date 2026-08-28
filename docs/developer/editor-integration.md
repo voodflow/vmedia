@@ -69,7 +69,7 @@ Used by `MediaController`, `VmediaFilamentBrowser`, and `VmediaPicker`.
 |-----------|-----|
 | `VmediaPicker` | Entity attachments; optional locked vault gallery. Browse-all when unlocked; upload follows filters. |
 | `VmediaFilamentBrowser` | Shared modal for markdown/rich editors (`VmediaMarkdownEditor`, `VmediaRichContentPlugin`). |
-| `VmediaMarkdownEditor` | Toolbar image → vmedia modal → `![](url)`. |
+| `VmediaMarkdownEditor` | Toolbar image → vmedia modal → `![](url)`. Replaces Filament `attachFiles` (native browser upload). |
 | `VmediaRichEditor` + plugin | TipTap attach from library. |
 
 Register plugin vault library as browse default:

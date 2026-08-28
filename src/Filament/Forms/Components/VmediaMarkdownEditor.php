@@ -27,6 +27,7 @@ class VmediaMarkdownEditor extends MarkdownEditor
         parent::setUp();
 
         $this->fileAttachments(false);
+        $this->disableToolbarButtons(['attachFiles']);
 
         $this->registerActions([
             fn (VmediaMarkdownEditor $component): Action => $component->insertVmediaImageAction(),
@@ -51,7 +52,7 @@ class VmediaMarkdownEditor extends MarkdownEditor
 
         return VmediaFilamentBrowser::pickAction(
             name: 'insertVmediaImage',
-            vaultGalleryId: fn (): int => VmediaFilamentBrowser::resolveVaultGalleryId($component->getVaultPlugin()),
+            defaultVaultGalleryId: fn (): int => VmediaFilamentBrowser::resolveVaultGalleryId($component->getVaultPlugin()),
             onPick: function (array $result) use ($component): void {
                 /** @var Collection<int, MediaItem> $media */
                 $media = $result['media'];
@@ -111,7 +112,7 @@ class VmediaMarkdownEditor extends MarkdownEditor
             x-load
             x-load-src="<?= e(FilamentAsset::getAlpineComponentSrc('markdown-editor', 'filament/forms')) ?>"
             x-data="markdownEditorFormComponent({
-                        canAttachFiles: true,
+                        canAttachFiles: false,
                         isLiveDebounced: <?= Js::from($this->isLiveDebounced()) ?>,
                         isLiveOnBlur: <?= Js::from($this->isLiveOnBlur()) ?>,
                         label: <?= Js::from($label) ?>,
@@ -124,19 +125,38 @@ class VmediaMarkdownEditor extends MarkdownEditor
                         translations: <?= Js::from(__('filament-forms::components.markdown_editor')) ?>,
                         uploadFileAttachmentUsing: async () => {},
                         setUpUsing: (editorComponent) => {
-                            const attachButton = editorComponent.$root
-                                ?.closest('.fi-fo-markdown-editor')
-                                ?.querySelector('.image.btn, button.image, .fa-image')?.closest('button')
+                            const wire = editorComponent.$wire
+                            const componentKey = <?= Js::from($key) ?>
+                            const libraryTitle = <?= Js::from(__('vmedia::admin.editor.attach_from_library')) ?>
 
-                            if (! attachButton) {
+                            const openLibrary = (event) => {
+                                event.preventDefault()
+                                event.stopImmediatePropagation()
+                                wire.mountFormComponentAction(componentKey, 'insertVmediaImage')
+                            }
+
+                            const editor = editorComponent.editor
+                            const uploadBtn = editor?.toolbarElements?.['upload-image']
+
+                            if (uploadBtn) {
+                                uploadBtn.addEventListener('click', openLibrary, true)
+
                                 return
                             }
 
-                            attachButton.addEventListener('click', (event) => {
-                                event.preventDefault()
-                                event.stopImmediatePropagation()
-                                $wire.mountFormComponentAction(<?= Js::from($key) ?>, 'insertVmediaImage')
-                            }, true)
+                            const bar = editor?.gui?.toolbar?.querySelector('.editor-toolbar')
+
+                            if (! bar) {
+                                return
+                            }
+
+                            const button = document.createElement('button')
+                            button.type = 'button'
+                            button.className = 'fa fa-image'
+                            button.title = libraryTitle
+                            button.setAttribute('aria-label', libraryTitle)
+                            button.addEventListener('click', openLibrary, true)
+                            bar.appendChild(button)
                         },
                     })"
             x-on:vmedia-markdown-insert.window="
