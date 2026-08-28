@@ -141,7 +141,10 @@ final class VmediaFilamentBrowser
                     );
 
                     return [
-                        'assets' => $result['assets'],
+                        'assets' => array_map(
+                            static fn (array $asset): array => MediaLibrary::toBrowserTile($asset),
+                            $result['data'],
+                        ),
                         'meta' => $result['meta'],
                         'multiple' => $multiple,
                         'upload_target' => $uploadTarget,
