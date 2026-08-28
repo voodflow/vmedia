@@ -14,9 +14,13 @@ Vmedia registers its own **Media** navigation group (configurable). It is not ne
 ## Galleries
 
 - Each gallery has a name, unique slug (auto from name), description, public flag, and sort order.
-- Exactly one gallery is **default**. Frontend / editor uploads always land there.
-- Choose / browse can still open any gallery.
+- Exactly one gallery is **default** — used when no folder/album is selected (e.g. “All media” in the page builder).
+- **Browse** any folder or album; **upload** goes to the one you selected. Selecting a **folder** stores files in its `Library` album (created automatically for plugin roots such as Builder, Events, …).
 - The default gallery cannot be deleted until another gallery is marked default.
+
+### Page builder
+
+When inserting images in VoodBuilder, pick **Builder** (or another folder) in the sidebar before uploading so files land in the right place. See the builder manual: *Media library in the builder*.
 
 ## Library
 

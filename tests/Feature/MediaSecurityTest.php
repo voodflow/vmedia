@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
+use Voodflow\Vmedia\Support\Integration\PluginVaultLibraryGallery;
+use Voodflow\Vmedia\Support\Integration\PluginVaultRootGroup;
 use Voodflow\Vmedia\Support\MediaLibrary;
 use Voodflow\Vmedia\Support\UploadGuard;
 use Voodflow\Vmedia\Tests\TestCase;
@@ -118,6 +120,44 @@ class MediaSecurityTest extends TestCase
         $this->assertNotNull($media);
         $this->assertTrue(MediaLibrary::isVaultMedia($media));
         $this->assertTrue($media->galleries()->where('is_default', true)->exists());
+    }
+
+    public function test_upload_with_gallery_id_targets_plugin_library_album(): void
+    {
+        $this->actingAsUser();
+        Storage::fake('public');
+
+        $builderRoot = PluginVaultRootGroup::voodbuilder();
+        $library = PluginVaultLibraryGallery::album('voodbuilder');
+        $file = UploadedFile::fake()->image('builder-shot.jpg', 24, 24);
+
+        $response = $this->postJson(route('vmedia.media.upload'), [
+            'file' => $file,
+            'gallery_id' => $builderRoot->getKey(),
+        ]);
+
+        $response->assertCreated();
+
+        $media = MediaItem::query()->first();
+        $this->assertNotNull($media);
+        $this->assertTrue($media->galleries()->whereKey($library->getKey())->exists());
+        $this->assertFalse($media->galleries()->where('is_default', true)->exists());
+    }
+
+    public function test_galleries_index_returns_upload_target_for_selection(): void
+    {
+        $this->actingAsUser();
+
+        $builderRoot = PluginVaultRootGroup::voodbuilder();
+        $library = PluginVaultLibraryGallery::album('voodbuilder');
+
+        $response = $this->getJson(route('vmedia.media.galleries', [
+            'gallery_id' => $builderRoot->getKey(),
+        ]));
+
+        $response->assertOk()
+            ->assertJsonPath('upload_gallery_id', (int) $library->getKey())
+            ->assertJsonPath('upload_gallery.kind', 'album');
     }
 
     public function test_delete_requires_authorization_and_vault_ownership(): void

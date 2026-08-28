@@ -13,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Support\GalleryPath;
+use Voodflow\Vmedia\Support\GalleryUploadTarget;
 use Voodflow\Vmedia\Support\MediaLibrary;
 use Voodflow\Vmedia\Support\UploadGuard;
 
@@ -30,12 +31,15 @@ class MediaController extends Controller
         $type = $request->query('type');
         $type = is_string($type) && in_array($type, ['image', 'video', 'file'], true) ? $type : null;
         $default = MediaGallery::default();
+        $browseGalleryId = is_numeric($request->query('gallery_id')) ? (int) $request->query('gallery_id') : null;
+        $uploadTarget = GalleryUploadTarget::payload(null, $browseGalleryId);
 
         return response()->json([
             'data' => MediaLibrary::listGalleries($type),
             'tree' => GalleryPath::treePayload(),
             'default_gallery_id' => (int) $default->getKey(),
-            'upload_gallery_id' => (int) $default->getKey(),
+            'upload_gallery_id' => $uploadTarget['id'],
+            'upload_gallery' => $uploadTarget,
         ]);
     }
 
@@ -64,11 +68,15 @@ class MediaController extends Controller
             $tagIds,
         );
 
+        $browseGalleryId = is_numeric($request->query('gallery_id')) ? (int) $request->query('gallery_id') : null;
+        $uploadTarget = GalleryUploadTarget::payload(null, $browseGalleryId);
+
         return response()->json([
             'data' => $result['data'],
             'meta' => $result['meta'],
             'default_gallery_id' => (int) MediaGallery::default()->getKey(),
-            'upload_gallery_id' => (int) MediaGallery::default()->getKey(),
+            'upload_gallery_id' => $uploadTarget['id'],
+            'upload_gallery' => $uploadTarget,
         ]);
     }
 
@@ -97,12 +105,17 @@ class MediaController extends Controller
                 'file',
                 File::types($extensions)->max($maxKb),
             ],
+            'gallery_id' => ['nullable', 'integer', 'exists:'.(new MediaGallery)->getTable().',id'],
             'name' => ['nullable', 'string', 'max:255'],
             'caption' => ['nullable', 'string', 'max:1000'],
             'alt' => ['nullable', 'string', 'max:255'],
         ]);
 
         UploadGuard::assertAllowedMime($validated['file']);
+
+        $targetGallery = GalleryUploadTarget::resolve(
+            isset($validated['gallery_id']) ? (int) $validated['gallery_id'] : null,
+        );
 
         $custom = [];
 
@@ -112,7 +125,7 @@ class MediaController extends Controller
 
         $media = MediaLibrary::store(
             $validated['file'],
-            MediaGallery::default(),
+            $targetGallery,
             isset($validated['name']) ? (string) $validated['name'] : null,
             isset($validated['caption']) ? (string) $validated['caption'] : null,
             $custom,

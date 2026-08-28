@@ -6,7 +6,6 @@ namespace Voodflow\Vmedia\Tests;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use Spatie\MediaLibrary\MediaLibraryServiceProvider;
 use Voodflow\Vmedia\Tests\Concerns\InteractsWithVmediaTests;

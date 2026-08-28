@@ -28,6 +28,7 @@ use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Support\AttachmentMeta;
 use Voodflow\Vmedia\Support\FileTypeIcon;
 use Voodflow\Vmedia\Support\GalleryBrowser;
+use Voodflow\Vmedia\Support\GalleryUploadTarget;
 use Voodflow\Vmedia\Support\MediaLibrary;
 use Voodflow\Vmedia\Support\UploadGuard;
 
@@ -329,6 +330,11 @@ class VmediaPicker extends Field
                                 'assets' => $result['assets'],
                                 'meta' => $result['meta'],
                                 'multiple' => $picker->isMultiple(),
+                                'upload_target' => GalleryUploadTarget::payload(
+                                    $parentFolderId,
+                                    $galleryId,
+                                    $picker->getVaultGalleryId(),
+                                ),
                             ];
                         }),
                 ]));
@@ -380,7 +386,21 @@ class VmediaPicker extends Field
 
         return FileUpload::make('upload_files')
             ->label(__('vmedia::admin.picker.upload_in_modal'))
-            ->helperText(__('vmedia::admin.picker.upload_in_modal_help'))
+            ->helperText(function (Get $get) use ($picker): string {
+                if ($picker->isVaultGalleryLocked()) {
+                    return __('vmedia::admin.picker.upload_in_modal_help');
+                }
+
+                $target = GalleryUploadTarget::payload(
+                    is_numeric($get('parent_folder_id')) ? (int) $get('parent_folder_id') : null,
+                    is_numeric($get('gallery_id')) ? (int) $get('gallery_id') : null,
+                    $picker->getVaultGalleryId(),
+                );
+
+                return __('vmedia::admin.picker.upload_destination_help', [
+                    'path' => $target['path'] !== '' ? $target['path'] : $target['name'],
+                ]);
+            })
             ->multiple($this->isMultiple())
             ->storeFiles(false)
             ->dehydrated(false)
@@ -395,7 +415,7 @@ class VmediaPicker extends Field
                     return;
                 }
 
-                $uploadUuids = $picker->storeFilesToVault($state);
+                $uploadUuids = $picker->storeFilesToVault($state, $get);
 
                 if ($uploadUuids === []) {
                     $set('upload_files', []);
@@ -425,7 +445,7 @@ class VmediaPicker extends Field
     /**
      * @return list<string>
      */
-    protected function storeFilesToVault(mixed $files): array
+    protected function storeFilesToVault(mixed $files, ?Get $get = null): array
     {
         if (! is_array($files)) {
             $files = filled($files) ? [$files] : [];
@@ -439,7 +459,7 @@ class VmediaPicker extends Field
             }
 
             UploadGuard::assertSafeUpload($file);
-            $gallery = $this->resolveUploadGallery();
+            $gallery = $this->resolveUploadGallery($get);
             $stored = $gallery !== null
                 ? MediaLibrary::store($file, $gallery)
                 : MediaLibrary::store($file);
@@ -688,8 +708,16 @@ class VmediaPicker extends Field
         return (bool) $this->evaluate($this->vaultGalleryLocked);
     }
 
-    protected function resolveUploadGallery(): ?MediaGallery
+    protected function resolveUploadGallery(?Get $get = null): ?MediaGallery
     {
+        if ($get !== null && ! $this->isVaultGalleryLocked()) {
+            return GalleryUploadTarget::resolveFromBrowse(
+                is_numeric($get('parent_folder_id')) ? (int) $get('parent_folder_id') : null,
+                is_numeric($get('gallery_id')) ? (int) $get('gallery_id') : null,
+                $this->getVaultGalleryId(),
+            );
+        }
+
         $galleryId = $this->getVaultGalleryId();
 
         if ($galleryId === null) {

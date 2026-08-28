@@ -22,6 +22,7 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Support\GalleryBrowser;
+use Voodflow\Vmedia\Support\GalleryUploadTarget;
 use Voodflow\Vmedia\Support\Integration\PluginVaultLibraryGallery;
 use Voodflow\Vmedia\Support\MediaLibrary;
 use Voodflow\Vmedia\Support\UploadGuard;
@@ -32,12 +33,12 @@ use Voodflow\Vmedia\Support\UploadGuard;
 final class VmediaFilamentBrowser
 {
     /**
-     * @param  Closure(): int|null  $vaultGalleryId
+     * @param  Closure(): int|null  $defaultVaultGalleryId  Suggested browse/upload default (e.g. plugin library album)
      * @param  Closure(array<string, mixed>): void  $onPick
      */
     public static function pickAction(
         string $name,
-        Closure $vaultGalleryId,
+        Closure $defaultVaultGalleryId,
         Closure $onPick,
         bool $multiple = false,
         string $accept = 'images',
@@ -48,9 +49,9 @@ final class VmediaFilamentBrowser
             ->modalWidth(Width::FiveExtraLarge)
             ->stickyModalHeader()
             ->stickyModalFooter()
-            ->schema(fn (): array => self::schema($vaultGalleryId, $multiple, $accept))
-            ->fillForm(function () use ($vaultGalleryId, $multiple): array {
-                $galleryId = $vaultGalleryId();
+            ->schema(fn (): array => self::schema($defaultVaultGalleryId, $multiple, $accept))
+            ->fillForm(function () use ($defaultVaultGalleryId, $multiple): array {
+                $galleryId = $defaultVaultGalleryId();
                 $filters = GalleryBrowser::defaultPickerFilters($galleryId);
 
                 return [
@@ -94,17 +95,16 @@ final class VmediaFilamentBrowser
     }
 
     /**
-     * @param  Closure(): int|null  $vaultGalleryId
+     * @param  Closure(): int|null  $defaultVaultGalleryId
      * @return list<Component>
      */
-    public static function schema(Closure $vaultGalleryId, bool $multiple, string $accept): array
+    public static function schema(Closure $defaultVaultGalleryId, bool $multiple, string $accept): array
     {
         $perPage = max(8, min(48, (int) config('vmedia.browser.picker_per_page', 20)));
-        $lockedGallery = fn (): bool => $vaultGalleryId() !== null;
 
         return array_values(array_filter([
-            self::uploadField($vaultGalleryId, $multiple, $accept),
-            Grid::make($lockedGallery() ? 1 : 3)->schema(GalleryBrowser::filterFields($lockedGallery())),
+            self::uploadField($defaultVaultGalleryId, $multiple, $accept),
+            Grid::make(3)->schema(GalleryBrowser::filterFields()),
             Hidden::make('browser_page')
                 ->default(1)
                 ->live()
@@ -117,19 +117,13 @@ final class VmediaFilamentBrowser
                 ->hiddenLabel()
                 ->live()
                 ->view('vmedia::forms.components.media-browser-grid')
-                ->viewData(function (Get $get) use ($vaultGalleryId, $perPage, $multiple): array {
+                ->viewData(function (Get $get) use ($defaultVaultGalleryId, $perPage, $multiple): array {
                     $get('browser_nonce');
 
                     $parentFolderId = is_numeric($get('parent_folder_id')) ? (int) $get('parent_folder_id') : null;
                     $galleryId = is_numeric($get('gallery_id')) ? (int) $get('gallery_id') : null;
                     $search = $get('q');
                     $page = max(1, (int) ($get('browser_page') ?? 1));
-
-                    $scopedGalleryId = $vaultGalleryId();
-                    if ($scopedGalleryId !== null) {
-                        $galleryId = $scopedGalleryId;
-                        $parentFolderId = null;
-                    }
 
                     $result = GalleryBrowser::paginateForPicker(
                         type: 'image',
@@ -140,19 +134,26 @@ final class VmediaFilamentBrowser
                         perPage: $perPage,
                     );
 
+                    $uploadTarget = GalleryUploadTarget::payload(
+                        $parentFolderId,
+                        $galleryId,
+                        $defaultVaultGalleryId(),
+                    );
+
                     return [
                         'assets' => $result['assets'],
                         'meta' => $result['meta'],
                         'multiple' => $multiple,
+                        'upload_target' => $uploadTarget,
                     ];
                 }),
         ]));
     }
 
     /**
-     * @param  Closure(): int|null  $vaultGalleryId
+     * @param  Closure(): int|null  $defaultVaultGalleryId
      */
-    protected static function uploadField(Closure $vaultGalleryId, bool $multiple, string $accept): FileUpload
+    protected static function uploadField(Closure $defaultVaultGalleryId, bool $multiple, string $accept): FileUpload
     {
         $mimes = match ($accept) {
             'videos' => ['video/mp4', 'video/webm', 'video/quicktime'],
@@ -174,7 +175,17 @@ final class VmediaFilamentBrowser
 
         return FileUpload::make('upload_files')
             ->label(__('vmedia::admin.picker.upload_in_modal'))
-            ->helperText(__('vmedia::admin.picker.upload_in_modal_help'))
+            ->helperText(function (Get $get) use ($defaultVaultGalleryId): string {
+                $target = GalleryUploadTarget::payload(
+                    is_numeric($get('parent_folder_id')) ? (int) $get('parent_folder_id') : null,
+                    is_numeric($get('gallery_id')) ? (int) $get('gallery_id') : null,
+                    $defaultVaultGalleryId(),
+                );
+
+                return __('vmedia::admin.picker.upload_destination_help', [
+                    'path' => $target['path'] !== '' ? $target['path'] : $target['name'],
+                ]);
+            })
             ->multiple($multiple)
             ->storeFiles(false)
             ->dehydrated(false)
@@ -184,12 +195,18 @@ final class VmediaFilamentBrowser
             ->rules([
                 File::types($extensions)->max($maxKb),
             ])
-            ->afterStateUpdated(function (mixed $state, Set $set, Get $get) use ($vaultGalleryId, $multiple): void {
+            ->afterStateUpdated(function (mixed $state, Set $set, Get $get) use ($defaultVaultGalleryId, $multiple): void {
                 if (blank($state)) {
                     return;
                 }
 
-                $uuids = self::storeFilesToVault($state, $vaultGalleryId());
+                $target = GalleryUploadTarget::resolveFromBrowse(
+                    is_numeric($get('parent_folder_id')) ? (int) $get('parent_folder_id') : null,
+                    is_numeric($get('gallery_id')) ? (int) $get('gallery_id') : null,
+                    $defaultVaultGalleryId(),
+                );
+
+                $uuids = self::storeFilesToVault($state, $target);
 
                 if ($uuids === []) {
                     $set('upload_files', []);
@@ -219,15 +236,11 @@ final class VmediaFilamentBrowser
     /**
      * @return list<string>
      */
-    protected static function storeFilesToVault(mixed $files, ?int $galleryId): array
+    protected static function storeFilesToVault(mixed $files, MediaGallery $targetGallery): array
     {
         if (! is_array($files)) {
             $files = filled($files) ? [$files] : [];
         }
-
-        $gallery = $galleryId !== null
-            ? MediaGallery::query()->find($galleryId)
-            : null;
 
         $uuids = [];
 
@@ -237,9 +250,7 @@ final class VmediaFilamentBrowser
             }
 
             UploadGuard::assertSafeUpload($file);
-            $stored = $gallery !== null
-                ? MediaLibrary::store($file, $gallery)
-                : MediaLibrary::store($file);
+            $stored = MediaLibrary::store($file, $targetGallery);
             $uuids[] = (string) $stored->uuid;
         }
 

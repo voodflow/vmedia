@@ -82,7 +82,7 @@ VmediaPicker::make('gallery')
 |--------|------|------|
 | `GET` | `/vmedia/media/galleries` | Gallery list + counts |
 | `GET` | `/vmedia/media?page=&per_page=&gallery_id=&type=&q=` | Paginated assets (`type`: image\|video\|file) |
-| `POST` | `/vmedia/media/upload` | Upload → **default gallery only** |
+| `POST` | `/vmedia/media/upload` | Upload; optional `gallery_id` (folder/album — folders resolve to library album) |
 | `DELETE` | `/vmedia/media/{media}` | Soft-delete (`?force=1` force-deletes) |
 
 All routes require authentication (and optional Gate ability `VMEDIA_ABILITY`).

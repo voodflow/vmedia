@@ -59,7 +59,7 @@ Authenticated (`web`, `auth`, throttle, optional Gate ability):
 
 - `GET vmedia/media/galleries`
 - `GET vmedia/media`
-- `POST vmedia/media/upload`
+- `POST vmedia/media/upload` — body: `file`, optional `gallery_id` (folder or album; folders → library album)
 - `DELETE vmedia/media/{media}` (`?force=1`)
 
 Optional builder aliases when `VMEDIA_VOODBUILDER_EDITOR_ROUTES=true`.
@@ -72,7 +72,7 @@ Optional builder aliases when `VMEDIA_VOODBUILDER_EDITOR_ROUTES=true`.
 
 ## Do / don't
 
-- **Do** keep uploads on the vault + default gallery path
+- **Do** keep uploads on the vault; resolve destination with `GalleryUploadTarget` (browse selection or default gallery)
 - **Do** reject non-allow-listed MIME and traversal in filenames
 - **Do** use `VmediaPicker` / `HasAttachedMedia` from sibling plugins
 - **Don't** expose media routes without `auth`
