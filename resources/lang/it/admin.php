@@ -158,8 +158,15 @@ return [
     ],
     'plugin_roots' => [
         'exhibitors' => 'Espositori',
+        'events' => 'Eventi',
         'sponsors' => 'Sponsor',
         'partners' => 'Partner',
+        'vtuts' => 'Tutorial',
+        'vdocs' => 'Documenti',
+        'voodbuilder' => 'Builder',
+        'vforms' => 'Moduli',
+        'logos' => 'Loghi',
+        'logos_library' => 'Libreria',
     ],
     'galleries' => [
         'navigation' => 'Gallerie',

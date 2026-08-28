@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Voodflow\Vmedia\Console\EnsurePluginVaultRootsCommand;
 use Voodflow\Vmedia\Console\InstallCommand;
 use Voodflow\Vmedia\Console\PruneOrphansCommand;
 use Voodflow\Vmedia\Console\StatsCommand;
@@ -39,6 +40,7 @@ class VmediaServiceProvider extends PackageServiceProvider
                 InstallCommand::class,
                 StatsCommand::class,
                 PruneOrphansCommand::class,
+                EnsurePluginVaultRootsCommand::class,
             ]);
     }
 
