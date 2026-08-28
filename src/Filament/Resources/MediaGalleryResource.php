@@ -24,6 +24,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Voodflow\Vmedia\Filament\Forms\Components\GalleryMediaManager;
@@ -34,6 +35,7 @@ use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource\Pages\ListMediaGalle
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Support\FileTypeIcon;
+use Voodflow\Vmedia\Support\GalleryDisplay;
 use Voodflow\Vmedia\Support\GalleryPath;
 use Voodflow\Vmedia\Support\MediaLibrary;
 
@@ -176,19 +178,26 @@ class MediaGalleryResource extends Resource
         ]);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return GalleryDisplay::applyTreeOrdering(
+            parent::getEloquentQuery()->with(['parent']),
+        );
+    }
+
     public static function table(Table $table): Table
     {
         return $table
-            ->defaultSort('sort_order')
+            ->modifyQueryUsing(fn (Builder $query): Builder => GalleryDisplay::applyTreeOrdering($query))
             ->columns([
                 TextColumn::make('name')
                     ->label(__('vmedia::admin.galleries.fields.name'))
-                    ->searchable()
-                    ->sortable()
+                    ->searchable(['name', 'slug'])
+                    ->sortable(false)
                     ->wrap()
                     ->lineClamp(2)
                     ->extraCellAttributes(['class' => 'max-w-md'])
-                    ->formatStateUsing(fn (string $state, MediaGallery $record): string => str_repeat('— ', GalleryPath::depth($record)).$state)
+                    ->formatStateUsing(fn (string $state, MediaGallery $record): string => str_repeat('— ', GalleryPath::depth($record)).GalleryDisplay::navLabel($record))
                     ->description(function (MediaGallery $record): ?string {
                         if (blank($record->description)) {
                             return null;
@@ -230,7 +239,8 @@ class MediaGalleryResource extends Resource
                     ->counts('mediaItems'),
                 TextColumn::make('children_count')
                     ->label(__('vmedia::admin.galleries.fields.children_count'))
-                    ->counts('children'),
+                    ->counts('children')
+                    ->tooltip(__('vmedia::admin.galleries.helpers.children_count')),
                 TextColumn::make('sort_order')
                     ->label(__('vmedia::admin.galleries.fields.sort_order'))
                     ->sortable(),

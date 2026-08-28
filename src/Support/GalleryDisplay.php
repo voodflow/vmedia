@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Voodflow\Vmedia\Support;
 
+use Illuminate\Database\Eloquent\Builder;
 use Voodflow\Vmedia\Models\MediaGallery;
 
 /**
@@ -100,5 +101,17 @@ final class GalleryDisplay
         $walk(null, 0);
 
         return $ordered;
+    }
+
+    /**
+     * Depth-first friendly ordering for admin lists and browsers.
+     */
+    public static function applyTreeOrdering(Builder $query): Builder
+    {
+        return $query
+            ->orderByRaw('COALESCE(parent_id, id)')
+            ->orderByRaw('CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END')
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 }
