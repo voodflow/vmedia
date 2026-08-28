@@ -53,6 +53,24 @@ gallery_id=42
 
 Builder JS sends `gallery_id` from the sidebar selection; Filament pickers resolve from folder/album filter fields.
 
+### Replace (in-place edit)
+
+`POST /vmedia/media/replace`
+
+Used by the page-builder image editor **Save** action when the canvas image carries a vmedia UUID (`data-vb-media-uuid`).
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `uuid` | yes | Vault media UUID to update. |
+| `file` | yes | New image bytes (JPEG from the editor pipeline). |
+| `name` | no | Optional display name update. |
+
+On the **first** replace, vmedia copies the previous file to `{directory}/.originals/{uuid}.{ext}` and stores the path in `custom_properties.original_backup_path`.
+
+**Save as copy** uses `POST /vmedia/media/upload` with optional `derived_from_uuid` instead.
+
+Compat route alias: `POST /voodbuilder/editor/media/replace` when editor routes are enabled.
+
 ## PHP: `GalleryUploadTarget`
 
 ```php
