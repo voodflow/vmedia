@@ -6,7 +6,7 @@ namespace Voodflow\Vmedia\Support\Integration;
 
 use InvalidArgumentException;
 use Voodflow\Vmedia\Models\MediaGallery;
-use Voodflow\Vmedia\Support\EntityVaultGallery;
+use Voodflow\Vmedia\Support\GalleryUploadTarget;
 
 /**
  * Default upload/browse album inside each plugin vault root folder.
@@ -27,12 +27,6 @@ final class PluginVaultLibraryGallery
             default => throw new InvalidArgumentException("Unknown vmedia vault plugin [{$integrationSource}]."),
         };
 
-        return EntityVaultGallery::ensure(
-            integrationSource: $integrationSource,
-            integrationKey: 'library',
-            name: (string) __('vmedia::admin.plugin_roots.library'),
-            slug: 'library',
-            parentGroup: $group,
-        );
+        return GalleryUploadTarget::resolve((int) $group->getKey());
     }
 }

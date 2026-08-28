@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Voodflow\Vmedia\Tests\Unit;
 
 use Voodflow\Vmedia\Models\MediaGallery;
+use Voodflow\Vmedia\Support\GalleryPath;
 use Voodflow\Vmedia\Support\GalleryUploadTarget;
 use Voodflow\Vmedia\Support\Integration\PluginVaultLibraryGallery;
 use Voodflow\Vmedia\Support\Integration\PluginVaultRootGroup;
@@ -30,6 +31,15 @@ class GalleryUploadTargetTest extends TestCase
         $resolved = GalleryUploadTarget::resolve((int) $library->getKey());
 
         $this->assertSame((int) $library->getKey(), (int) $resolved->getKey());
+    }
+
+    public function test_plugin_vault_library_matches_group_resolve(): void
+    {
+        $library = PluginVaultLibraryGallery::album('voodbuilder');
+        $resolved = GalleryUploadTarget::resolve((int) PluginVaultRootGroup::voodbuilder()->getKey());
+
+        $this->assertSame((int) $library->getKey(), (int) $resolved->getKey());
+        $this->assertStringStartsWith('voodbuilder/library', GalleryPath::toPath($library));
     }
 
     public function test_payload_includes_path(): void

@@ -67,13 +67,28 @@ final class GalleryUploadTarget
 
     protected static function resolveAlbumForGroup(MediaGallery $group): MediaGallery
     {
+        $parentId = (int) $group->getKey();
+        $scopedKey = 'group:'.$parentId.':library';
+
         $library = MediaGallery::query()
-            ->where('parent_id', $group->getKey())
+            ->where('parent_id', $parentId)
             ->where('kind', MediaGallery::KIND_ALBUM)
-            ->where(function ($query): void {
-                $query->where('slug', 'library')
-                    ->orWhere('integration_key', 'library');
+            ->where(function ($query) use ($scopedKey, $group): void {
+                $query->where('integration_key', $scopedKey);
+
+                if (filled($group->integration_source)) {
+                    $query->orWhere(function ($query) use ($group): void {
+                        $query->where('integration_source', (string) $group->integration_source)
+                            ->where('slug', 'library');
+                    })->orWhere(function ($query) use ($group): void {
+                        $query->where('integration_source', (string) $group->integration_source)
+                            ->where('integration_key', 'library');
+                    });
+                } else {
+                    $query->orWhere('slug', 'library');
+                }
             })
+            ->orderByRaw('CASE WHEN integration_key = ? THEN 0 ELSE 1 END', [$scopedKey])
             ->orderBy('sort_order')
             ->orderBy('id')
             ->first();
@@ -99,7 +114,7 @@ final class GalleryUploadTarget
             'kind' => MediaGallery::KIND_ALBUM,
             'parent' => $group,
             'integration_source' => filled($group->integration_source) ? (string) $group->integration_source : 'vmedia',
-            'integration_key' => 'group:'.$group->getKey().':library',
+            'integration_key' => $scopedKey,
         ]);
     }
 }
