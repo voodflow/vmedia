@@ -20,13 +20,13 @@ window.vmediaMarkdownEditorSetUp = function vmediaMarkdownEditorSetUp(editorComp
 
     const wire = editorComponent.$wire
 
-    if (!wire?.mountFormComponentAction) {
+    if (!wire?.mountAction) {
         return
     }
 
     const openLibrary = (event) => {
         event.preventDefault()
-        wire.mountFormComponentAction(componentKey, 'insertVmediaImage')
+        wire.mountAction('insertVmediaImage', {}, { schemaComponent: componentKey })
     }
 
     const bar = editorComponent.editor?.gui?.toolbar
