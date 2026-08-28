@@ -9,7 +9,6 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ViewField;
@@ -21,12 +20,14 @@ use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Voodflow\Vmedia\Concerns\HasAttachedMedia;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Support\AttachmentMeta;
 use Voodflow\Vmedia\Support\FileTypeIcon;
+use Voodflow\Vmedia\Support\GalleryBrowser;
 use Voodflow\Vmedia\Support\MediaLibrary;
 use Voodflow\Vmedia\Support\UploadGuard;
 
@@ -52,6 +53,10 @@ class VmediaPicker extends Field
     protected bool|Closure $isMultiple = false;
 
     protected bool|Closure $uploadEnabled = true;
+
+    protected int|Closure|null $vaultGalleryId = null;
+
+    protected bool|Closure $vaultGalleryLocked = false;
 
     protected function setUp(): void
     {
@@ -103,12 +108,30 @@ class VmediaPicker extends Field
                 ->get()
                 ->keyBy(fn (MediaItem $media): string => (string) $media->uuid);
 
+            $allowedGalleryId = $component->getVaultGalleryId();
+            $existingUuids = [];
+
+            if ($record !== null && self::usesAttachedMedia($record)) {
+                $existingUuids = $record->load('media')
+                    ->getMedia($component->getCollection() ?? 'default')
+                    ->map(fn (MediaItem $media): string => (string) $media->uuid)
+                    ->all();
+            }
+
             $entries = [];
 
             foreach ($items as $item) {
                 $media = $byUuid->get($item['uuid']);
 
                 if ($media === null) {
+                    continue;
+                }
+
+                if (
+                    $allowedGalleryId !== null
+                    && ! in_array($item['uuid'], $existingUuids, true)
+                    && ! $media->galleries()->whereKey($allowedGalleryId)->exists()
+                ) {
                     continue;
                 }
 
@@ -129,7 +152,6 @@ class VmediaPicker extends Field
 
         $this->hintActions([
             $this->browseAction(),
-            $this->uploadAction(),
             $this->clearAction(),
         ]);
     }
@@ -256,7 +278,7 @@ class VmediaPicker extends Field
     protected function browseAction(): Action
     {
         return Action::make('browseLibrary')
-            ->label(fn (): string => __('vmedia::admin.picker.browse'))
+            ->label(fn (): string => __('vmedia::admin.picker.choose_media'))
             ->icon('heroicon-o-photo')
             ->link()
             ->modalHeading(fn (): string => __('vmedia::admin.picker.modal_heading'))
@@ -267,41 +289,40 @@ class VmediaPicker extends Field
             ->schema(function (): array {
                 $picker = $this;
                 $perPage = max(8, min(48, (int) config('vmedia.browser.picker_per_page', 20)));
+                $lockedGallery = $picker->isVaultGalleryLocked();
+                $uploadField = $picker->isUploadEnabled()
+                    ? $picker->browseUploadField()
+                    : null;
 
-                return [
-                    Grid::make(2)->schema([
-                        Select::make('gallery_id')
-                            ->label(__('vmedia::admin.library.gallery'))
-                            ->options(fn (): array => MediaGallery::query()->orderBy('sort_order')->pluck('name', 'id')->all())
-                            ->searchable()
-                            ->live()
-                            ->nullable()
-                            ->afterStateUpdated(fn (Set $set) => $set('browser_page', 1)),
-                        TextInput::make('q')
-                            ->label(__('vmedia::admin.picker.search'))
-                            ->placeholder(__('vmedia::admin.picker.search_placeholder'))
-                            ->live(debounce: 300)
-                            ->nullable()
-                            ->afterStateUpdated(fn (Set $set) => $set('browser_page', 1)),
-                    ]),
+                return array_values(array_filter([
+                    $uploadField,
+                    Grid::make($lockedGallery ? 1 : 3)->schema(GalleryBrowser::filterFields($lockedGallery)),
                     Hidden::make('browser_page')
                         ->default(1)
                         ->live()
                         ->dehydrated(false),
+                    Hidden::make('browser_nonce')
+                        ->default(0)
+                        ->live()
+                        ->dehydrated(false),
                     ViewField::make('media_uuids')
                         ->hiddenLabel()
-                        ->required()
+                        ->live()
                         ->view('vmedia::forms.components.media-browser-grid')
                         ->viewData(function (Get $get) use ($picker, $perPage): array {
-                            $galleryId = $get('gallery_id');
+                            $get('browser_nonce');
+
+                            $parentFolderId = is_numeric($get('parent_folder_id')) ? (int) $get('parent_folder_id') : null;
+                            $galleryId = is_numeric($get('gallery_id')) ? (int) $get('gallery_id') : null;
                             $search = $get('q');
                             $page = max(1, (int) ($get('browser_page') ?? 1));
 
                             $result = $picker->browserPage(
-                                is_numeric($galleryId) ? (int) $galleryId : null,
+                                $galleryId,
                                 is_string($search) && trim($search) !== '' ? trim($search) : null,
                                 $page,
                                 $perPage,
+                                $parentFolderId,
                             );
 
                             return [
@@ -310,15 +331,18 @@ class VmediaPicker extends Field
                                 'multiple' => $picker->isMultiple(),
                             ];
                         }),
-                ];
+                ]));
             })
             ->fillForm(function (): array {
                 $uuids = $this->normalizedUuids();
+                $filters = GalleryBrowser::defaultPickerFilters($this->getVaultGalleryId());
 
                 return [
-                    'gallery_id' => (int) MediaGallery::default()->getKey(),
+                    'parent_folder_id' => $filters['parent_folder_id'],
+                    'gallery_id' => $filters['gallery_id'],
                     'q' => null,
                     'browser_page' => 1,
+                    'upload_files' => [],
                     'media_uuids' => $this->isMultiple() ? $uuids : ($uuids[0] ?? null),
                 ];
             })
@@ -328,6 +352,12 @@ class VmediaPicker extends Field
                     ? array_values(array_filter(array_map('strval', $raw)))
                     : (filled($raw) ? [(string) $raw] : []);
 
+                if ($uuids === []) {
+                    throw ValidationException::withMessages([
+                        'media_uuids' => [__('vmedia::admin.picker.selection_required')],
+                    ]);
+                }
+
                 $this->applyUuidsToState($set, $uuids, replace: true);
 
                 Notification::make()
@@ -335,6 +365,88 @@ class VmediaPicker extends Field
                     ->title(__('vmedia::admin.picker.selected'))
                     ->send();
             });
+    }
+
+    protected function browseUploadField(): FileUpload
+    {
+        $picker = $this;
+        $mimes = $this->acceptedMimeTypes();
+        $extensions = $this->acceptedExtensions();
+        $maxKb = max(
+            (int) config('vmedia.upload.image_max_kb', 8192),
+            (int) config('vmedia.upload.video_max_kb', 51200),
+            (int) config('vmedia.upload.file_max_kb', 20480),
+        );
+
+        return FileUpload::make('upload_files')
+            ->label(__('vmedia::admin.picker.upload_in_modal'))
+            ->helperText(__('vmedia::admin.picker.upload_in_modal_help'))
+            ->multiple($this->isMultiple())
+            ->storeFiles(false)
+            ->dehydrated(false)
+            ->panelLayout('compact')
+            ->live()
+            ->acceptedFileTypes($mimes)
+            ->rules([
+                File::types($extensions)->max($maxKb),
+            ])
+            ->afterStateUpdated(function (mixed $state, Set $set, Get $get) use ($picker): void {
+                if (blank($state)) {
+                    return;
+                }
+
+                $uploadUuids = $picker->storeFilesToVault($state);
+
+                if ($uploadUuids === []) {
+                    $set('upload_files', []);
+
+                    return;
+                }
+
+                $raw = $get('media_uuids');
+                $current = is_array($raw)
+                    ? array_values(array_filter(array_map('strval', $raw)))
+                    : (filled($raw) ? [(string) $raw] : []);
+
+                if ($picker->isMultiple()) {
+                    $set('media_uuids', array_values(array_unique([...$current, ...$uploadUuids])));
+                } else {
+                    $set('media_uuids', $uploadUuids[0]);
+                }
+
+                $set('upload_files', []);
+                $set('browser_page', 1);
+                $set('browser_nonce', ((int) ($get('browser_nonce') ?? 0)) + 1);
+            })
+            ->columnSpanFull()
+            ->extraAttributes(['class' => 'vmedia-picker-instant-upload']);
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function storeFilesToVault(mixed $files): array
+    {
+        if (! is_array($files)) {
+            $files = filled($files) ? [$files] : [];
+        }
+
+        $uuids = [];
+
+        foreach ($files as $file) {
+            if (! $file instanceof TemporaryUploadedFile && ! $file instanceof UploadedFile) {
+                continue;
+            }
+
+            UploadGuard::assertSafeUpload($file);
+            $gallery = $this->resolveUploadGallery();
+            $stored = $gallery !== null
+                ? MediaLibrary::store($file, $gallery)
+                : MediaLibrary::store($file);
+            $uuids[] = (string) $stored->uuid;
+        }
+
+        return array_values(array_unique($uuids));
     }
 
     protected function uploadAction(): Action
@@ -368,25 +480,11 @@ class VmediaPicker extends Field
                 ];
             })
             ->action(function (array $data, Set $set): void {
-                $files = $data['files'] ?? [];
+                $uuids = array_values(array_unique([
+                    ...$this->storeFilesToVault($data['files'] ?? []),
+                    ...$this->normalizedUuids(),
+                ]));
 
-                if (! is_array($files)) {
-                    $files = [$files];
-                }
-
-                $uuids = $this->normalizedUuids();
-
-                foreach ($files as $file) {
-                    if (! $file instanceof TemporaryUploadedFile && ! $file instanceof UploadedFile) {
-                        continue;
-                    }
-
-                    UploadGuard::assertSafeUpload($file);
-                    $stored = MediaLibrary::store($file);
-                    $uuids[] = (string) $stored->uuid;
-                }
-
-                $uuids = array_values(array_unique($uuids));
                 $this->applyUuidsToState($set, $uuids, replace: true);
 
                 Notification::make()
@@ -566,6 +664,41 @@ class VmediaPicker extends Field
         return (bool) $this->evaluate($this->attachToRecord);
     }
 
+    public function vaultGallery(int|Closure|null $galleryId, bool|Closure $lock = true): static
+    {
+        $this->vaultGalleryId = $galleryId;
+        $this->vaultGalleryLocked = $lock;
+
+        return $this;
+    }
+
+    public function getVaultGalleryId(): ?int
+    {
+        $value = $this->evaluate($this->vaultGalleryId);
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (int) $value;
+    }
+
+    public function isVaultGalleryLocked(): bool
+    {
+        return (bool) $this->evaluate($this->vaultGalleryLocked);
+    }
+
+    protected function resolveUploadGallery(): ?MediaGallery
+    {
+        $galleryId = $this->getVaultGalleryId();
+
+        if ($galleryId === null) {
+            return null;
+        }
+
+        return MediaGallery::query()->find($galleryId);
+    }
+
     /**
      * @return list<array{uuid: string, caption: string|null, alt: string|null, credits: string|null}>
      */
@@ -647,8 +780,13 @@ class VmediaPicker extends Field
      *   meta: array{current_page: int, last_page: int, per_page: int, total: int, has_more: bool}
      * }
      */
-    public function browserPage(?int $galleryId = null, ?string $search = null, int $page = 1, int $perPage = 20): array
-    {
+    public function browserPage(
+        ?int $galleryId = null,
+        ?string $search = null,
+        int $page = 1,
+        int $perPage = 20,
+        ?int $parentFolderId = null,
+    ): array {
         $type = match ($this->getAccept()) {
             'images', 'image' => 'image',
             'videos', 'video' => 'video',
@@ -656,7 +794,7 @@ class VmediaPicker extends Field
             default => null,
         };
 
-        $result = MediaLibrary::paginateAssets($type, $galleryId, $search, max(1, $page), max(1, $perPage));
+        $result = GalleryBrowser::paginateForPicker($type, $parentFolderId, $galleryId, $search, max(1, $page), max(1, $perPage));
 
         return [
             'assets' => array_map(
@@ -745,11 +883,14 @@ class VmediaPicker extends Field
      */
     public function getViewData(): array
     {
+        $record = $this->getRecord();
+
         return [
             'selected' => $this->selectedPayload(),
             'stateItems' => $this->normalizedItems(),
             'isMultiple' => $this->isMultiple(),
             'editActionKey' => $this->getKey(),
+            'recordKey' => $record?->getKey() ?? 'new',
         ];
     }
 

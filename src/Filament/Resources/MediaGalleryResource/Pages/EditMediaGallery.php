@@ -16,6 +16,12 @@ class EditMediaGallery extends EditRecord
     /** @var list<string> */
     protected array $pendingGalleryMedia = [];
 
+    /** @var list<int> */
+    protected array $pendingTagIds = [];
+
+    /** @var list<int> */
+    protected array $pendingAllowedTagIds = [];
+
     protected function getHeaderActions(): array
     {
         return [
@@ -32,7 +38,11 @@ class EditMediaGallery extends EditRecord
     {
         /** @var MediaGallery $record */
         $record = $this->record;
+        $record->load(['tags', 'allowedTags']);
+
         $data['gallery_media'] = $record->orderedMediaUuids();
+        $data['tag_ids'] = $record->tags->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $data['allowed_tag_ids'] = $record->allowedTags->pluck('id')->map(fn ($id): int => (int) $id)->all();
 
         return $data;
     }
@@ -43,12 +53,7 @@ class EditMediaGallery extends EditRecord
      */
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        $raw = $data['gallery_media'] ?? [];
-        $this->pendingGalleryMedia = is_array($raw)
-            ? array_values(array_filter(array_map('strval', $raw)))
-            : [];
-
-        unset($data['gallery_media']);
+        $this->captureVirtualFields($data);
 
         return $data;
     }
@@ -57,6 +62,37 @@ class EditMediaGallery extends EditRecord
     {
         /** @var MediaGallery $record */
         $record = $this->record;
-        $record->syncOrderedMedia($this->pendingGalleryMedia);
+        $this->syncVirtualFields($record);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function captureVirtualFields(array &$data): void
+    {
+        $raw = $data['gallery_media'] ?? [];
+        $this->pendingGalleryMedia = is_array($raw)
+            ? array_values(array_filter(array_map('strval', $raw)))
+            : [];
+
+        $this->pendingTagIds = array_values(array_map('intval', (array) ($data['tag_ids'] ?? [])));
+        $this->pendingAllowedTagIds = array_values(array_map('intval', (array) ($data['allowed_tag_ids'] ?? [])));
+
+        unset($data['gallery_media'], $data['tag_ids'], $data['allowed_tag_ids']);
+    }
+
+    protected function syncVirtualFields(MediaGallery $record): void
+    {
+        if ($record->isAlbum()) {
+            $record->syncOrderedMedia($this->pendingGalleryMedia);
+            $record->tags()->sync($this->pendingTagIds);
+            $record->allowedTags()->detach();
+        }
+
+        if ($record->isGroup()) {
+            $record->allowedTags()->sync($this->pendingAllowedTagIds);
+            $record->tags()->detach();
+            $record->mediaItems()->detach();
+        }
     }
 }

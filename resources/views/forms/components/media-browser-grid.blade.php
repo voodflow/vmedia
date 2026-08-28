@@ -15,13 +15,15 @@
     $lastPage = max(1, (int) ($meta['last_page'] ?? 1));
     $total = (int) ($meta['total'] ?? 0);
     $perPage = (int) ($meta['per_page'] ?? 20);
+    $pageUuids = array_values(array_column($assets, 'uuid'));
 @endphp
 
 <div
-    wire:key="vmedia-browser-p{{ $currentPage }}-{{ md5(json_encode(array_column($assets, 'uuid'))) }}"
+    wire:key="vmedia-browser-p{{ $currentPage }}-{{ md5(json_encode($pageUuids)) }}"
     x-data="{
         selected: $wire.{{ '$entangle' }}('{{ $statePath }}'),
         multiple: {{ $multiple ? 'true' : 'false' }},
+        pageUuids: @js($pageUuids),
         view: localStorage.getItem('vmedia.browser.view') || 'grid',
         preview: null,
         setView(mode) {
@@ -53,6 +55,39 @@
 
             this.selected = list;
         },
+        selectAllOnPage() {
+            if (! this.multiple || this.pageUuids.length === 0) {
+                return;
+            }
+
+            const list = Array.isArray(this.selected) ? [...this.selected] : [];
+
+            for (const uuid of this.pageUuids) {
+                if (! list.includes(uuid)) {
+                    list.push(uuid);
+                }
+            }
+
+            this.selected = list;
+        },
+        deselectAllOnPage() {
+            if (! this.multiple || this.pageUuids.length === 0) {
+                return;
+            }
+
+            const pageSet = new Set(this.pageUuids);
+            this.selected = (Array.isArray(this.selected) ? this.selected : [])
+                .filter((uuid) => ! pageSet.has(uuid));
+        },
+        allOnPageSelected() {
+            if (! this.multiple || this.pageUuids.length === 0) {
+                return false;
+            }
+
+            const list = Array.isArray(this.selected) ? this.selected : [];
+
+            return this.pageUuids.every((uuid) => list.includes(uuid));
+        },
         openPreview(event, asset) {
             event.stopPropagation();
             this.preview = asset;
@@ -70,7 +105,33 @@
     @keydown.escape.window="if (preview) closePreview()"
 >
     <div class="vmedia-browser__toolbar">
-        <div class="vmedia-browser__view-toggle" role="group" aria-label="{{ __('vmedia::admin.picker.view_grid') }} / {{ __('vmedia::admin.picker.view_list') }}">
+        @if ($multiple && $assets !== [])
+            <div class="vmedia-browser__toolbar-start">
+                <div class="vmedia-browser__selection-actions" role="group" aria-label="{{ __('vmedia::admin.picker.select_all') }}">
+                    <button
+                        type="button"
+                        class="vmedia-browser__selection-btn"
+                        x-show="! allOnPageSelected()"
+                        x-cloak
+                        @click="selectAllOnPage()"
+                    >
+                        {{ __('vmedia::admin.picker.select_all') }}
+                    </button>
+                    <button
+                        type="button"
+                        class="vmedia-browser__selection-btn"
+                        x-show="allOnPageSelected()"
+                        x-cloak
+                        @click="deselectAllOnPage()"
+                    >
+                        {{ __('vmedia::admin.picker.deselect_all') }}
+                    </button>
+                </div>
+            </div>
+        @endif
+
+        <div @class(['vmedia-browser__toolbar-end', 'vmedia-browser__toolbar-end--solo' => ! ($multiple && $assets !== [])])>
+            <div class="vmedia-browser__view-toggle" role="group" aria-label="{{ __('vmedia::admin.picker.view_grid') }} / {{ __('vmedia::admin.picker.view_list') }}">
             <button
                 type="button"
                 class="vmedia-browser__view-btn"
@@ -89,6 +150,7 @@
                 <x-filament::icon icon="heroicon-m-bars-3" class="h-4 w-4" />
                 {{ __('vmedia::admin.picker.view_list') }}
             </button>
+        </div>
         </div>
     </div>
 

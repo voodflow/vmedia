@@ -10,25 +10,31 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Voodflow\Vmedia\Filament\Forms\Components\GalleryMediaManager;
+use Voodflow\Vmedia\Filament\Forms\MediaTagSelect;
 use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource\Pages\CreateMediaGallery;
 use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource\Pages\EditMediaGallery;
 use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource\Pages\ListMediaGalleries;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Support\FileTypeIcon;
+use Voodflow\Vmedia\Support\GalleryPath;
 use Voodflow\Vmedia\Support\MediaLibrary;
 
 class MediaGalleryResource extends Resource
@@ -68,7 +74,6 @@ class MediaGalleryResource extends Resource
     {
         $id = $gallery instanceof MediaGallery ? $gallery->getKey() : $gallery;
 
-        // Filament 5 ListRecords binds filters via #[Url(as: 'filters')], not tableFilters.
         return MediaItemResource::getUrl('index', [
             'filters' => [
                 'gallery_id' => ['value' => $id],
@@ -81,6 +86,17 @@ class MediaGalleryResource extends Resource
         return $schema->components([
             Section::make()
                 ->schema([
+                    Select::make('kind')
+                        ->label(__('vmedia::admin.galleries.fields.kind'))
+                        ->options([
+                            MediaGallery::KIND_GROUP => __('vmedia::admin.galleries.kinds.group'),
+                            MediaGallery::KIND_ALBUM => __('vmedia::admin.galleries.kinds.album'),
+                        ])
+                        ->default(MediaGallery::KIND_ALBUM)
+                        ->required()
+                        ->live()
+                        ->helperText(__('vmedia::admin.galleries.helpers.kind')),
+                    MediaTagSelect::parentFolderSelect(),
                     TextInput::make('name')
                         ->label(__('vmedia::admin.galleries.fields.name'))
                         ->required()
@@ -102,26 +118,52 @@ class MediaGalleryResource extends Resource
                         ->visibleOn('create'),
                     TextInput::make('slug')
                         ->label(__('vmedia::admin.galleries.fields.slug'))
-                        ->disabled()
-                        ->dehydrated(false)
-                        ->helperText(__('vmedia::admin.galleries.helpers.slug_locked'))
-                        ->visibleOn('edit'),
+                        ->required()
+                        ->maxLength(120)
+                        ->alphaDash()
+                        ->helperText(__('vmedia::admin.galleries.helpers.slug_editable'))
+                        ->visibleOn('edit')
+                        ->rules(fn (Get $get, ?MediaGallery $record): array => [
+                            Rule::unique((new MediaGallery)->getTable(), 'slug')
+                                ->where(
+                                    'parent_key',
+                                    (int) ($get('parent_id') ?? $record?->parent_id ?? 0),
+                                )
+                                ->ignore($record),
+                        ]),
                     Textarea::make('description')
                         ->label(__('vmedia::admin.galleries.fields.description'))
                         ->rows(3)
                         ->columnSpanFull(),
                     Toggle::make('is_default')
                         ->label(__('vmedia::admin.galleries.fields.is_default'))
-                        ->helperText(__('vmedia::admin.galleries.helpers.is_default')),
+                        ->helperText(__('vmedia::admin.galleries.helpers.is_default'))
+                        ->visible(fn (Get $get): bool => $get('kind') === MediaGallery::KIND_ALBUM),
                     Toggle::make('is_public')
                         ->label(__('vmedia::admin.galleries.fields.is_public'))
                         ->default(true),
                     TextInput::make('sort_order')
                         ->label(__('vmedia::admin.galleries.fields.sort_order'))
                         ->numeric()
-                        ->default(0),
+                        ->default(0)
+                        ->dehydrateStateUsing(fn ($state): int => filled($state) ? (int) $state : 0),
                 ])
                 ->columns(2),
+            Section::make(__('vmedia::admin.galleries.tags.allowed_section'))
+                ->description(__('vmedia::admin.galleries.tags.allowed_help'))
+                ->schema([
+                    MediaTagSelect::make('allowed_tag_ids')
+                        ->label(__('vmedia::admin.galleries.tags.allowed'))
+                        ->columnSpanFull(),
+                ])
+                ->visible(fn (Get $get): bool => $get('kind') === MediaGallery::KIND_GROUP),
+            Section::make(__('vmedia::admin.galleries.tags.section'))
+                ->schema([
+                    MediaTagSelect::make('tag_ids')
+                        ->label(__('vmedia::admin.galleries.tags.label'))
+                        ->columnSpanFull(),
+                ])
+                ->visible(fn (Get $get): bool => $get('kind') === MediaGallery::KIND_ALBUM),
             Section::make(__('vmedia::admin.galleries.media.section'))
                 ->description(__('vmedia::admin.galleries.media.section_help'))
                 ->schema([
@@ -129,7 +171,8 @@ class MediaGalleryResource extends Resource
                         ->hiddenLabel()
                         ->dehydrated(true)
                         ->columnSpanFull(),
-                ]),
+                ])
+                ->visible(fn (Get $get): bool => $get('kind') === MediaGallery::KIND_ALBUM),
         ]);
     }
 
@@ -142,9 +185,39 @@ class MediaGalleryResource extends Resource
                     ->label(__('vmedia::admin.galleries.fields.name'))
                     ->searchable()
                     ->sortable()
-                    ->description(fn (MediaGallery $record): ?string => $record->description),
-                TextColumn::make('slug')
-                    ->label(__('vmedia::admin.galleries.fields.slug'))
+                    ->wrap()
+                    ->lineClamp(2)
+                    ->extraCellAttributes(['class' => 'max-w-md'])
+                    ->formatStateUsing(fn (string $state, MediaGallery $record): string => str_repeat('— ', GalleryPath::depth($record)).$state)
+                    ->description(function (MediaGallery $record): ?string {
+                        if (blank($record->description)) {
+                            return null;
+                        }
+
+                        return Str::limit(str($record->description)->squish()->toString(), 120);
+                    })
+                    ->tooltip(function (MediaGallery $record): ?string {
+                        if (blank($record->description)) {
+                            return null;
+                        }
+
+                        $description = str($record->description)->squish()->toString();
+
+                        return strlen($description) > 120 ? $description : null;
+                    }),
+                TextColumn::make('kind')
+                    ->label(__('vmedia::admin.galleries.fields.kind'))
+                    ->badge()
+                    ->formatStateUsing(fn (string $state): string => $state === MediaGallery::KIND_GROUP
+                        ? __('vmedia::admin.galleries.kinds.group')
+                        : __('vmedia::admin.galleries.kinds.album')),
+                TextColumn::make('path')
+                    ->label(__('vmedia::admin.galleries.fields.path'))
+                    ->state(fn (MediaGallery $record): string => GalleryPath::toPath($record))
+                    ->toggleable(),
+                TextColumn::make('parent.name')
+                    ->label(__('vmedia::admin.galleries.fields.parent'))
+                    ->placeholder('—')
                     ->toggleable(),
                 IconColumn::make('is_default')
                     ->label(__('vmedia::admin.galleries.fields.is_default'))
@@ -155,9 +228,23 @@ class MediaGalleryResource extends Resource
                 TextColumn::make('media_items_count')
                     ->label(__('vmedia::admin.galleries.fields.media_count'))
                     ->counts('mediaItems'),
+                TextColumn::make('children_count')
+                    ->label(__('vmedia::admin.galleries.fields.children_count'))
+                    ->counts('children'),
                 TextColumn::make('sort_order')
                     ->label(__('vmedia::admin.galleries.fields.sort_order'))
                     ->sortable(),
+            ])
+            ->filters([
+                SelectFilter::make('kind')
+                    ->label(__('vmedia::admin.galleries.fields.kind'))
+                    ->options([
+                        MediaGallery::KIND_GROUP => __('vmedia::admin.galleries.kinds.group'),
+                        MediaGallery::KIND_ALBUM => __('vmedia::admin.galleries.kinds.album'),
+                    ]),
+                SelectFilter::make('parent_id')
+                    ->label(__('vmedia::admin.galleries.fields.parent'))
+                    ->options(fn (): array => MediaTagSelect::parentFolderOptions()),
             ])
             ->recordActions([
                 ActionGroup::make([
@@ -165,6 +252,7 @@ class MediaGalleryResource extends Resource
                     Action::make('slideshow')
                         ->label(__('vmedia::admin.galleries.media.slideshow'))
                         ->icon('heroicon-o-play')
+                        ->visible(fn (MediaGallery $record): bool => $record->isAlbum())
                         ->modalHeading(fn (MediaGallery $record): string => $record->name)
                         ->modalSubmitAction(false)
                         ->modalCancelActionLabel(__('vmedia::admin.galleries.media.close'))
@@ -197,6 +285,7 @@ class MediaGalleryResource extends Resource
                     Action::make('browse')
                         ->label(__('vmedia::admin.galleries.browse_media'))
                         ->icon('heroicon-o-photo')
+                        ->visible(fn (MediaGallery $record): bool => $record->isAlbum())
                         ->url(fn (MediaGallery $record): string => static::libraryUrlForGallery($record)),
                     DeleteAction::make()
                         ->disabled(fn (MediaGallery $record): bool => $record->is_default),

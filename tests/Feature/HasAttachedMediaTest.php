@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Voodflow\Vmedia\Tests\Feature;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Voodflow\Vmedia\Concerns\HasAttachedMedia;
 use Voodflow\Vmedia\Models\MediaGallery;
+use Voodflow\Vmedia\Support\AttachedMediaPresenter;
 use Voodflow\Vmedia\Support\AttachmentMeta;
 use Voodflow\Vmedia\Support\MediaLibrary;
 use Voodflow\Vmedia\Tests\TestCase;
@@ -20,6 +22,10 @@ class HasAttachedMediaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Relation::morphMap([
+            'vmedia_attachable_dummy' => VmediaAttachableDummy::class,
+        ]);
 
         Schema::create('vmedia_attachable_dummies', function (Blueprint $table): void {
             $table->id();
@@ -120,6 +126,22 @@ class HasAttachedMediaTest extends TestCase
             [(string) $b->uuid, (string) $a->uuid],
             $gallery->fresh()->orderedMediaUuids(),
         );
+    }
+
+    public function test_presenter_builds_limited_slides(): void
+    {
+        Storage::fake('public');
+
+        $record = VmediaAttachableDummy::query()->create(['name' => 'Booth']);
+        $first = MediaLibrary::store(UploadedFile::fake()->image('one.png', 8, 8));
+        $second = MediaLibrary::store(UploadedFile::fake()->image('two.png', 8, 8));
+
+        $record->syncMediaCollection('gallery', [(int) $first->getKey(), (int) $second->getKey()]);
+
+        $slides = AttachedMediaPresenter::slides($record, 'gallery', ['limit' => 1]);
+
+        $this->assertCount(1, $slides);
+        $this->assertStringContainsString('/storage/', $slides[0]->url);
     }
 }
 

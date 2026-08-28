@@ -12,6 +12,7 @@ use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\ValidationException;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
+use Voodflow\Vmedia\Support\GalleryPath;
 use Voodflow\Vmedia\Support\MediaLibrary;
 use Voodflow\Vmedia\Support\UploadGuard;
 
@@ -32,6 +33,7 @@ class MediaController extends Controller
 
         return response()->json([
             'data' => MediaLibrary::listGalleries($type),
+            'tree' => GalleryPath::treePayload(),
             'default_gallery_id' => (int) $default->getKey(),
             'upload_gallery_id' => (int) $default->getKey(),
         ]);
@@ -49,8 +51,18 @@ class MediaController extends Controller
         $search = is_string($search) ? trim($search) : null;
         $page = max(1, (int) $request->query('page', 1));
         $perPage = (int) $request->query('per_page', config('vmedia.browser.per_page', 48));
+        $includeDescendants = $request->boolean('include_descendants');
+        $tagIds = array_values(array_filter(array_map('intval', (array) $request->query('tag_ids', []))));
 
-        $result = MediaLibrary::paginateAssets($type, $galleryId, $search !== '' ? $search : null, $page, $perPage);
+        $result = MediaLibrary::paginateAssets(
+            $type,
+            $galleryId,
+            $search !== '' ? $search : null,
+            $page,
+            $perPage,
+            $includeDescendants,
+            $tagIds,
+        );
 
         return response()->json([
             'data' => $result['data'],

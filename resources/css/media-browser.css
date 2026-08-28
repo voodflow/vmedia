@@ -3,6 +3,14 @@
  * Inspired by clean square-tile gallery UIs (e.g. Filament Gallery plugins).
  */
 
+.vmedia-picker-instant-upload .filepond--list {
+    display: none;
+}
+
+.vmedia-picker-instant-upload .filepond--root {
+    margin-bottom: 0;
+}
+
 .vmedia-browser {
     display: flex;
     flex-direction: column;
@@ -11,7 +19,66 @@
 
 .vmedia-browser__toolbar {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+}
+
+.vmedia-browser__toolbar-start {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.vmedia-browser__toolbar-end {
+    display: flex;
+    align-items: center;
     justify-content: flex-end;
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+
+.vmedia-browser__toolbar-end--solo {
+    width: 100%;
+}
+
+.vmedia-browser__selection-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.vmedia-browser__selection-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.625rem;
+    border: 0;
+    border-radius: 0.375rem;
+    background: rgba(243, 244, 246, 0.95);
+    color: #374151;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.vmedia-browser__selection-btn:hover {
+    background: rgba(229, 231, 235, 0.95);
+    color: #111827;
+}
+
+.dark .vmedia-browser__selection-btn,
+:is(.dark) .vmedia-browser__selection-btn {
+    background: rgba(31, 41, 55, 0.95);
+    color: #e5e7eb;
+}
+
+.dark .vmedia-browser__selection-btn:hover,
+:is(.dark) .vmedia-browser__selection-btn:hover {
+    background: rgba(55, 65, 81, 0.95);
+    color: #f9fafb;
 }
 
 .vmedia-browser__view-toggle {

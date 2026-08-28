@@ -11,6 +11,7 @@ use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Support\Facades\File;
 use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource;
 use Voodflow\Vmedia\Filament\Resources\MediaItemResource;
+use Voodflow\Vmedia\Filament\Resources\MediaTagResource;
 use Voodflow\Vmedia\Filament\Widgets\MediaStatsWidget;
 
 /**
@@ -53,6 +54,7 @@ class VmediaPlugin implements Plugin
             ->resources([
                 MediaGalleryResource::class,
                 MediaItemResource::class,
+                MediaTagResource::class,
             ])
             ->widgets([
                 MediaStatsWidget::class,

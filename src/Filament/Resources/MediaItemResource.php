@@ -36,12 +36,13 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\File;
-use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Voodflow\Vmedia\Filament\Forms\MediaTagSelect;
 use Voodflow\Vmedia\Filament\Resources\MediaItemResource\Pages\ManageMediaItems;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
+use Voodflow\Vmedia\Models\MediaTag;
 use Voodflow\Vmedia\Models\MediaVault;
 use Voodflow\Vmedia\Support\FileTypeIcon;
 use Voodflow\Vmedia\Support\MediaLibrary;
@@ -188,12 +189,25 @@ class MediaItemResource extends Resource
             ->filters([
                 SelectFilter::make('gallery_id')
                     ->label(__('vmedia::admin.library.gallery'))
-                    ->options(fn (): array => MediaGallery::query()->orderBy('sort_order')->pluck('name', 'id')->all())
+                    ->options(fn (): array => MediaGallery::query()->where('kind', MediaGallery::KIND_ALBUM)->orderBy('sort_order')->pluck('name', 'id')->all())
                     ->query(function (Builder $query, array $data): Builder {
                         $value = $data['value'] ?? null;
 
                         if (filled($value)) {
                             $query->whereHas('galleries', fn (Builder $builder): Builder => $builder->whereKey($value));
+                        }
+
+                        return $query;
+                    }),
+                SelectFilter::make('tag_ids')
+                    ->label(__('vmedia::admin.library.tags'))
+                    ->multiple()
+                    ->options(fn (): array => MediaTag::query()->orderBy('sort_order')->pluck('name', 'id')->all())
+                    ->query(function (Builder $query, array $data): Builder {
+                        $values = array_values(array_filter((array) ($data['values'] ?? [])));
+
+                        if ($values !== []) {
+                            $query->whereHas('tags', fn (Builder $builder): Builder => $builder->whereIn('id', $values));
                         }
 
                         return $query;
@@ -216,19 +230,14 @@ class MediaItemResource extends Resource
                         ->url(fn (MediaItem $record): string => MediaLibrary::publicUrl($record))
                         ->openUrlInNewTab(),
                     DeleteAction::make()
+                        ->modalDescription(fn (MediaItem $record): ?string => MediaUsage::attachmentCount($record) > 0
+                            ? __('vmedia::admin.library.delete_detach_confirm', [
+                                'count' => MediaUsage::attachmentCount($record),
+                            ])
+                            : null)
                         ->successNotificationTitle(__('vmedia::admin.library.deleted'))
                         ->using(function (MediaItem $record): void {
-                            try {
-                                MediaLibrary::delete($record, force: false);
-                            } catch (ValidationException $exception) {
-                                Notification::make()
-                                    ->danger()
-                                    ->title($exception->getMessage())
-                                    ->body(collect($exception->errors())->flatten()->implode(' '))
-                                    ->send();
-
-                                throw $exception;
-                            }
+                            MediaLibrary::delete($record, force: false);
                         }),
                     RestoreAction::make()
                         ->using(fn (MediaItem $record) => MediaLibrary::restore($record)),
@@ -275,7 +284,11 @@ class MediaItemResource extends Resource
                         ->schema([
                             Select::make('gallery_ids')
                                 ->label(__('vmedia::admin.library.galleries'))
-                                ->options(fn (): array => MediaGallery::query()->orderBy('sort_order')->pluck('name', 'id')->all())
+                                ->options(fn (): array => MediaGallery::query()
+                                    ->where('kind', MediaGallery::KIND_ALBUM)
+                                    ->orderBy('sort_order')
+                                    ->pluck('name', 'id')
+                                    ->all())
                                 ->multiple()
                                 ->required()
                                 ->searchable(),
@@ -294,6 +307,40 @@ class MediaItemResource extends Resource
                             Notification::make()
                                 ->success()
                                 ->title(__('vmedia::admin.library.bulk_assign_done'))
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('assignTags')
+                        ->label(__('vmedia::admin.library.bulk_assign_tags'))
+                        ->icon('heroicon-o-tag')
+                        ->schema([
+                            MediaTagSelect::make('tag_ids')
+                                ->label(__('vmedia::admin.library.tags'))
+                                ->required(),
+                            Toggle::make('replace')
+                                ->label(__('vmedia::admin.library.bulk_replace'))
+                                ->default(false),
+                        ])
+                        ->action(function (Collection $records, array $data): void {
+                            $tagIds = array_values(array_map('intval', (array) ($data['tag_ids'] ?? [])));
+
+                            foreach ($records as $record) {
+                                if (! $record instanceof MediaItem) {
+                                    continue;
+                                }
+
+                                if ((bool) ($data['replace'] ?? false)) {
+                                    $record->tags()->sync($tagIds);
+
+                                    continue;
+                                }
+
+                                $record->tags()->syncWithoutDetaching($tagIds);
+                            }
+
+                            Notification::make()
+                                ->success()
+                                ->title(__('vmedia::admin.library.bulk_assign_tags_done'))
                                 ->send();
                         })
                         ->deselectRecordsAfterCompletion(),
@@ -321,16 +368,25 @@ class MediaItemResource extends Resource
                         })
                         ->deselectRecordsAfterCompletion(),
                     DeleteBulkAction::make()
+                        ->modalDescription(function (Collection $records): ?string {
+                            $used = $records
+                                ->filter(fn (mixed $record): bool => $record instanceof MediaItem)
+                                ->filter(fn (MediaItem $record): bool => MediaUsage::attachmentCount($record) > 0)
+                                ->count();
+
+                            if ($used === 0) {
+                                return null;
+                            }
+
+                            return __('vmedia::admin.library.delete_detach_bulk_confirm', [
+                                'count' => $used,
+                                'total' => $records->count(),
+                            ]);
+                        })
                         ->using(function (Collection $records): void {
                             foreach ($records as $record) {
-                                if (! $record instanceof MediaItem) {
-                                    continue;
-                                }
-
-                                try {
+                                if ($record instanceof MediaItem) {
                                     MediaLibrary::delete($record, force: false);
-                                } catch (ValidationException) {
-                                    // Skip protected rows; UI still completes for the rest.
                                 }
                             }
                         }),

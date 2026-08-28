@@ -85,9 +85,10 @@ return [
 
     'usage' => [
         /*
-        | Block delete when the media is attached to domain models, unless force is used.
+        | Detaching domain attachments before delete is always applied when media is in use.
+        | Legacy flag kept for compatibility; no longer blocks soft delete.
         */
-        'protect_delete' => env('VMEDIA_PROTECT_DELETE', true),
+        'protect_delete' => env('VMEDIA_PROTECT_DELETE', false),
     ],
 
     'soft_deletes' => env('VMEDIA_SOFT_DELETES', true),
@@ -144,11 +145,23 @@ return [
     /*
     | Table names kept for backward compatibility with existing installs.
     */
+    'hierarchy' => [
+        'max_depth' => (int) env('VMEDIA_MAX_DEPTH', 5),
+    ],
+
+    'tags' => [
+        'types' => [],
+    ],
+
     'tables' => [
         'galleries' => 'voodbuilder_media_galleries',
         'vaults' => 'voodbuilder_media_vaults',
         'gallery_media' => 'voodbuilder_media_gallery_media',
         'attachments' => 'vmedia_attachments',
+        'tags' => 'vmedia_tags',
+        'gallery_tags' => 'vmedia_gallery_tags',
+        'media_tags' => 'vmedia_media_tags',
+        'gallery_allowed_tags' => 'vmedia_gallery_allowed_tags',
     ],
 
     'browser' => [

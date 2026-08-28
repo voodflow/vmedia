@@ -95,7 +95,9 @@ class VmediaServiceProvider extends PackageServiceProvider
         Route::middleware($middleware)
             ->prefix($prefix)
             ->group(function (): void {
-                Route::get('{slug}', PublicGalleryController::class)->name('vmedia.public.gallery');
+                Route::get('{path}', PublicGalleryController::class)
+                    ->where('path', '.*')
+                    ->name('vmedia.public.gallery');
             });
     }
 }

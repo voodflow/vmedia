@@ -5,9 +5,9 @@
     $stateItems = $stateItems ?? [];
     $isMultiple = (bool) ($isMultiple ?? false);
     $componentKey = $getKey();
+    $recordKey = $recordKey ?? 'new';
     $statePath = $getStatePath();
     $orderedUuids = array_column($selected, 'uuid');
-    $stateFingerprint = md5(json_encode($stateItems));
 @endphp
 
 <x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
@@ -17,7 +17,7 @@
                 ->merge($getExtraAttributes(), escape: false)
                 ->class(['vmedia-picker'])
         }}
-        wire:key="vmedia-picker-{{ $stateFingerprint }}"
+        wire:key="vmedia-picker-{{ $recordKey }}-{{ $componentKey }}"
         x-data="{
             preview: null,
             multiple: @js($isMultiple),

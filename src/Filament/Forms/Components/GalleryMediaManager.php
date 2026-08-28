@@ -23,6 +23,7 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Support\FileTypeIcon;
+use Voodflow\Vmedia\Support\GalleryBrowser;
 use Voodflow\Vmedia\Support\MediaLibrary;
 use Voodflow\Vmedia\Support\UploadGuard;
 use Voodflow\Vmedia\Support\ZipImporter;
@@ -124,34 +125,22 @@ class GalleryMediaManager extends Field
             ->stickyModalHeader()
             ->stickyModalFooter()
             ->schema([
-                Grid::make(2)->schema([
-                    Select::make('gallery_id')
-                        ->label(__('vmedia::admin.library.gallery'))
-                        ->options(fn (): array => MediaGallery::query()->orderBy('sort_order')->pluck('name', 'id')->all())
-                        ->searchable()
-                        ->live()
-                        ->nullable()
-                        ->afterStateUpdated(fn (Set $set) => $set('browser_page', 1)),
-                    TextInput::make('q')
-                        ->label(__('vmedia::admin.picker.search'))
-                        ->placeholder(__('vmedia::admin.picker.search_placeholder'))
-                        ->live(debounce: 300)
-                        ->nullable()
-                        ->afterStateUpdated(fn (Set $set) => $set('browser_page', 1)),
-                ]),
+                Grid::make(3)->schema(GalleryBrowser::filterFields()),
                 Hidden::make('browser_page')->default(1)->live()->dehydrated(false),
                 ViewField::make('media_uuids')
                     ->hiddenLabel()
                     ->default([])
                     ->view('vmedia::forms.components.media-browser-grid')
                     ->viewData(function (Get $get) use ($perPage): array {
-                        $galleryId = $get('gallery_id');
+                        $parentFolderId = is_numeric($get('parent_folder_id')) ? (int) $get('parent_folder_id') : null;
+                        $galleryId = is_numeric($get('gallery_id')) ? (int) $get('gallery_id') : null;
                         $search = $get('q');
                         $page = max(1, (int) ($get('browser_page') ?? 1));
 
-                        $result = MediaLibrary::paginateAssets(
+                        $result = GalleryBrowser::paginateForPicker(
                             null,
-                            is_numeric($galleryId) ? (int) $galleryId : null,
+                            $parentFolderId,
+                            $galleryId,
                             is_string($search) && trim($search) !== '' ? trim($search) : null,
                             $page,
                             $perPage,
@@ -168,7 +157,7 @@ class GalleryMediaManager extends Field
                     }),
             ])
             ->fillForm(fn (): array => [
-                'gallery_id' => (int) MediaGallery::default()->getKey(),
+                ...GalleryBrowser::defaultPickerFilters(),
                 'q' => null,
                 'browser_page' => 1,
                 'media_uuids' => [],

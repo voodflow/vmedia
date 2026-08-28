@@ -41,9 +41,11 @@ class MediaLibraryTest extends TestCase
         $default = MediaGallery::default();
         $other = MediaGallery::query()->create([
             'name' => 'Events',
+            'kind' => MediaGallery::KIND_ALBUM,
             'is_default' => false,
             'is_public' => true,
             'sort_order' => 1,
+            'parent_key' => 0,
         ]);
 
         $media = MediaLibrary::store(

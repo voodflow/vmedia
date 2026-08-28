@@ -21,7 +21,7 @@ use Voodflow\Vmedia\Models\MediaVault;
 final class MediaLibrary
 {
     /**
-     * @return list<array{id: int, name: string, slug: string, is_default: bool, is_public: bool, media_count: int}>
+     * @return list<array{id: int, name: string, slug: string, kind: string, parent_id: int|null, path: string, is_default: bool, is_public: bool, media_count: int, children_count: int}>
      */
     public static function listGalleries(?string $type = null): array
     {
@@ -34,7 +34,7 @@ final class MediaLibrary
                 } elseif ($type === 'file') {
                     $builder->where('collection_name', MediaGallery::COLLECTION_FILES);
                 }
-            }])
+            }, 'children'])
             ->orderBy('sort_order')
             ->orderBy('id');
 
@@ -42,9 +42,13 @@ final class MediaLibrary
             'id' => (int) $gallery->getKey(),
             'name' => (string) $gallery->name,
             'slug' => (string) $gallery->slug,
+            'kind' => (string) $gallery->kind,
+            'parent_id' => $gallery->parent_id !== null ? (int) $gallery->parent_id : null,
+            'path' => GalleryPath::toPath($gallery),
             'is_default' => (bool) $gallery->is_default,
             'is_public' => (bool) $gallery->is_public,
             'media_count' => (int) ($gallery->media_count ?? 0),
+            'children_count' => (int) ($gallery->children_count ?? 0),
         ])->all();
     }
 
@@ -60,12 +64,28 @@ final class MediaLibrary
         ?string $search = null,
         int $page = 1,
         int $perPage = 48,
+        bool $includeDescendants = false,
+        array $tagIds = [],
     ): array {
         $page = max(1, $page);
         $perPage = max(1, min(96, $perPage));
 
+        if ($galleryId !== null && $includeDescendants) {
+            $gallery = MediaGallery::query()->find($galleryId);
+
+            if ($gallery !== null) {
+                return GalleryAggregate::paginateMedia($gallery, [
+                    'type' => $type,
+                    'search' => $search,
+                    'page' => $page,
+                    'per_page' => $perPage,
+                    'tag_ids' => $tagIds,
+                ]);
+            }
+        }
+
         $query = MediaItem::query()
-            ->with('galleries:id,name')
+            ->with(['galleries:id,name', 'tags:id,name'])
             ->where('model_type', (new MediaVault)->getMorphClass())
             ->whereIn('collection_name', [
                 MediaGallery::COLLECTION_IMAGES,
@@ -76,6 +96,10 @@ final class MediaLibrary
 
         if ($galleryId !== null) {
             $query->whereHas('galleries', static fn ($builder) => $builder->whereKey($galleryId));
+        }
+
+        if ($tagIds !== []) {
+            $query->whereHas('tags', static fn ($builder) => $builder->whereIn('id', $tagIds));
         }
 
         if ($type === 'image') {
@@ -345,9 +369,11 @@ final class MediaLibrary
         $gallery = MediaGallery::query()->create([
             'name' => $name,
             'description' => $description,
+            'kind' => MediaGallery::KIND_ALBUM,
             'is_default' => false,
             'is_public' => true,
             'sort_order' => (int) (MediaGallery::query()->max('sort_order') ?? 0) + 1,
+            'parent_key' => 0,
         ]);
 
         $gallery->attachMedia($media);
@@ -411,20 +437,11 @@ final class MediaLibrary
             ]);
         }
 
-        if (
-            (bool) config('vmedia.usage.protect_delete', true)
-            && MediaUsage::isUsed($media)
-            && ! $force
-        ) {
-            throw ValidationException::withMessages([
-                'media' => [__('vmedia::admin.library.delete_blocked_used', [
-                    'count' => MediaUsage::attachmentCount($media),
-                ])],
-            ]);
+        if (MediaUsage::isUsed($media)) {
+            MediaUsage::detachAllAttachments($media);
         }
 
         if ($force) {
-            MediaUsage::detachAllAttachments($media);
             $media->forceDelete();
             MediaDeleted::dispatch($media, true);
 

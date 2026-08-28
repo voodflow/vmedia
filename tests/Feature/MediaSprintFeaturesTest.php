@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Voodflow\Vmedia\Tests\Feature;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
 use Voodflow\Vmedia\Concerns\HasAttachedMedia;
 use Voodflow\Vmedia\Events\MediaAttached;
 use Voodflow\Vmedia\Events\MediaStored;
@@ -27,6 +27,10 @@ class MediaSprintFeaturesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Relation::morphMap([
+            'vmedia_sprint_attachable' => SprintAttachable::class,
+        ]);
 
         Schema::create('vmedia_attachable_dummies', function (Blueprint $table): void {
             $table->id();
@@ -72,7 +76,7 @@ class MediaSprintFeaturesTest extends TestCase
         $this->assertSame('image', $payload['type']);
     }
 
-    public function test_protect_delete_when_attached(): void
+    public function test_delete_when_attached_detaches_and_soft_deletes(): void
     {
         Storage::fake('public');
         Event::fake([MediaAttached::class, MediaStored::class]);
@@ -85,8 +89,11 @@ class MediaSprintFeaturesTest extends TestCase
         Event::assertDispatched(MediaAttached::class);
         $this->assertTrue(MediaUsage::isUsed($media));
 
-        $this->expectException(ValidationException::class);
         MediaLibrary::delete($media, force: false);
+
+        $this->assertSame(0, MediaUsage::attachmentCount($media));
+        $this->assertTrue($media->fresh()->trashed());
+        $this->assertSame(0, $record->fresh()->getMedia('logo')->count());
     }
 
     public function test_soft_delete_and_restore(): void

@@ -55,6 +55,19 @@ class MediaItem extends Media
             ->orderByPivot('sort_order');
     }
 
+    /**
+     * @return BelongsToMany<MediaTag, $this>
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            MediaTag::class,
+            (string) config('vmedia.tables.media_tags', 'vmedia_media_tags'),
+            'media_id',
+            'tag_id',
+        )->withTimestamps();
+    }
+
     public function isVideo(): bool
     {
         return $this->collection_name === MediaGallery::COLLECTION_VIDEOS
