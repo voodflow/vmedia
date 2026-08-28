@@ -192,7 +192,7 @@ return [
             'is_public' => 'Public',
             'sort_order' => 'Sort order',
             'media_count' => 'Items',
-            'children_count' => 'Children',
+            'children_count' => 'Sub-galleries',
         ],
         'kinds' => [
             'group' => 'Folder',
@@ -220,6 +220,7 @@ return [
             'slug_auto' => 'Generated automatically from the name (unique).',
             'slug_locked' => 'Slug is fixed after creation.',
             'slug_editable' => 'Used in public URLs. Must be unique among siblings in the same folder.',
+            'children_count' => 'Child folders and albums only — not media files (see Items).',
         ],
         'media' => [
             'section' => 'Images',

@@ -115,11 +115,13 @@ See [companion-integration.md](../../../voodbuilder/docs/developer/companion-int
 
 Each companion can register a root **folder** + `Library` album (`PluginVaultRootGroup`, `PluginVaultLibraryGallery`). Selecting **Builder** in the editor uploads to `Builder/Library`, not the site-wide default.
 
-Ensure roots exist:
+Ensure roots exist (and prune duplicate plugin Library albums):
 
 ```bash
 php artisan vmedia:ensure-plugin-roots
 ```
+
+The Filament **Galleries** list uses depth-first ordering so child albums appear directly under their parent folder. **Sub-galleries** counts child folders/albums only (not media files).
 
 ## User-facing copy
 

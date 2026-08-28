@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Voodflow\Vmedia\Support\Integration;
 
+use Illuminate\Support\Collection;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Support\GalleryUploadTarget;
 
@@ -56,13 +57,7 @@ final class DuplicateLibraryAlbumPruner
         }
 
         /** @var MediaGallery $canonical */
-        $canonical = $libraries
-            ->sortBy([
-                fn (MediaGallery $album): int => $album->integration_key === $scopedKey ? 0 : 1,
-                fn (MediaGallery $album): int => -((int) ($album->media_items_count ?? 0)),
-                fn (MediaGallery $album): int => (int) $album->getKey(),
-            ])
-            ->first();
+        $canonical = self::pickCanonicalAlbum($libraries, $scopedKey);
 
         $pruned = 0;
 
@@ -111,5 +106,29 @@ final class DuplicateLibraryAlbumPruner
 
         // Touch resolve so future uploads use the normalized album.
         GalleryUploadTarget::resolve((int) $group->getKey());
+    }
+
+    /**
+     * @param  Collection<int, MediaGallery>  $libraries
+     */
+    protected static function pickCanonicalAlbum(Collection $libraries, string $scopedKey): MediaGallery
+    {
+        return $libraries
+            ->sort(function (MediaGallery $a, MediaGallery $b) use ($scopedKey): int {
+                return self::canonicalRank($a, $scopedKey) <=> self::canonicalRank($b, $scopedKey);
+            })
+            ->first();
+    }
+
+    /**
+     * @return array{0: int, 1: int, 2: int}
+     */
+    protected static function canonicalRank(MediaGallery $album, string $scopedKey): array
+    {
+        return [
+            $album->integration_key === $scopedKey ? 0 : 1,
+            -((int) ($album->media_items_count ?? 0)),
+            (int) $album->getKey(),
+        ];
     }
 }

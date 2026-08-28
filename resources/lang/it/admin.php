@@ -192,7 +192,7 @@ return [
             'is_public' => 'Pubblica',
             'sort_order' => 'Ordine',
             'media_count' => 'Elementi',
-            'children_count' => 'Figli',
+            'children_count' => 'Sotto-gallerie',
         ],
         'kinds' => [
             'group' => 'Cartella',
@@ -220,6 +220,7 @@ return [
             'slug_auto' => 'Generato automaticamente dal nome (univoco).',
             'slug_locked' => 'Lo slug non si modifica dopo la creazione.',
             'slug_editable' => 'Usato negli URL pubblici. Deve essere univoco tra gli elementi della stessa cartella.',
+            'children_count' => 'Solo cartelle e album figli — non i file media (vedi Items).',
         ],
         'media' => [
             'section' => 'Immagini',
