@@ -16,7 +16,8 @@ use Voodflow\Vmedia\Support\AttachmentMeta;
 use Voodflow\Vmedia\Support\MediaLibrary;
 
 /**
- * Markdown editor with vmedia library on the image toolbar button (instead of native file picker).
+ * Markdown editor with an extra toolbar button to insert images from the vmedia library.
+ * Native {@see MarkdownEditor} file attachments stay available when {@see attachFiles} is in the toolbar.
  */
 class VmediaMarkdownEditor extends MarkdownEditor
 {
@@ -25,9 +26,6 @@ class VmediaMarkdownEditor extends MarkdownEditor
     protected function setUp(): void
     {
         parent::setUp();
-
-        $this->fileAttachments(false);
-        $this->disableToolbarButtons(['attachFiles']);
 
         $this->registerActions([
             fn (VmediaMarkdownEditor $component): Action => $component->insertVmediaImageAction(),
@@ -99,11 +97,15 @@ class VmediaMarkdownEditor extends MarkdownEditor
 
         $key = $this->getKey();
         $label = $this->getLabel();
+        $fileAttachmentsMaxSize = $this->getFileAttachmentsMaxSize();
+        $fileAttachmentsAcceptedFileTypes = $this->getFileAttachmentsAcceptedFileTypes();
 
         $wrapperAttributes = $this->getExtraAttributeBag()
             ->class(['fi-fo-markdown-editor']);
 
         ob_start(); ?>
+
+        <link rel="stylesheet" href="<?= e(FilamentAsset::getStyleHref('vmedia-markdown-editor', 'voodflow/vmedia')) ?>" data-vmedia-markdown-editor-styles />
 
         <div
             aria-labelledby="<?= e($id) ?>-label"
@@ -112,7 +114,7 @@ class VmediaMarkdownEditor extends MarkdownEditor
             x-load
             x-load-src="<?= e(FilamentAsset::getAlpineComponentSrc('markdown-editor', 'filament/forms')) ?>"
             x-data="markdownEditorFormComponent({
-                        canAttachFiles: false,
+                        canAttachFiles: <?= Js::from($this->hasFileAttachments()) ?>,
                         isLiveDebounced: <?= Js::from($this->isLiveDebounced()) ?>,
                         isLiveOnBlur: <?= Js::from($this->isLiveOnBlur()) ?>,
                         label: <?= Js::from($label) ?>,
@@ -123,7 +125,34 @@ class VmediaMarkdownEditor extends MarkdownEditor
                         state: $wire.<?= $this->applyStateBindingModifiers("\$entangle('{$statePath}')", isOptimisticallyLive: false) ?>,
                         toolbarButtons: <?= Js::from($this->getToolbarButtons()) ?>,
                         translations: <?= Js::from(__('filament-forms::components.markdown_editor')) ?>,
-                        uploadFileAttachmentUsing: async () => {},
+                        uploadFileAttachmentUsing: async (file, onSuccess, onError) => {
+                            const acceptedTypes = <?= Js::from($fileAttachmentsAcceptedFileTypes) ?>
+
+                            if (acceptedTypes && ! acceptedTypes.includes(file.type)) {
+                                return onError(<?= Js::from($fileAttachmentsAcceptedFileTypes ? __('filament-forms::components.markdown_editor.file_attachments_accepted_file_types_message', ['values' => implode(', ', $fileAttachmentsAcceptedFileTypes)]) : null) ?>)
+                            }
+
+                            const maxSize = <?= Js::from($fileAttachmentsMaxSize) ?>
+
+                            if (maxSize && file.size > +maxSize * 1024) {
+                                return onError(<?= Js::from($fileAttachmentsMaxSize ? trans_choice('filament-forms::components.markdown_editor.file_attachments_max_size_message', $fileAttachmentsMaxSize, ['max' => $fileAttachmentsMaxSize]) : null) ?>)
+                            }
+
+                            $wire.upload(`componentFileAttachments.<?= e($statePath) ?>`, file, () => {
+                                $wire
+                                    .callSchemaComponentMethod(
+                                        <?= Js::from($key) ?>,
+                                        'saveUploadedFileAttachmentAndGetUrl',
+                                    )
+                                    .then((url) => {
+                                        if (! url) {
+                                            return onError()
+                                        }
+
+                                        onSuccess(url)
+                                    })
+                            })
+                        },
                         setUpUsing: (editorComponent) => {
                             const wire = editorComponent.$wire
                             const componentKey = <?= Js::from($key) ?>
@@ -131,31 +160,25 @@ class VmediaMarkdownEditor extends MarkdownEditor
 
                             const openLibrary = (event) => {
                                 event.preventDefault()
-                                event.stopImmediatePropagation()
                                 wire.mountFormComponentAction(componentKey, 'insertVmediaImage')
                             }
 
-                            const editor = editorComponent.editor
-                            const uploadBtn = editor?.toolbarElements?.['upload-image']
+                            const bar = editorComponent.editor?.gui?.toolbar
 
-                            if (uploadBtn) {
-                                uploadBtn.addEventListener('click', openLibrary, true)
-
+                            if (! bar || bar.querySelector('.vmedia-library')) {
                                 return
                             }
 
-                            const bar = editor?.gui?.toolbar?.querySelector('.editor-toolbar')
-
-                            if (! bar) {
-                                return
-                            }
+                            const separator = document.createElement('span')
+                            separator.className = 'separator'
+                            bar.appendChild(separator)
 
                             const button = document.createElement('button')
                             button.type = 'button'
-                            button.className = 'fa fa-image'
+                            button.className = 'vmedia-library'
                             button.title = libraryTitle
                             button.setAttribute('aria-label', libraryTitle)
-                            button.addEventListener('click', openLibrary, true)
+                            button.addEventListener('click', openLibrary)
                             bar.appendChild(button)
                         },
                     })"

@@ -134,6 +134,6 @@ final class VmediaRichContentPlugin implements HasFileAttachmentProvider, HasToo
      */
     public function getDisabledToolbarButtons(): array
     {
-        return ['attachFiles'];
+        return [];
     }
 }

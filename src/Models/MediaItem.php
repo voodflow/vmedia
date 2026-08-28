@@ -39,6 +39,14 @@ class MediaItem extends Media
 
     public const CUSTOM_CONTENT_HASH = 'content_hash';
 
+    public const CUSTOM_ORIGINAL_CONTENT_HASH = 'original_content_hash';
+
+    public const CUSTOM_ORIGINAL_BACKUP_PATH = 'original_backup_path';
+
+    public const CUSTOM_DERIVED_FROM_UUID = 'derived_from_uuid';
+
+    public const CUSTOM_EDITED_AT = 'edited_at';
+
     /**
      * @return BelongsToMany<MediaGallery, $this>
      */

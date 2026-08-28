@@ -68,21 +68,34 @@ class VmediaPlugin implements Plugin
 
     protected function registerAssets(): void
     {
-        $source = dirname(__DIR__).'/resources/css/media-browser.css';
+        $assets = [
+            'media-browser' => dirname(__DIR__).'/resources/css/media-browser.css',
+            'vmedia-markdown-editor' => dirname(__DIR__).'/resources/css/markdown-editor.css',
+        ];
 
-        if (! is_file($source)) {
+        $registered = [];
+
+        foreach ($assets as $id => $source) {
+            if (! is_file($source)) {
+                continue;
+            }
+
+            if ($id === 'media-browser') {
+                $destination = public_path('css/vmedia/media-browser.css');
+                File::ensureDirectoryExists(dirname($destination));
+
+                if (! is_file($destination) || filemtime($source) > filemtime($destination)) {
+                    File::copy($source, $destination);
+                }
+            }
+
+            $registered[] = Css::make($id, $source);
+        }
+
+        if ($registered === []) {
             return;
         }
 
-        $destination = public_path('css/vmedia/media-browser.css');
-        File::ensureDirectoryExists(dirname($destination));
-
-        if (! is_file($destination) || filemtime($source) > filemtime($destination)) {
-            File::copy($source, $destination);
-        }
-
-        FilamentAsset::register([
-            Css::make('media-browser', $source),
-        ], 'voodflow/vmedia');
+        FilamentAsset::register($registered, 'voodflow/vmedia');
     }
 }

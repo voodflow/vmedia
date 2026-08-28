@@ -47,6 +47,7 @@ final class VmediaRoutes
                 Route::get('media/galleries', [MediaController::class, 'galleries'])->name('media.galleries');
                 Route::get('media', [MediaController::class, 'index'])->name('media.index');
                 Route::post('media/upload', [MediaController::class, 'store'])->name('media.upload');
+                Route::post('media/replace', [MediaController::class, 'replace'])->name('media.replace');
                 Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
             });
 
@@ -61,6 +62,7 @@ final class VmediaRoutes
                     Route::get('media/galleries', [MediaController::class, 'galleries'])->name('media.galleries');
                     Route::get('media', [MediaController::class, 'index'])->name('media.index');
                     Route::post('upload', [MediaController::class, 'store'])->name('upload');
+                    Route::post('media/replace', [MediaController::class, 'replace'])->name('media.replace');
                 });
         }
     }

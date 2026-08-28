@@ -110,6 +110,7 @@ class MediaController extends Controller
             'name' => ['nullable', 'string', 'max:255'],
             'caption' => ['nullable', 'string', 'max:1000'],
             'alt' => ['nullable', 'string', 'max:255'],
+            'derived_from_uuid' => ['nullable', 'uuid', 'exists:'.(new MediaItem)->getTable().',uuid'],
         ]);
 
         UploadGuard::assertAllowedMime($validated['file']);
@@ -122,10 +123,29 @@ class MediaController extends Controller
 
         $targetGallery = GalleryUploadTarget::resolve($galleryId);
 
+        if (filled($validated['derived_from_uuid'] ?? null)) {
+            $parent = MediaItem::query()
+                ->where('uuid', (string) $validated['derived_from_uuid'])
+                ->first();
+
+            if ($parent !== null) {
+                $parent->loadMissing('galleries');
+                $galleries = $parent->galleries;
+
+                if ($galleries->isNotEmpty()) {
+                    $targetGallery = $galleries->all();
+                }
+            }
+        }
+
         $custom = [];
 
         if (filled($validated['alt'] ?? null)) {
             $custom[MediaItem::CUSTOM_ALT] = trim((string) $validated['alt']);
+        }
+
+        if (filled($validated['derived_from_uuid'] ?? null)) {
+            $custom[MediaItem::CUSTOM_DERIVED_FROM_UUID] = (string) $validated['derived_from_uuid'];
         }
 
         $media = MediaLibrary::store(
@@ -141,6 +161,45 @@ class MediaController extends Controller
             'data' => [$payload['src']],
             'media' => $payload,
         ], 201);
+    }
+
+    public function replace(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'uuid' => ['required', 'uuid'],
+            'file' => ['required', 'file'],
+            'name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $media = MediaItem::query()->where('uuid', $validated['uuid'])->firstOrFail();
+
+        $this->authorize('update', $media);
+
+        $imageMaxKb = (int) config('vmedia.upload.image_max_kb', 8192);
+        $extensions = (array) config('vmedia.upload.allowed_extensions', []);
+        $uploaded = $request->file('file');
+
+        UploadGuard::assertSafeUpload($uploaded);
+
+        $validatedFile = validator(
+            ['file' => $uploaded],
+            ['file' => ['required', 'file', File::types($extensions)->max($imageMaxKb)]],
+        )->validate();
+
+        UploadGuard::assertAllowedMime($validatedFile['file']);
+
+        $media = MediaLibrary::replaceFile(
+            $media,
+            $validatedFile['file'],
+            isset($validated['name']) ? (string) $validated['name'] : null,
+        );
+        $payload = MediaLibrary::toAssetPayload($media);
+
+        return response()->json([
+            'data' => [$payload['src']],
+            'media' => $payload,
+            'replaced' => true,
+        ]);
     }
 
     public function destroy(Request $request, MediaItem $media): JsonResponse

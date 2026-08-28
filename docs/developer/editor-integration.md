@@ -17,7 +17,9 @@ The API exposes the resolved destination on list endpoints as `upload_gallery_id
 
 `GET /vmedia/media/galleries?gallery_id={optional}`
 
-Returns `data`, `tree`, `default_gallery_id`, `upload_gallery_id`, `upload_gallery`.
+Returns `data` (flat list, depth-first with `label`, `breadcrumb`, `depth`, `parent_name`), `tree`, `default_gallery_id`, `upload_gallery_id`, `upload_gallery`.
+
+Each gallery row includes a disambiguated `label` (e.g. `Builder › Library` for nested albums that share names). The page-builder sidebar indents by `depth` and lists children directly under their parent folder.
 
 Pass `gallery_id` to preview where an upload would land for that browse context.
 
@@ -69,7 +71,7 @@ Used by `MediaController`, `VmediaFilamentBrowser`, and `VmediaPicker`.
 |-----------|-----|
 | `VmediaPicker` | Entity attachments; optional locked vault gallery. Browse-all when unlocked; upload follows filters. |
 | `VmediaFilamentBrowser` | Shared modal for markdown/rich editors (`VmediaMarkdownEditor`, `VmediaRichContentPlugin`). |
-| `VmediaMarkdownEditor` | Toolbar image → vmedia modal → `![](url)`. Replaces Filament `attachFiles` (native browser upload). |
+| `VmediaMarkdownEditor` | Extra toolbar button → vmedia modal → `![](url)`. Native `attachFiles` upload stays when enabled in the toolbar. |
 | `VmediaRichEditor` + plugin | TipTap attach from library. |
 
 Register plugin vault library as browse default:
@@ -85,6 +87,7 @@ Requires `mediaLibraryUrl` + `mediaGalleriesUrl` in editor bootstrap (`EditorGat
 JS entry: `resources/js/editor/media-browser.js` (`openMediaBrowser`).
 
 - Sidebar gallery selection sets upload destination (subtitle + drop zone hint).
+- Galleries are ordered depth-first; nested albums show `Parent › Album` labels (see `GalleryDisplay`).
 - Upload `FormData` includes `gallery_id` from selection.
 - Folder browse uses `include_descendants=1` on the index API.
 

@@ -8,7 +8,7 @@ use Closure;
 use Filament\Forms\Components\RichEditor;
 
 /**
- * Rich editor preconfigured with the vmedia image picker (replaces native attachFiles).
+ * Rich editor with an extra toolbar button to insert images from the vmedia library.
  */
 class VmediaRichEditor extends RichEditor
 {
@@ -22,7 +22,6 @@ class VmediaRichEditor extends RichEditor
             VmediaRichContentPlugin::make($component->getVaultPlugin()),
         ]);
 
-        $this->disableToolbarButtons(['attachFiles']);
         $this->enableToolbarButtons(['vmediaAttach']);
     }
 

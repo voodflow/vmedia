@@ -6,6 +6,7 @@ namespace Voodflow\Vmedia\Support;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Voodflow\Vmedia\Events\MediaDeleted;
@@ -21,11 +22,12 @@ use Voodflow\Vmedia\Models\MediaVault;
 final class MediaLibrary
 {
     /**
-     * @return list<array{id: int, name: string, slug: string, kind: string, parent_id: int|null, path: string, is_default: bool, is_public: bool, media_count: int, children_count: int}>
+     * @return list<array{id: int, name: string, slug: string, kind: string, parent_id: int|null, parent_name: string|null, path: string, depth: int, label: string, breadcrumb: string, is_default: bool, is_public: bool, media_count: int, children_count: int}>
      */
     public static function listGalleries(?string $type = null): array
     {
         $query = MediaGallery::query()
+            ->with(['parent:id,name'])
             ->withCount(['mediaItems as media_count' => function ($builder) use ($type): void {
                 if ($type === 'image') {
                     $builder->where('collection_name', MediaGallery::COLLECTION_IMAGES);
@@ -44,12 +46,16 @@ final class MediaLibrary
             'slug' => (string) $gallery->slug,
             'kind' => (string) $gallery->kind,
             'parent_id' => $gallery->parent_id !== null ? (int) $gallery->parent_id : null,
+            'parent_name' => $gallery->parent?->name,
             'path' => GalleryPath::toPath($gallery),
+            'depth' => GalleryPath::depth($gallery),
+            'label' => GalleryDisplay::navLabel($gallery),
+            'breadcrumb' => GalleryDisplay::breadcrumb($gallery),
             'is_default' => (bool) $gallery->is_default,
             'is_public' => (bool) $gallery->is_public,
             'media_count' => (int) ($gallery->media_count ?? 0),
             'children_count' => (int) ($gallery->children_count ?? 0),
-        ])->all();
+        ])->pipe(static fn ($collection): array => GalleryDisplay::orderHierarchically($collection->all()));
     }
 
     /**
@@ -427,6 +433,97 @@ final class MediaLibrary
         }
 
         return self::thumbUrl($poster) ?? self::publicUrl($poster);
+    }
+
+    /**
+     * Replace vault image bytes in-place (same id/uuid and gallery memberships).
+     * On first edit, keeps one on-disk backup under `.originals/` next to the file.
+     */
+    public static function replaceFile(MediaItem $media, UploadedFile $file, ?string $name = null): MediaItem
+    {
+        if (! self::isVaultMedia($media)) {
+            throw ValidationException::withMessages([
+                'media' => ['Not a vault media item.'],
+            ]);
+        }
+
+        if (! $media->isImage()) {
+            throw ValidationException::withMessages([
+                'file' => ['Only images can be replaced through the editor.'],
+            ]);
+        }
+
+        UploadGuard::assertSafeUpload($file);
+        UploadGuard::assertAllowedMime($file);
+
+        self::ensureOriginalBackup($media);
+
+        $disk = Storage::disk($media->disk);
+        $relativePath = UploadGuard::assertSafeRelativePath((string) $media->getPathRelativeToRoot());
+
+        $disk->putFileAs(dirname($relativePath), $file, basename($relativePath));
+
+        $props = (array) $media->custom_properties;
+        $hash = self::contentHashForUpload($file);
+
+        if ($hash !== null) {
+            $props[MediaItem::CUSTOM_CONTENT_HASH] = $hash;
+        }
+
+        $props[MediaItem::CUSTOM_EDITED_AT] = now()->toIso8601String();
+
+        $updates = [
+            'size' => $file->getSize(),
+            'mime_type' => (string) ($file->getMimeType() ?? $media->mime_type),
+            'custom_properties' => $props,
+        ];
+
+        if (filled($name)) {
+            $updates['name'] = self::resolveDisplayName($file, $name);
+        }
+
+        $media->forceFill($updates)->save();
+
+        $fresh = $media->fresh(['galleries']);
+
+        return $fresh instanceof MediaItem ? $fresh : $media;
+    }
+
+    protected static function ensureOriginalBackup(MediaItem $media): void
+    {
+        $props = (array) $media->custom_properties;
+
+        if (isset($props[MediaItem::CUSTOM_ORIGINAL_BACKUP_PATH])) {
+            return;
+        }
+
+        $disk = Storage::disk($media->disk);
+        $source = UploadGuard::assertSafeRelativePath((string) $media->getPathRelativeToRoot());
+
+        if (! $disk->exists($source)) {
+            return;
+        }
+
+        $extension = pathinfo((string) $media->file_name, PATHINFO_EXTENSION) ?: 'jpg';
+        $backupPath = dirname($source).'/.originals/'.($media->uuid).'.'.$extension;
+
+        if (! $disk->exists($backupPath)) {
+            $disk->makeDirectory(dirname($backupPath));
+            $disk->copy($source, $backupPath);
+        }
+
+        $absolute = $disk->path($source);
+
+        if (is_file($absolute)) {
+            $hash = hash_file('sha256', $absolute);
+
+            if (is_string($hash)) {
+                $props[MediaItem::CUSTOM_ORIGINAL_CONTENT_HASH] = $hash;
+            }
+        }
+
+        $props[MediaItem::CUSTOM_ORIGINAL_BACKUP_PATH] = $backupPath;
+        $media->forceFill(['custom_properties' => $props])->save();
     }
 
     public static function delete(MediaItem $media, bool $force = false): void

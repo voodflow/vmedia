@@ -98,14 +98,7 @@ final class GalleryBrowser
 
     public static function albumLabel(MediaGallery $album): string
     {
-        $indent = str_repeat('— ', max(0, GalleryPath::depth($album)));
-        $path = GalleryPath::toPath($album);
-
-        if ($path !== '' && $path !== (string) $album->name) {
-            return $indent.$album->name.' · '.$path;
-        }
-
-        return $indent.$album->name;
+        return GalleryDisplay::navLabel($album);
     }
 
     /**
