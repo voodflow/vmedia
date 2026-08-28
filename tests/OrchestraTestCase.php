@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Voodflow\Vmedia\Tests;
 
+use Filament\Forms\FormsServiceProvider;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use Spatie\MediaLibrary\MediaLibraryServiceProvider;
 use Voodflow\Vmedia\Tests\Concerns\InteractsWithVmediaTests;
@@ -30,6 +32,8 @@ abstract class OrchestraTestCase extends BaseTestCase
     {
         return [
             MediaLibraryServiceProvider::class,
+            LivewireServiceProvider::class,
+            FormsServiceProvider::class,
             VmediaServiceProvider::class,
         ];
     }

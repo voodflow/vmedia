@@ -89,8 +89,28 @@ Used by `MediaController`, `VmediaFilamentBrowser`, and `VmediaPicker`.
 |-----------|-----|
 | `VmediaPicker` | Entity attachments; optional locked vault gallery. Browse-all when unlocked; upload follows filters. |
 | `VmediaFilamentBrowser` | Shared modal for markdown/rich editors (`VmediaMarkdownEditor`, `VmediaRichContentPlugin`). |
-| `VmediaMarkdownEditor` | Extra toolbar button → vmedia modal → `![](url)`. Native `attachFiles` upload stays when enabled in the toolbar. |
+| `VmediaMarkdownEditor` | Drop-in replacement for `MarkdownEditor::make()` — same toolbar/API; vmedia adds one library button via `VmediaPlugin` assets (no duplicated Filament markup). |
 | `VmediaRichEditor` + plugin | TipTap attach from library. |
+
+### Markdown editor integration
+
+`VmediaMarkdownEditor` calls `parent::toEmbeddedHtml()` and only:
+
+1. Registers the `insertVmediaImage` form action (vmedia browser modal).
+2. Adds Alpine `data-vmedia-*` attributes and a `vmedia-markdown-insert` listener.
+3. Injects Filament’s supported `setUpUsing` hook (`window.vmediaMarkdownEditorSetUp`).
+
+Use it like any Filament markdown field:
+
+```php
+use Voodflow\Vmedia\Filament\Forms\Components\VmediaMarkdownEditor;
+
+VmediaMarkdownEditor::make('content')
+    ->vaultPlugin('vtuts') // optional: default vault folder for the picker
+    ->toolbarButtons([/* same as MarkdownEditor */]);
+```
+
+Requires `VmediaPlugin` on the panel (loads setup JS + toolbar icon CSS).
 
 Register plugin vault library as browse default:
 

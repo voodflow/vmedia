@@ -7,6 +7,7 @@ namespace Voodflow\Vmedia;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Assets\Css;
+use Filament\Support\Assets\Js;
 use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Support\Facades\File;
 use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource;
@@ -71,6 +72,7 @@ class VmediaPlugin implements Plugin
         $assets = [
             'media-browser' => dirname(__DIR__).'/resources/css/media-browser.css',
             'vmedia-markdown-editor' => dirname(__DIR__).'/resources/css/markdown-editor.css',
+            'vmedia-markdown-editor-setup' => dirname(__DIR__).'/resources/js/filament/vmedia-markdown-editor-setup.js',
         ];
 
         $registered = [];
@@ -89,7 +91,13 @@ class VmediaPlugin implements Plugin
                 }
             }
 
-            $registered[] = Css::make($id, $source);
+            if (str_ends_with($source, '.css')) {
+                $registered[] = Css::make($id, $source);
+
+                continue;
+            }
+
+            $registered[] = Js::make($id, $source);
         }
 
         if ($registered === []) {
