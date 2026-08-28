@@ -72,6 +72,18 @@ final class AttachmentMeta
         return $media->alt();
     }
 
+    /**
+     * Alt text for markdown / rich editor inserts (never empty).
+     */
+    public static function markdownAlt(MediaItem $media): string
+    {
+        $alt = self::alt($media);
+
+        return ($alt !== null && trim($alt) !== '')
+            ? trim($alt)
+            : $media->displayTitle();
+    }
+
     public static function credits(MediaItem $media): ?string
     {
         $pivot = $media->pivot;

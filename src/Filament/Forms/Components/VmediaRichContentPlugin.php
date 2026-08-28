@@ -92,7 +92,7 @@ final class VmediaRichContentPlugin implements HasFileAttachmentProvider, HasToo
                 }
 
                 $url = MediaLibrary::publicUrl($media);
-                $alt = AttachmentMeta::alt($media) ?? $media->alt() ?? $media->displayName();
+                $alt = AttachmentMeta::markdownAlt($media);
 
                 $component->runCommands(
                     [

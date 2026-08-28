@@ -108,7 +108,7 @@ JS;
                 $chunks = $media
                     ->map(function (MediaItem $item): string {
                         $url = MediaLibrary::publicUrl($item);
-                        $alt = AttachmentMeta::alt($item) ?? $item->alt() ?? $item->displayName();
+                        $alt = AttachmentMeta::markdownAlt($item);
 
                         return '!['.str_replace(['[', ']'], ['\\[', '\\]'], (string) $alt).']('.$url.')';
                     })
