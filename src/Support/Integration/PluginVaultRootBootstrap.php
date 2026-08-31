@@ -4,35 +4,57 @@ declare(strict_types=1);
 
 namespace Voodflow\Vmedia\Support\Integration;
 
-use Illuminate\Support\Facades\Schema;
-use Voodflow\Vmedia\Models\MediaGallery;
+use Illuminate\Database\Events\MigrationsEnded;
+use Illuminate\Support\Facades\Event;
+use Voodflow\Vmedia\Support\GalleryIntegrationSchema;
 
 /**
  * Idempotent top-level vault folders for voodflow companion plugins.
  */
 final class PluginVaultRootBootstrap
 {
+    /** @var array<string, true> */
+    private static array $deferredSources = [];
+
+    private static bool $migrateListenerRegistered = false;
+
     public static function ensureFor(string $integrationSource): void
     {
+        if (self::shouldDeferUntilMigrateEnds()) {
+            self::$deferredSources[$integrationSource] = true;
+            self::registerMigrateEndedListener();
+
+            return;
+        }
+
         if (! self::canProvision()) {
             return;
         }
 
-        match ($integrationSource) {
-            'vexhibitors' => PluginVaultRootGroup::exhibitors(),
-            'vevents' => PluginVaultRootGroup::events(),
-            'vsponsors' => PluginVaultRootGroup::sponsors(),
-            'vpartners' => PluginVaultRootGroup::partners(),
-            'vtuts' => PluginVaultRootGroup::vtuts(),
-            'vdocs' => PluginVaultRootGroup::vdocs(),
-            'voodbuilder' => PluginVaultRootGroup::voodbuilder(),
-            'vforms' => PluginVaultRootGroup::vforms(),
-            default => null,
-        };
+        self::provisionFor($integrationSource);
     }
 
     public static function ensureAll(): void
     {
+        if (self::shouldDeferUntilMigrateEnds()) {
+            foreach ([
+                'vexhibitors',
+                'vevents',
+                'vsponsors',
+                'vpartners',
+                'vtuts',
+                'vdocs',
+                'voodbuilder',
+                'vforms',
+            ] as $source) {
+                self::$deferredSources[$source] = true;
+            }
+
+            self::registerMigrateEndedListener();
+
+            return;
+        }
+
         if (! self::canProvision()) {
             return;
         }
@@ -47,23 +69,88 @@ final class PluginVaultRootBootstrap
             'voodbuilder',
             'vforms',
         ] as $source) {
-            self::ensureFor($source);
+            self::provisionFor($source);
         }
 
         PluginVaultRootGroup::logos();
         SharedLogosGallery::album();
     }
 
-    protected static function canProvision(): bool
+    public static function canProvision(): bool
     {
-        if (! class_exists(MediaGallery::class)) {
+        return GalleryIntegrationSchema::isReady();
+    }
+
+    protected static function provisionFor(string $integrationSource): void
+    {
+        match ($integrationSource) {
+            'vexhibitors' => PluginVaultRootGroup::exhibitors(),
+            'vevents' => PluginVaultRootGroup::events(),
+            'vsponsors' => PluginVaultRootGroup::sponsors(),
+            'vpartners' => PluginVaultRootGroup::partners(),
+            'vtuts' => PluginVaultRootGroup::vtuts(),
+            'vdocs' => PluginVaultRootGroup::vdocs(),
+            'voodbuilder' => PluginVaultRootGroup::voodbuilder(),
+            'vforms' => PluginVaultRootGroup::vforms(),
+            default => null,
+        };
+    }
+
+    protected static function shouldDeferUntilMigrateEnds(): bool
+    {
+        if (! app()->runningInConsole()) {
             return false;
         }
 
-        $table = (string) config('vmedia.tables.galleries', 'vmedia_galleries');
+        if (! self::isMigrateArtisanCommand()) {
+            return false;
+        }
 
-        // Hierarchy columns are added in a later migration; companions boot during migrate.
-        return Schema::hasTable($table)
-            && Schema::hasColumn($table, 'integration_source');
+        // Targeted package/test migrations should not defer vault provisioning.
+        return ! self::isPathLimitedMigrateCommand();
+    }
+
+    protected static function isPathLimitedMigrateCommand(): bool
+    {
+        return in_array('--path', $_SERVER['argv'] ?? [], true);
+    }
+
+    protected static function isMigrateArtisanCommand(): bool
+    {
+        if (! isset($_SERVER['argv'][1])) {
+            return false;
+        }
+
+        $command = (string) $_SERVER['argv'][1];
+
+        return $command === 'migrate'
+            || str_starts_with($command, 'migrate:');
+    }
+
+    protected static function registerMigrateEndedListener(): void
+    {
+        if (self::$migrateListenerRegistered) {
+            return;
+        }
+
+        self::$migrateListenerRegistered = true;
+
+        Event::listen(MigrationsEnded::class, function (): void {
+            if (! self::canProvision()) {
+                return;
+            }
+
+            $sources = array_keys(self::$deferredSources);
+            self::$deferredSources = [];
+
+            foreach ($sources as $source) {
+                self::provisionFor($source);
+            }
+
+            if ($sources !== []) {
+                PluginVaultRootGroup::logos();
+                SharedLogosGallery::album();
+            }
+        });
     }
 }

@@ -53,6 +53,12 @@ final class GalleryProvisioner
             : null;
 
         if ($source !== null && $key !== null) {
+            if (! GalleryIntegrationSchema::isReady()) {
+                throw new \RuntimeException(
+                    'Cannot provision integration galleries before vmedia hierarchy migrations have run.'
+                );
+            }
+
             $existing = MediaGallery::query()
                 ->where('integration_source', $source)
                 ->where('integration_key', $key)
