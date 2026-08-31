@@ -57,10 +57,8 @@ class VmediaServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        // Morph aliases kept for backward compatibility with existing media rows.
+        // Canonical morph aliases for Spatie media ownership.
         Relation::morphMap([
-            'voodbuilder_media_gallery' => MediaGallery::class,
-            'voodbuilder_media_vault' => MediaVault::class,
             'vmedia_gallery' => MediaGallery::class,
             'vmedia_vault' => MediaVault::class,
         ]);

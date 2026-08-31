@@ -37,7 +37,7 @@ Alternatively set `VMEDIA_AUTO_REGISTER=true` (prefer the plugin so commenting i
 | `UploadGuard` | MIME allow-list + path-traversal checks |
 | Policies | Authz for gallery/media CRUD |
 
-Table names default to legacy `voodbuilder_media_*` for backward compatibility. Morph aliases `voodbuilder_media_vault` / `voodbuilder_media_gallery` are preserved; `vmedia_*` aliases are also registered.
+Table names use the `vmedia_*` prefix (`vmedia_galleries`, `vmedia_vaults`, `vmedia_gallery_media`, …). Morph aliases: `vmedia_gallery`, `vmedia_vault`.
 
 ## Routes
 

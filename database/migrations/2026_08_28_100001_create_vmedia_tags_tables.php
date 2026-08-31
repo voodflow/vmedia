@@ -14,7 +14,7 @@ return new class extends Migration
         $galleryTagsTable = (string) config('vmedia.tables.gallery_tags', 'vmedia_gallery_tags');
         $mediaTagsTable = (string) config('vmedia.tables.media_tags', 'vmedia_media_tags');
         $allowedTagsTable = (string) config('vmedia.tables.gallery_allowed_tags', 'vmedia_gallery_allowed_tags');
-        $galleriesTable = (string) config('vmedia.tables.galleries', 'voodbuilder_media_galleries');
+        $galleriesTable = (string) config('vmedia.tables.galleries', 'vmedia_galleries');
 
         if (! Schema::hasTable($tagsTable)) {
             Schema::create($tagsTable, function (Blueprint $blueprint): void {

@@ -66,7 +66,7 @@ final class GalleryAggregate
         } elseif ($order === 'oldest') {
             $query->oldest("{$mediaTable}.id");
         } else {
-            $pivotTable = (string) config('vmedia.tables.gallery_media', 'voodbuilder_media_gallery_media');
+            $pivotTable = (string) config('vmedia.tables.gallery_media', 'vmedia_gallery_media');
             $albumIdList = implode(',', array_map(intval(...), $albumIds));
 
             $query->orderByRaw(

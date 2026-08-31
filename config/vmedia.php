@@ -143,7 +143,7 @@ return [
     'auto_register' => env('VMEDIA_AUTO_REGISTER', false),
 
     /*
-    | Table names kept for backward compatibility with existing installs.
+    | Vmedia table names (override via config if needed).
     */
     'hierarchy' => [
         'max_depth' => (int) env('VMEDIA_MAX_DEPTH', 5),
@@ -154,9 +154,9 @@ return [
     ],
 
     'tables' => [
-        'galleries' => 'voodbuilder_media_galleries',
-        'vaults' => 'voodbuilder_media_vaults',
-        'gallery_media' => 'voodbuilder_media_gallery_media',
+        'galleries' => 'vmedia_galleries',
+        'vaults' => 'vmedia_vaults',
+        'gallery_media' => 'vmedia_gallery_media',
         'attachments' => 'vmedia_attachments',
         'tags' => 'vmedia_tags',
         'gallery_tags' => 'vmedia_gallery_tags',

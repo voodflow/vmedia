@@ -103,7 +103,7 @@ final class MediaUsage
     public static function orphanQuery()
     {
         $vaultMorph = (new MediaVault)->getMorphClass();
-        $galleryPivot = (string) config('vmedia.tables.gallery_media', 'voodbuilder_media_gallery_media');
+        $galleryPivot = (string) config('vmedia.tables.gallery_media', 'vmedia_gallery_media');
         $attachments = self::attachmentsTable();
 
         return MediaItem::query()

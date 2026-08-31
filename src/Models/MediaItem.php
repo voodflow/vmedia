@@ -54,7 +54,7 @@ class MediaItem extends Media
     {
         return $this->belongsToMany(
             MediaGallery::class,
-            (string) config('vmedia.tables.gallery_media', 'voodbuilder_media_gallery_media'),
+            (string) config('vmedia.tables.gallery_media', 'vmedia_gallery_media'),
             'media_id',
             'gallery_id',
         )

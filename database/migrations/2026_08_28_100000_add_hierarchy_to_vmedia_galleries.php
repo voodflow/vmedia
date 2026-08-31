@@ -11,7 +11,7 @@ return new class extends Migration
 {
     public function up(): void
 {
-        $table = (string) config('vmedia.tables.galleries', 'voodbuilder_media_galleries');
+        $table = (string) config('vmedia.tables.galleries', 'vmedia_galleries');
 
         if (! Schema::hasTable($table)) {
             return;
@@ -45,7 +45,7 @@ return new class extends Migration
 
         DB::table($table)->whereNull('parent_id')->update(['parent_key' => 0]);
 
-        if ($this->hasIndexNamed($table, 'voodbuilder_media_galleries_slug_unique')) {
+        if ($this->hasIndexNamed($table, 'vmedia_galleries_slug_unique')) {
             Schema::table($table, function (Blueprint $blueprint): void {
                 $blueprint->dropUnique(['slug']);
             });
@@ -70,7 +70,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        $table = (string) config('vmedia.tables.galleries', 'voodbuilder_media_galleries');
+        $table = (string) config('vmedia.tables.galleries', 'vmedia_galleries');
 
         if (! Schema::hasTable($table)) {
             return;
@@ -99,7 +99,7 @@ return new class extends Migration
                 }
             }
 
-            if (! $this->hasIndexNamed($table, 'voodbuilder_media_galleries_slug_unique')) {
+            if (! $this->hasIndexNamed($table, 'vmedia_galleries_slug_unique')) {
                 $blueprint->unique('slug');
             }
         });

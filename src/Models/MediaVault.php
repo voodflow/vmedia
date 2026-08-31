@@ -23,15 +23,15 @@ class MediaVault extends Model implements HasMedia
 
     public function getTable(): string
     {
-        return (string) config('vmedia.tables.vaults', 'voodbuilder_media_vaults');
+        return (string) config('vmedia.tables.vaults', 'vmedia_vaults');
     }
 
     /**
-     * Stable morph alias (kept for existing Spatie media rows).
+     * Stable morph alias for Spatie media rows owned by the vault.
      */
     public function getMorphClass(): string
     {
-        return 'voodbuilder_media_vault';
+        return 'vmedia_vault';
     }
 
     public static function current(): self

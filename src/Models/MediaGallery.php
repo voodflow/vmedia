@@ -68,15 +68,15 @@ class MediaGallery extends Model
 
     public function getTable(): string
     {
-        return (string) config('vmedia.tables.galleries', 'voodbuilder_media_galleries');
+        return (string) config('vmedia.tables.galleries', 'vmedia_galleries');
     }
 
     /**
-     * Stable morph alias (kept for legacy migrations / existing rows).
+     * Stable morph alias for Spatie media rows owned by galleries.
      */
     public function getMorphClass(): string
     {
-        return 'voodbuilder_media_gallery';
+        return 'vmedia_gallery';
     }
 
     public function getSlugOptions(): SlugOptions
@@ -197,7 +197,7 @@ class MediaGallery extends Model
             }
 
             if ($gallery->isGroup() && $gallery->exists) {
-                $hasMedia = DB::table((string) config('vmedia.tables.gallery_media', 'voodbuilder_media_gallery_media'))
+                $hasMedia = DB::table((string) config('vmedia.tables.gallery_media', 'vmedia_gallery_media'))
                     ->where('gallery_id', $gallery->getKey())
                     ->exists();
 
@@ -225,7 +225,7 @@ class MediaGallery extends Model
     {
         return $this->belongsToMany(
             MediaItem::class,
-            (string) config('vmedia.tables.gallery_media', 'voodbuilder_media_gallery_media'),
+            (string) config('vmedia.tables.gallery_media', 'vmedia_gallery_media'),
             'gallery_id',
             'media_id',
         )
@@ -259,7 +259,7 @@ class MediaGallery extends Model
             return;
         }
 
-        $table = (string) config('vmedia.tables.gallery_media', 'voodbuilder_media_gallery_media');
+        $table = (string) config('vmedia.tables.gallery_media', 'vmedia_gallery_media');
         $existingMax = (int) (DB::table($table)
             ->where('gallery_id', $this->getKey())
             ->max('sort_order') ?? -1);

@@ -60,7 +60,7 @@ final class PluginVaultRootBootstrap
             return false;
         }
 
-        $table = (string) config('vmedia.tables.galleries', 'voodbuilder_media_galleries');
+        $table = (string) config('vmedia.tables.galleries', 'vmedia_galleries');
 
         return Schema::hasTable($table);
     }

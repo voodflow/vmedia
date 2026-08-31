@@ -60,8 +60,8 @@ if (class_exists(\Tests\TestCase::class)) {
 
             $migrationPath = dirname(__DIR__).'/database/migrations';
             $files = [
-                '2026_07_31_160000_create_voodbuilder_media_galleries_table.php',
-                '2026_07_31_170000_create_voodbuilder_media_vault_and_gallery_pivot.php',
+                '2026_07_31_160000_create_vmedia_galleries_table.php',
+                '2026_07_31_170000_create_vmedia_vault_and_gallery_pivot.php',
                 '2026_08_26_120000_create_vmedia_attachments_table.php',
                 '2026_08_26_160000_add_properties_to_vmedia_attachments_table.php',
                 '2026_08_28_100000_add_hierarchy_to_vmedia_galleries.php',
