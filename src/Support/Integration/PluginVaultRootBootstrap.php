@@ -62,6 +62,8 @@ final class PluginVaultRootBootstrap
 
         $table = (string) config('vmedia.tables.galleries', 'vmedia_galleries');
 
-        return Schema::hasTable($table);
+        // Hierarchy columns are added in a later migration; companions boot during migrate.
+        return Schema::hasTable($table)
+            && Schema::hasColumn($table, 'integration_source');
     }
 }
