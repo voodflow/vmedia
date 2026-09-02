@@ -48,6 +48,45 @@ final class UploadGuard
         }
     }
 
+    /**
+     * Clean an uploaded SVG by rewriting the temporary file, so the copy that reaches the
+     * disk is the sanitized one.
+     *
+     * MIME allow-listing does not help here: `image/svg+xml` is a type we want to accept,
+     * and the danger is in the document body rather than the type. Callers run this before
+     * hashing so deduplication keys the bytes actually stored.
+     */
+    public static function sanitizeSvgInPlace(?UploadedFile $file): void
+    {
+        if ($file === null || ! self::looksLikeSvg($file)) {
+            return;
+        }
+
+        $path = $file->getRealPath();
+
+        if ($path === false || ! is_readable($path)) {
+            return;
+        }
+
+        $sanitized = SvgSanitizer::sanitize((string) file_get_contents($path));
+
+        // Unparseable input is not something to put on a public disk — and an SVG that the
+        // sanitizer cannot read is not one a browser should be asked to interpret either.
+        if ($sanitized === '') {
+            throw ValidationException::withMessages([
+                'file' => ['The SVG could not be parsed and was rejected.'],
+            ]);
+        }
+
+        file_put_contents($path, $sanitized);
+    }
+
+    private static function looksLikeSvg(UploadedFile $file): bool
+    {
+        return strtolower((string) $file->getClientOriginalExtension()) === 'svg'
+            || str_contains(strtolower((string) $file->getMimeType()), 'svg');
+    }
+
     public static function containsPathTraversal(string $value): bool
     {
         $normalized = str_replace('\\', '/', $value);

@@ -233,6 +233,10 @@ final class MediaLibrary
     ): MediaItem {
         UploadGuard::assertSafeUpload($file);
         UploadGuard::assertAllowedMime($file);
+        // Before hashing, so dedup keys the bytes we are about to store rather than the
+        // hostile original — otherwise a cleaned upload could be deduplicated against a
+        // dirty one stored earlier.
+        UploadGuard::sanitizeSvgInPlace($file);
 
         $targets = self::normalizeGalleries($galleries);
         $hash = self::contentHashForUpload($file);
@@ -455,6 +459,7 @@ final class MediaLibrary
 
         UploadGuard::assertSafeUpload($file);
         UploadGuard::assertAllowedMime($file);
+        UploadGuard::sanitizeSvgInPlace($file);
 
         self::ensureOriginalBackup($media);
 

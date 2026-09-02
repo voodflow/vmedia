@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Voodflow\Vmedia\Tests\Concerns;
 
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Tests\User;
@@ -14,9 +15,30 @@ trait InteractsWithVmediaTests
     protected function bootVmediaTests(): void
     {
         $this->configureVmedia();
+        $this->grantVmediaAbilities();
 
         Vmedia::reset();
         Vmedia::activate();
+    }
+
+    /**
+     * Let the signed-in test user manage media.
+     *
+     * The policies ask for Shield-style abilities (`Create:MediaItem`), which nothing in a
+     * package test suite grants — so every authenticated request answered 403 and the
+     * upload, gallery and delete tests asserted nothing about the behaviour they name.
+     *
+     * Scoped to this package's models on purpose: abilities like `manage-vmedia`, which
+     * `vmedia.authorization.ability` points at, must stay deniable, and a blanket allow
+     * would quietly turn the middleware test green too.
+     */
+    protected function grantVmediaAbilities(): void
+    {
+        Gate::before(static function ($user, string $ability): ?bool {
+            return preg_match('/^[A-Za-z]+:(MediaItem|MediaGallery|MediaTag)$/', $ability) === 1
+                ? true
+                : null;
+        });
     }
 
     protected function configureVmedia(): void
