@@ -4,33 +4,77 @@ declare(strict_types=1);
 
 namespace Voodflow\Vmedia\Policies;
 
-use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Foundation\Auth\User as AuthUser;
 use Voodflow\Vmedia\Models\MediaGallery;
 
 class MediaGalleryPolicy
 {
-    public function viewAny(?Authenticatable $user): bool
+    use HandlesAuthorization;
+
+    public function viewAny(AuthUser $authUser): bool
     {
-        return $user !== null;
+        return $authUser->can('ViewAny:MediaGallery');
     }
 
-    public function view(?Authenticatable $user, MediaGallery $gallery): bool
+    public function view(AuthUser $authUser, MediaGallery $mediaGallery): bool
     {
-        return $user !== null;
+        return $authUser->can('View:MediaGallery');
     }
 
-    public function create(?Authenticatable $user): bool
+    public function create(AuthUser $authUser): bool
     {
-        return $user !== null;
+        return $authUser->can('Create:MediaGallery');
     }
 
-    public function update(?Authenticatable $user, MediaGallery $gallery): bool
+    public function update(AuthUser $authUser, MediaGallery $mediaGallery): bool
     {
-        return $user !== null;
+        return $authUser->can('Update:MediaGallery');
     }
 
-    public function delete(?Authenticatable $user, MediaGallery $gallery): bool
+    public function delete(AuthUser $authUser, MediaGallery $mediaGallery): bool
     {
-        return $user !== null && ! $gallery->is_default;
+        // The default gallery is the fallback target for every upload: deleting it orphans
+        // media that has nowhere else to live.
+        if ($mediaGallery->is_default) {
+            return false;
+        }
+
+        return $authUser->can('Delete:MediaGallery');
+    }
+
+    public function deleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('DeleteAny:MediaGallery');
+    }
+
+    public function restore(AuthUser $authUser, MediaGallery $mediaGallery): bool
+    {
+        return $authUser->can('Restore:MediaGallery');
+    }
+
+    public function forceDelete(AuthUser $authUser, MediaGallery $mediaGallery): bool
+    {
+        return $authUser->can('ForceDelete:MediaGallery');
+    }
+
+    public function forceDeleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('ForceDeleteAny:MediaGallery');
+    }
+
+    public function restoreAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('RestoreAny:MediaGallery');
+    }
+
+    public function replicate(AuthUser $authUser, MediaGallery $mediaGallery): bool
+    {
+        return $authUser->can('Replicate:MediaGallery');
+    }
+
+    public function reorder(AuthUser $authUser): bool
+    {
+        return $authUser->can('Reorder:MediaGallery');
     }
 }
