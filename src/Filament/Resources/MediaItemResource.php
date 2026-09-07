@@ -190,7 +190,7 @@ class MediaItemResource extends Resource
             ->filters([
                 SelectFilter::make('gallery_id')
                     ->label(__('vmedia::admin.library.gallery'))
-                    ->options(fn (): array => MediaGallery::query()->where('kind', MediaGallery::KIND_ALBUM)->orderBy('sort_order')->pluck('name', 'id')->all())
+                    ->options(fn (): array => GalleryDisplay::albumSelectOptions())
                     ->query(function (Builder $query, array $data): Builder {
                         $value = $data['value'] ?? null;
 
@@ -285,11 +285,7 @@ class MediaItemResource extends Resource
                         ->schema([
                             Select::make('gallery_ids')
                                 ->label(__('vmedia::admin.library.galleries'))
-                                ->options(fn (): array => MediaGallery::query()
-                                    ->where('kind', MediaGallery::KIND_ALBUM)
-                                    ->orderBy('sort_order')
-                                    ->pluck('name', 'id')
-                                    ->all())
+                                ->options(fn (): array => GalleryDisplay::albumSelectOptions())
                                 ->multiple()
                                 ->required()
                                 ->searchable(),

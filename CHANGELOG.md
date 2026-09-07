@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.5] - 2026-09-07
+
+### Fixed
+
+- Bulk “Assign galleries” and the library gallery filter show parent context (e.g. `Builder › Library`) so duplicate album names are distinguishable
+
 ## [0.2.4] - 2026-09-07
 
 ### Fixed

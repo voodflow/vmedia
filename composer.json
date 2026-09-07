@@ -1,7 +1,7 @@
 {
     "name": "voodflow/vmedia",
     "description": "Media Vault for the Voodflow plugin family (Filament 5 + Spatie Media Library). Standalone admin/API/galleries; integrates with VoodBuilder Asset Manager.",
-    "version": "0.2.4",
+    "version": "0.2.5",
     "type": "library",
     "license": "MIT",
     "keywords": [
