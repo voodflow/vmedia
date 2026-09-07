@@ -46,7 +46,7 @@ return [
         'import_zip_done' => 'Imported :count file(s) (:skipped skipped)',
         'files' => 'Files',
         'upload_help' => 'Photos, videos, and documents. Stored once in the vault; membership is per gallery. After upload you can tweak titles and captions.',
-        'upload_galleries_help' => 'Assign this upload to one or more galleries. In the admin picker and page builder, uploads follow the selected folder/album; otherwise they use the default gallery.',
+        'upload_galleries_help' => 'Assign this upload to one or more albums (folders cannot hold media).',
         'uploaded' => 'Media uploaded',
         'deleted' => 'Media deleted',
         'delete_detach_confirm' => 'This file is used on :count record(s). It will be removed from those records (e.g. exhibitor galleries) and moved to trash. The records themselves are not deleted.',

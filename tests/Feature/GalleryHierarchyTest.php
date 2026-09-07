@@ -37,6 +37,37 @@ class GalleryHierarchyTest extends TestCase
         $group->attachMedia([$media]);
     }
 
+    public function test_store_with_folder_attaches_to_resolved_album(): void
+    {
+        Storage::fake('public');
+
+        $folder = MediaGallery::query()->create([
+            'name' => 'Builder',
+            'slug' => 'builder-folder',
+            'kind' => MediaGallery::KIND_GROUP,
+            'is_public' => true,
+            'sort_order' => 0,
+            'parent_key' => 0,
+        ]);
+
+        $album = GalleryProvisioner::ensure([
+            'name' => 'Library',
+            'slug' => 'library',
+            'kind' => MediaGallery::KIND_ALBUM,
+            'parent' => $folder,
+            'integration_source' => 'test',
+            'integration_key' => 'group:'.$folder->getKey().':library',
+        ]);
+
+        $media = MediaLibrary::store(
+            UploadedFile::fake()->image('hero.jpg', 12, 12),
+            $folder,
+        );
+
+        $this->assertTrue($media->galleries->contains(fn (MediaGallery $g): bool => (int) $g->getKey() === (int) $album->getKey()));
+        $this->assertFalse($media->galleries->contains(fn (MediaGallery $g): bool => (int) $g->getKey() === (int) $folder->getKey()));
+    }
+
     public function test_path_resolution_and_aggregate_descendants(): void
     {
         Storage::fake('public');

@@ -46,7 +46,7 @@ return [
         'import_zip_done' => 'Importati :count file (:skipped saltati)',
         'files' => 'File',
         'upload_help' => 'Foto, video e documenti. Salvati una volta nel vault; l’appartenenza è per galleria. Dopo il caricamento puoi ritoccare titoli e metadati.',
-        'upload_galleries_help' => 'Assegna questo upload a una o più gallerie. Nel picker admin e nel page builder la destinazione segue cartella/album selezionati; altrimenti si usa la galleria predefinita.',
+        'upload_galleries_help' => 'Assegna questo upload a uno o più album (le cartelle non possono contenere media).',
         'uploaded' => 'Media caricati',
         'deleted' => 'Media eliminato',
         'delete_detach_confirm' => 'Questo file è usato in :count record. Verrà rimosso da quei record (es. gallery espositore) e spostato nel cestino. I record (espositore, ecc.) non vengono eliminati.',

@@ -1,8 +1,6 @@
 # Vmedia — product overview
 
-Reusable **media library and galleries** for Filament 5, backed by Spatie Media Library. One vault storage copy, many gallery memberships. Works standalone; optional page-builder Asset Manager integration.
-
-**Free MIT pilot** for the Voodflow ecosystem.
+**Media Vault** for the Voodflow plugin family: one vault storage copy, many gallery memberships. Built on Filament 5 and Spatie Media Library. Works standalone; integrates with VoodBuilder Asset Manager.
 
 ## Who it is for
 

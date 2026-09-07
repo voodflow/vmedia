@@ -603,7 +603,7 @@ final class MediaLibrary
     protected static function normalizeGalleries(iterable|MediaGallery|null $galleries): array
     {
         if ($galleries instanceof MediaGallery) {
-            return [$galleries];
+            $galleries = [$galleries];
         }
 
         if ($galleries === null) {
@@ -611,19 +611,30 @@ final class MediaLibrary
         }
 
         $resolved = [];
+        $seen = [];
 
         foreach ($galleries as $gallery) {
-            if ($gallery instanceof MediaGallery) {
-                $resolved[] = $gallery;
+            if (! $gallery instanceof MediaGallery) {
+                $gallery = MediaGallery::query()->find((int) $gallery);
+            }
 
+            if ($gallery === null) {
                 continue;
             }
 
-            $found = MediaGallery::query()->find((int) $gallery);
+            // Folders cannot hold media — map to the scoped Library album (or first album).
+            $album = $gallery->isGroup()
+                ? GalleryUploadTarget::resolve((int) $gallery->getKey())
+                : $gallery;
 
-            if ($found !== null) {
-                $resolved[] = $found;
+            $id = (int) $album->getKey();
+
+            if (isset($seen[$id])) {
+                continue;
             }
+
+            $seen[$id] = true;
+            $resolved[] = $album;
         }
 
         return $resolved !== [] ? $resolved : [MediaGallery::default()];

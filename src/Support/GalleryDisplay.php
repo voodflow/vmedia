@@ -30,6 +30,27 @@ final class GalleryDisplay
     }
 
     /**
+     * @return array<int, string> Album id → label (folders excluded).
+     */
+    public static function albumSelectOptions(): array
+    {
+        $albums = MediaGallery::query()
+            ->with(['parent:id,name,parent_id'])
+            ->where('kind', MediaGallery::KIND_ALBUM)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $options = [];
+
+        foreach ($albums as $album) {
+            $options[(int) $album->getKey()] = self::navLabel($album);
+        }
+
+        return $options;
+    }
+
+    /**
      * Compact label for sidebar / select options.
      *
      * Root nodes use their name. Nested albums include the parent folder for disambiguation

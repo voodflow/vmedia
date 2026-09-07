@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4] - 2026-09-07
+
+### Fixed
+
+- Upload / ZIP gallery pickers list **albums only** (folders cannot hold media)
+- Storing media against a folder resolves to that folder’s Library album instead of orphaning files with no gallery membership
+
 ## [0.2.3] - 2026-09-07
 
 ### Fixed

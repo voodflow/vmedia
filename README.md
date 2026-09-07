@@ -1,10 +1,8 @@
 # voodflow/vmedia
 
-Reusable **media library & galleries** for Filament 5, backed by [Spatie Media Library](https://github.com/spatie/laravel-medialibrary).
+**Media Vault** for the Voodflow plugin family: one vault storage copy, many gallery memberships, morph attachments for your domain models.
 
-**Free MIT pilot** for the Voodflow plugin family: one vault storage copy, many gallery memberships, morph attachments for your domain models.
-
-Works **standalone** (admin + HTTP API + public galleries). Optionally integrates with a page-builder Asset Manager.
+Built on Filament 5 and [Spatie Media Library](https://github.com/spatie/laravel-medialibrary). Works **standalone** (admin + HTTP API + public galleries). Integrates with VoodBuilder Asset Manager.
 
 ## Quick start (5 minutes)
 

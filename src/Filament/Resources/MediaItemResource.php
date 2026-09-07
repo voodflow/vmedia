@@ -45,6 +45,7 @@ use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaTag;
 use Voodflow\Vmedia\Models\MediaVault;
 use Voodflow\Vmedia\Support\FileTypeIcon;
+use Voodflow\Vmedia\Support\GalleryDisplay;
 use Voodflow\Vmedia\Support\MediaLibrary;
 use Voodflow\Vmedia\Support\MediaUsage;
 use Voodflow\Vmedia\Support\UploadGuard;
@@ -664,7 +665,7 @@ class MediaItemResource extends Resource
             ->schema([
                 Select::make('gallery_ids')
                     ->label(__('vmedia::admin.library.galleries'))
-                    ->options(fn (): array => MediaGallery::query()->orderBy('sort_order')->pluck('name', 'id')->all())
+                    ->options(fn (): array => GalleryDisplay::albumSelectOptions())
                     ->default(fn (): array => [(int) MediaGallery::default()->getKey()])
                     ->multiple()
                     ->required()
@@ -711,7 +712,7 @@ class MediaItemResource extends Resource
             ->schema([
                 Select::make('gallery_ids')
                     ->label(__('vmedia::admin.library.galleries'))
-                    ->options(fn (): array => MediaGallery::query()->orderBy('sort_order')->pluck('name', 'id')->all())
+                    ->options(fn (): array => GalleryDisplay::albumSelectOptions())
                     ->default(fn (): array => [(int) MediaGallery::default()->getKey()])
                     ->multiple()
                     ->required()
