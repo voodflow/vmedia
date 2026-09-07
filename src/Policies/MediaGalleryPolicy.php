@@ -7,6 +7,7 @@ namespace Voodflow\Vmedia\Policies;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Foundation\Auth\User as AuthUser;
 use Voodflow\Vmedia\Models\MediaGallery;
+use Voodflow\Vmedia\Support\MediaAuthorization;
 
 class MediaGalleryPolicy
 {
@@ -14,22 +15,22 @@ class MediaGalleryPolicy
 
     public function viewAny(AuthUser $authUser): bool
     {
-        return $authUser->can('ViewAny:MediaGallery');
+        return MediaAuthorization::allows($authUser, 'ViewAny:MediaGallery');
     }
 
     public function view(AuthUser $authUser, MediaGallery $mediaGallery): bool
     {
-        return $authUser->can('View:MediaGallery');
+        return MediaAuthorization::allows($authUser, 'View:MediaGallery');
     }
 
     public function create(AuthUser $authUser): bool
     {
-        return $authUser->can('Create:MediaGallery');
+        return MediaAuthorization::allows($authUser, 'Create:MediaGallery');
     }
 
     public function update(AuthUser $authUser, MediaGallery $mediaGallery): bool
     {
-        return $authUser->can('Update:MediaGallery');
+        return MediaAuthorization::allows($authUser, 'Update:MediaGallery');
     }
 
     public function delete(AuthUser $authUser, MediaGallery $mediaGallery): bool
@@ -40,41 +41,41 @@ class MediaGalleryPolicy
             return false;
         }
 
-        return $authUser->can('Delete:MediaGallery');
+        return MediaAuthorization::allows($authUser, 'Delete:MediaGallery');
     }
 
     public function deleteAny(AuthUser $authUser): bool
     {
-        return $authUser->can('DeleteAny:MediaGallery');
+        return MediaAuthorization::allows($authUser, 'DeleteAny:MediaGallery');
     }
 
     public function restore(AuthUser $authUser, MediaGallery $mediaGallery): bool
     {
-        return $authUser->can('Restore:MediaGallery');
+        return MediaAuthorization::allows($authUser, 'Restore:MediaGallery');
     }
 
     public function forceDelete(AuthUser $authUser, MediaGallery $mediaGallery): bool
     {
-        return $authUser->can('ForceDelete:MediaGallery');
+        return MediaAuthorization::allows($authUser, 'ForceDelete:MediaGallery');
     }
 
     public function forceDeleteAny(AuthUser $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:MediaGallery');
+        return MediaAuthorization::allows($authUser, 'ForceDeleteAny:MediaGallery');
     }
 
     public function restoreAny(AuthUser $authUser): bool
     {
-        return $authUser->can('RestoreAny:MediaGallery');
+        return MediaAuthorization::allows($authUser, 'RestoreAny:MediaGallery');
     }
 
     public function replicate(AuthUser $authUser, MediaGallery $mediaGallery): bool
     {
-        return $authUser->can('Replicate:MediaGallery');
+        return MediaAuthorization::allows($authUser, 'Replicate:MediaGallery');
     }
 
     public function reorder(AuthUser $authUser): bool
     {
-        return $authUser->can('Reorder:MediaGallery');
+        return MediaAuthorization::allows($authUser, 'Reorder:MediaGallery');
     }
 }

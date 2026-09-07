@@ -1,7 +1,7 @@
 {
     "name": "voodflow/vmedia",
     "description": "Reusable media library & galleries for Filament 5 (Spatie Media Library). Works standalone; optional page-builder editor integration.",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "type": "library",
     "license": "MIT",
     "keywords": [

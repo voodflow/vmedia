@@ -129,10 +129,18 @@ return [
     ],
 
     /*
-    | Optional Gate ability checked on HTTP media routes (in addition to auth).
-    | null = any authenticated user. Filament panel access is separate.
+    | Media policy authorization (galleries / items / tags).
+    |
+    | auto         — Shield present → named abilities (ViewAny:MediaItem, …);
+    |                otherwise any Filament panel user
+    | permissions  — always named abilities (custom Gate / Shield)
+    | panel        — always Filament panel access (ignore named abilities)
+    |
+    | Optional Gate ability checked on HTTP media routes (in addition to policies).
+    | null = no extra ability check.
     */
     'authorization' => [
+        'driver' => env('VMEDIA_AUTHORIZATION', 'auto'),
         'ability' => env('VMEDIA_ABILITY'),
     ],
 

@@ -7,6 +7,7 @@ namespace Voodflow\Vmedia\Policies;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Foundation\Auth\User as AuthUser;
 use Voodflow\Vmedia\Models\MediaItem;
+use Voodflow\Vmedia\Support\MediaAuthorization;
 use Voodflow\Vmedia\Support\MediaLibrary;
 
 class MediaItemPolicy
@@ -15,7 +16,7 @@ class MediaItemPolicy
 
     public function viewAny(AuthUser $authUser): bool
     {
-        return $authUser->can('ViewAny:MediaItem');
+        return MediaAuthorization::allows($authUser, 'ViewAny:MediaItem');
     }
 
     /**
@@ -24,56 +25,59 @@ class MediaItemPolicy
      */
     public function view(AuthUser $authUser, MediaItem $mediaItem): bool
     {
-        return $authUser->can('View:MediaItem') && MediaLibrary::isVaultMedia($mediaItem);
+        return MediaAuthorization::allows($authUser, 'View:MediaItem')
+            && MediaLibrary::isVaultMedia($mediaItem);
     }
 
     public function create(AuthUser $authUser): bool
     {
-        return $authUser->can('Create:MediaItem');
+        return MediaAuthorization::allows($authUser, 'Create:MediaItem');
     }
 
     public function update(AuthUser $authUser, MediaItem $mediaItem): bool
     {
-        return $authUser->can('Update:MediaItem') && MediaLibrary::isVaultMedia($mediaItem);
+        return MediaAuthorization::allows($authUser, 'Update:MediaItem')
+            && MediaLibrary::isVaultMedia($mediaItem);
     }
 
     public function delete(AuthUser $authUser, MediaItem $mediaItem): bool
     {
-        return $authUser->can('Delete:MediaItem') && MediaLibrary::isVaultMedia($mediaItem);
+        return MediaAuthorization::allows($authUser, 'Delete:MediaItem')
+            && MediaLibrary::isVaultMedia($mediaItem);
     }
 
     public function deleteAny(AuthUser $authUser): bool
     {
-        return $authUser->can('DeleteAny:MediaItem');
+        return MediaAuthorization::allows($authUser, 'DeleteAny:MediaItem');
     }
 
     public function restore(AuthUser $authUser, MediaItem $mediaItem): bool
     {
-        return $authUser->can('Restore:MediaItem');
+        return MediaAuthorization::allows($authUser, 'Restore:MediaItem');
     }
 
     public function forceDelete(AuthUser $authUser, MediaItem $mediaItem): bool
     {
-        return $authUser->can('ForceDelete:MediaItem');
+        return MediaAuthorization::allows($authUser, 'ForceDelete:MediaItem');
     }
 
     public function forceDeleteAny(AuthUser $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:MediaItem');
+        return MediaAuthorization::allows($authUser, 'ForceDeleteAny:MediaItem');
     }
 
     public function restoreAny(AuthUser $authUser): bool
     {
-        return $authUser->can('RestoreAny:MediaItem');
+        return MediaAuthorization::allows($authUser, 'RestoreAny:MediaItem');
     }
 
     public function replicate(AuthUser $authUser, MediaItem $mediaItem): bool
     {
-        return $authUser->can('Replicate:MediaItem');
+        return MediaAuthorization::allows($authUser, 'Replicate:MediaItem');
     }
 
     public function reorder(AuthUser $authUser): bool
     {
-        return $authUser->can('Reorder:MediaItem');
+        return MediaAuthorization::allows($authUser, 'Reorder:MediaItem');
     }
 }
