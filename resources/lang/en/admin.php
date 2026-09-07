@@ -64,6 +64,7 @@ return [
         'bulk_replace' => 'Remove from other galleries',
         'bulk_replace_help' => 'Off: keep current galleries and also add the ones you select. On: leave only the selected galleries (remove from all others).',
         'bulk_assign_done' => 'Galleries updated',
+        'galleries_count' => '{0} No galleries|{1} :count gallery|[2,*] :count galleries',
         'bulk_assign_tags' => 'Assign tags',
         'bulk_replace_tags' => 'Remove other tags',
         'bulk_replace_tags_help' => 'Off: keep current tags and also add the ones you select. On: leave only the selected tags (remove all others).',

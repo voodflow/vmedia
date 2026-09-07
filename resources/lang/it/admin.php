@@ -64,6 +64,7 @@ return [
         'bulk_replace' => 'Rimuovi dalle altre gallerie',
         'bulk_replace_help' => 'Off: resta anche nelle gallerie attuali e aggiungi quelle scelte. On: resta solo nelle gallerie selezionate (esce da tutte le altre).',
         'bulk_assign_done' => 'Gallerie aggiornate',
+        'galleries_count' => '{0} Nessuna galleria|{1} :count galleria|[2,*] :count gallerie',
         'bulk_assign_tags' => 'Assegna tag',
         'bulk_replace_tags' => 'Rimuovi gli altri tag',
         'bulk_replace_tags_help' => 'Off: restano anche i tag attuali e aggiungi quelli scelti. On: restano solo i tag selezionati (togli tutti gli altri).',

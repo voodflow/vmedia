@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.8] - 2026-09-07
+
+### Fixed
+
+- Media library Galleries column shows parent context (e.g. `Builder › Library`) plus a tooltip with the gallery count
+
 ## [0.2.7] - 2026-09-07
 
 ### Fixed

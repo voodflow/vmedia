@@ -93,7 +93,7 @@ class MediaItemResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ])
-            ->with(['galleries:id,name'])
+            ->with(['galleries.parent:id,name'])
             ->where('model_type', (new MediaVault)->getMorphClass())
             ->whereIn('collection_name', [
                 MediaGallery::COLLECTION_IMAGES,
@@ -147,11 +147,30 @@ class MediaItemResource extends Resource
 
                         return implode(' — ', $parts);
                     }),
-                TextColumn::make('galleries.name')
+                TextColumn::make('galleries_display')
                     ->label(__('vmedia::admin.library.galleries'))
                     ->badge()
                     ->separator(',')
-                    ->placeholder('—'),
+                    ->state(function (MediaItem $record): array {
+                        return $record->galleries
+                            ->sortBy([
+                                ['sort_order', 'asc'],
+                                ['id', 'asc'],
+                            ])
+                            ->map(fn (MediaGallery $gallery): string => GalleryDisplay::navLabel($gallery))
+                            ->values()
+                            ->all();
+                    })
+                    ->placeholder('—')
+                    ->tooltip(function (MediaItem $record): ?string {
+                        $count = $record->galleries->count();
+
+                        if ($count === 0) {
+                            return null;
+                        }
+
+                        return trans_choice('vmedia::admin.library.galleries_count', $count, ['count' => $count]);
+                    }),
                 TextColumn::make('usage')
                     ->label(__('vmedia::admin.library.usage'))
                     ->state(fn (MediaItem $record): string => (string) MediaUsage::attachmentCount($record))
