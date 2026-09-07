@@ -65,6 +65,8 @@ return [
         'bulk_replace_help' => 'Off: resta anche nelle gallerie attuali e aggiungi quelle scelte. On: resta solo nelle gallerie selezionate (esce da tutte le altre).',
         'bulk_assign_done' => 'Gallerie aggiornate',
         'bulk_assign_tags' => 'Assegna tag',
+        'bulk_replace_tags' => 'Rimuovi gli altri tag',
+        'bulk_replace_tags_help' => 'Off: resta anche i tag attuali e aggiungi quelli scelti. On: resta solo i tag selezionati (togli tutti gli altri).',
         'bulk_assign_tags_done' => 'Tag aggiornati',
         'bulk_create_gallery' => 'Nuova galleria dalla selezione',
         'bulk_create_gallery_done' => 'Galleria “:name” creata con i media selezionati',

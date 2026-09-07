@@ -315,7 +315,8 @@ class MediaItemResource extends Resource
                                 ->label(__('vmedia::admin.library.tags'))
                                 ->required(),
                             Toggle::make('replace')
-                                ->label(__('vmedia::admin.library.bulk_replace'))
+                                ->label(__('vmedia::admin.library.bulk_replace_tags'))
+                                ->helperText(__('vmedia::admin.library.bulk_replace_tags_help'))
                                 ->default(false),
                         ])
                         ->action(function (Collection $records, array $data): void {

@@ -65,6 +65,8 @@ return [
         'bulk_replace_help' => 'Off: keep current galleries and also add the ones you select. On: leave only the selected galleries (remove from all others).',
         'bulk_assign_done' => 'Galleries updated',
         'bulk_assign_tags' => 'Assign tags',
+        'bulk_replace_tags' => 'Remove other tags',
+        'bulk_replace_tags_help' => 'Off: keep current tags and also add the ones you select. On: leave only the selected tags (remove all others).',
         'bulk_assign_tags_done' => 'Tags updated',
         'bulk_create_gallery' => 'New gallery from selection',
         'bulk_create_gallery_done' => 'Gallery “:name” created with selected media',

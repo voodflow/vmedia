@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.7] - 2026-09-07
+
+### Fixed
+
+- Bulk “Assign tags” toggle no longer reuses the galleries wording (“Remove from other galleries”); it now says remove/keep other tags
+
 ## [0.2.6] - 2026-09-07
 
 ### Changed
