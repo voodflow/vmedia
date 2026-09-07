@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Voodflow\Vmedia\Support;
 
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -55,7 +56,7 @@ final class MediaAuthorization
 
     public static function usesPermissionAuthorizer(): bool
     {
-        return class_exists(\BezhanSalleh\FilamentShield\FilamentShieldPlugin::class);
+        return class_exists(FilamentShieldPlugin::class);
     }
 
     public static function userCanAccessPanel(): bool
@@ -79,10 +80,9 @@ final class MediaAuthorization
         }
 
         if ($panels === []) {
-            if ($user instanceof FilamentUser) {
-                return false;
-            }
-
+            // Editor/media routes often run with no "current" Filament panel. An empty
+            // registry here is usually boot timing — not "user cannot access admin".
+            // Without Shield, authenticated users may manage media (stock Filament).
             return ! self::usesPermissionAuthorizer();
         }
 

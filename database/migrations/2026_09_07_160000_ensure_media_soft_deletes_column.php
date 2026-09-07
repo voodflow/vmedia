@@ -7,11 +7,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Adds SoftDeletes to Spatie's `media` table.
- *
- * IMPORTANT: if this runs before `create_media_table`, it no-ops. A later
- * ensure migration (`2026_09_07_160000_ensure_media_soft_deletes_column`)
- * repairs installs that hit that race.
+ * Recovery for hosts where `add_soft_deletes_to_media_table` ran before the Spatie
+ * `media` table existed (early return) and was recorded as migrated — SoftDeletes
+ * then queries a missing `deleted_at` column on /admin/vmedia/library.
  */
 return new class extends Migration
 {
@@ -32,12 +30,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (! Schema::hasTable('media') || ! Schema::hasColumn('media', 'deleted_at')) {
-            return;
-        }
-
-        Schema::table('media', function (Blueprint $table): void {
-            $table->dropSoftDeletes();
-        });
+        // Do not drop deleted_at — the original soft-deletes migration owns that.
     }
 };

@@ -51,4 +51,20 @@ class MediaAuthorizationTest extends TestCase
         $this->assertTrue(MediaAuthorization::allows($user, 'Create:MediaItem'));
         $this->assertTrue(MediaAuthorization::allows($user, 'ViewAny:MediaGallery'));
     }
+
+    public function test_panel_driver_allows_plain_authenticated_user(): void
+    {
+        config(['vmedia.authorization.driver' => 'panel']);
+
+        $user = new User;
+        $user->forceFill([
+            'name' => 'Editor',
+            'email' => 'editor-media@example.com',
+            'password' => bcrypt('secret'),
+        ])->save();
+
+        $this->actingAs($user);
+
+        $this->assertTrue(MediaAuthorization::allows($user, 'Create:MediaItem'));
+    }
 }

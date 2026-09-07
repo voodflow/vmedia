@@ -6,6 +6,7 @@ namespace Voodflow\Vmedia\Console;
 
 use Composer\InstalledVersions;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
 
 class InstallCommand extends Command
 {
@@ -67,10 +68,25 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
+        $this->assertMediaSoftDeletesReady();
+
         $this->components->success('voodflow/vmedia installed.');
         $this->printNextSteps();
 
         return self::SUCCESS;
+    }
+
+    protected function assertMediaSoftDeletesReady(): void
+    {
+        if (! Schema::hasTable('media')) {
+            $this->components->warn('`media` table is still missing. Publish Spatie medialibrary migrations and re-run migrate.');
+
+            return;
+        }
+
+        if (! Schema::hasColumn('media', 'deleted_at')) {
+            $this->components->error('`media.deleted_at` is missing after migrate. Re-run `php artisan migrate` (vmedia ensure soft-deletes migration).');
+        }
     }
 
     protected function mediaTableMigrationIsAvailable(): bool

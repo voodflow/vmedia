@@ -6,6 +6,8 @@ namespace Voodflow\Vmedia\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Schema;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
@@ -46,6 +48,28 @@ class MediaItem extends Media
     public const CUSTOM_DERIVED_FROM_UUID = 'derived_from_uuid';
 
     public const CUSTOM_EDITED_AT = 'edited_at';
+
+    protected static function booted(): void
+    {
+        // SoftDeletes is required when soft_deletes=true, but the column can be
+        // missing if the soft-delete migration no-op'd before Spatie created `media`.
+        // Drop the global scope so Filament library pages stay usable until migrate.
+        if (! (bool) config('vmedia.soft_deletes', true) || ! static::mediaTableHasDeletedAt()) {
+            static::withoutGlobalScope(SoftDeletingScope::class);
+        }
+    }
+
+    protected static function mediaTableHasDeletedAt(): bool
+    {
+        try {
+            return Schema::hasColumn(
+                (new static)->getTable(),
+                'deleted_at',
+            );
+        } catch (\Throwable) {
+            return false;
+        }
+    }
 
     /**
      * @return BelongsToMany<MediaGallery, $this>
