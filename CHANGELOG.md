@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.6] - 2026-09-07
+
+### Changed
+
+- Bulk “Assign galleries / tags” toggle wording clarifies Off (add, keep current) vs On (remove from other galleries/tags)
+
 ## [0.2.5] - 2026-09-07
 
 ### Fixed
