@@ -4,6 +4,32 @@
 
 Built on Filament 5 and [Spatie Media Library](https://github.com/spatie/laravel-medialibrary). Works **standalone** (admin + HTTP API + public galleries). Integrates with VoodBuilder Asset Manager.
 
+## Requirements
+
+| Requirement | Notes |
+|-------------|--------|
+| PHP | 8.4+ |
+| Laravel | 12 or 13 |
+| Filament | 5 |
+| Spatie Media Library | 11 |
+| PHP `gd` extension | **Must** be built with **JPEG** (and preferably **WebP** + FreeType). Spatie generates `thumb` conversions on upload; without JPEG support you get `imagecreatefromstring(): No JPEG support in this PHP build`. |
+
+Verify in the app container:
+
+```bash
+php -r 'var_export(gd_info()["JPEG Support"] ?? false);'
+# expect: true
+```
+
+Docker / `php:*-fpm` example:
+
+```dockerfile
+RUN apt-get update && apt-get install -y \
+    libpng-dev libjpeg-dev libwebp-dev libfreetype6-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install gd
+```
+
 ## Quick start (5 minutes)
 
 ```bash

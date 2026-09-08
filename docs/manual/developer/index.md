@@ -2,10 +2,12 @@
 
 ## Requirements
 
-- PHP 8.4+
+- PHP 8.4+ with the **`gd`** extension compiled with **JPEG** support (WebP + FreeType recommended). Required for Spatie Media Library thumb conversions on image upload.
 - Laravel 12 or 13
 - Filament 5
 - Spatie Media Library 11
+
+Confirm JPEG support: `php -r 'var_export(gd_info()["JPEG Support"] ?? false);'` must print `true`.
 
 ## Install
 

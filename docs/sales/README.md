@@ -25,7 +25,7 @@
 
 | Requirement | Value |
 |-------------|--------|
-| PHP | 8.4+ |
+| PHP | 8.4+ with `gd` (JPEG required; WebP/FreeType recommended) |
 | Laravel | 12 or 13 |
 | Filament | 5 |
 | Spatie Media Library | 11 |

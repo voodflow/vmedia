@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Docs
+
+- Document PHP `gd` with JPEG (and recommended WebP/FreeType) as a hard runtime requirement for Spatie thumb conversions
+
 ## [0.2.8] - 2026-09-07
 
 ### Fixed
