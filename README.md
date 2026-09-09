@@ -4,7 +4,7 @@
 
 **Media Vault** for Laravel + Filament: upload once, reuse everywhere. One vault storage copy, many gallery memberships, morph attachments for your domain models.
 
-Works **standalone** in any Filament app — not limited to Voodflow. Optional integrations with VoodBuilder (Asset Manager), Voodflow (e.g. Approval Page heroes), and any third-party package that registers its own vault root.
+Works **standalone** in any Filament app. Optional integrations with VoodBuilder (Asset Manager), Voodflow (e.g. Approval Page heroes), and any third-party package that registers its own vault root.
 
 Built on Filament 5 and [Spatie Media Library](https://github.com/spatie/laravel-medialibrary).
 
