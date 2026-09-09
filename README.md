@@ -241,9 +241,7 @@ VMEDIA_PUBLIC_GALLERIES=true
 
 ## Docs
 
-- User manual: [docs/manual/user/index.md](docs/manual/user/index.md)
-- Developer manual: [docs/manual/developer/index.md](docs/manual/developer/index.md)
-- Product overview: [docs/sales/README.md](docs/sales/README.md)
+- Release checklist (internal): [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)
 
 ## License
 

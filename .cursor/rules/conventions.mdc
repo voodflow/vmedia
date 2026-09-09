@@ -9,6 +9,7 @@ alwaysApply: false
 - Namespace: `Voodflow\Vmedia`. Composer: `voodflow/vmedia`. Plugin: `VmediaPlugin`.
 - Vault + galleries architecture — one disk object, many memberships.
 - Domain companions attach via `HasAttachedMedia` + `VmediaFileUpload`; do not put Spatie `HasMedia` on those models.
-- Prefer `vmedia.*` route names; keep builder aliases behind config until hosts migrate.
+- Prefer `vmedia.*` route names for the HTTP media API.
 - Own Filament **Media** nav group — not under page-builder settings.
-- Docs: `docs/sales`, `docs/developer`, `docs/manual/*`, `docs/RELEASE_CHECKLIST.md`.
+- Public docs live in the root **README**; `docs/` keeps `images/` + `RELEASE_CHECKLIST.md` only.
+- Companions register vault roots via `Vmedia::registerPluginVault` / `RegistersPluginVault`.

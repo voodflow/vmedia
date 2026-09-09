@@ -1,10 +1,11 @@
-# Vmedia — release checklist
+# VoodMedia — release checklist
 
-## Missing for release
+## Release gate
 
-- [x] Marketplace / sales overview from `docs/sales/README.md`
+- [x] README quick start + plugin vault registration guide
 - [x] Install command + migration story for fresh hosts
-- [x] Plugin vault roots owned by companions (`Vmedia::registerPluginVault`) — no hardcoded builder list / editor route aliases
+- [x] Plugin vault roots owned by companions (`Vmedia::registerPluginVault`) — no hardcoded product list / editor route aliases
+- [x] Promo + UI screenshots in `docs/images/`
 
 ## Shipped (sprints A–C)
 
