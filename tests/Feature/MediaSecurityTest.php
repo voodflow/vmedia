@@ -15,6 +15,7 @@ use Voodflow\Vmedia\Support\Integration\PluginVaultRootGroup;
 use Voodflow\Vmedia\Support\MediaLibrary;
 use Voodflow\Vmedia\Support\UploadGuard;
 use Voodflow\Vmedia\Tests\TestCase;
+use Voodflow\Vmedia\Vmedia;
 
 class MediaSecurityTest extends TestCase
 {
@@ -23,14 +24,6 @@ class MediaSecurityTest extends TestCase
         $this->getJson(route('vmedia.media.galleries'))->assertUnauthorized();
         $this->getJson(route('vmedia.media.index'))->assertUnauthorized();
         $this->postJson(route('vmedia.media.upload'), [])->assertUnauthorized();
-    }
-
-    public function test_guest_cannot_use_compat_editor_aliases(): void
-    {
-        $this->assertVmediaRouteRegistered('voodbuilder.editor.media.galleries');
-        $this->getJson(route('voodbuilder.editor.media.galleries'))->assertUnauthorized();
-        $this->getJson(route('voodbuilder.editor.media.index'))->assertUnauthorized();
-        $this->postJson(route('voodbuilder.editor.upload'), [])->assertUnauthorized();
     }
 
     public function test_authenticated_user_can_list_galleries(): void
@@ -127,7 +120,8 @@ class MediaSecurityTest extends TestCase
         $this->actingAsUser();
         Storage::fake('public');
 
-        $builderRoot = PluginVaultRootGroup::voodbuilder();
+        Vmedia::registerPluginVault('voodbuilder', 'voodbuilder', 'Builder');
+        $builderRoot = PluginVaultRootGroup::for('voodbuilder');
         $library = PluginVaultLibraryGallery::album('voodbuilder');
         $file = UploadedFile::fake()->image('builder-shot.jpg', 24, 24);
 
@@ -148,7 +142,8 @@ class MediaSecurityTest extends TestCase
     {
         $this->actingAsUser();
 
-        $builderRoot = PluginVaultRootGroup::voodbuilder();
+        Vmedia::registerPluginVault('voodbuilder', 'voodbuilder', 'Builder');
+        $builderRoot = PluginVaultRootGroup::for('voodbuilder');
         $library = PluginVaultLibraryGallery::album('voodbuilder');
 
         $response = $this->getJson(route('vmedia.media.galleries', [
@@ -244,7 +239,7 @@ class MediaSecurityTest extends TestCase
         $this->assertVmediaRouteRegistered('vmedia.media.index');
         $this->assertVmediaRouteRegistered('vmedia.media.upload');
         $this->assertVmediaRouteRegistered('vmedia.media.destroy');
-        $this->assertVmediaRouteRegistered('voodbuilder.editor.media.galleries');
-        $this->assertVmediaRouteRegistered('voodbuilder.editor.upload');
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('voodbuilder.editor.media.galleries'));
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('voodbuilder.editor.upload'));
     }
 }

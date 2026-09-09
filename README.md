@@ -1,8 +1,10 @@
 # VoodMedia (`voodflow/vmedia`)
 
-**Media Vault** for the Voodflow plugin family: upload once, reuse everywhere. One vault storage copy, many gallery memberships, morph attachments for your domain models.
+**Media Vault** for Laravel + Filament: upload once, reuse everywhere. One vault storage copy, many gallery memberships, morph attachments for your domain models.
 
-Built on Filament 5 and [Spatie Media Library](https://github.com/spatie/laravel-medialibrary). Works **standalone** (admin + HTTP API + public galleries). Integrates with VoodBuilder Asset Manager and Voodflow (e.g. Approval Page heroes).
+Works **standalone** in any Filament app — not limited to Voodflow. Optional integrations with VoodBuilder (Asset Manager), Voodflow (e.g. Approval Page heroes), and any third-party package that registers its own vault root.
+
+Built on Filament 5 and [Spatie Media Library](https://github.com/spatie/laravel-medialibrary).
 
 ## Screenshots
 
@@ -103,6 +105,91 @@ VmediaPicker::make('gallery')
     ->multiple();
 ```
 
+## Plugin vault roots (for packages & host apps)
+
+VoodMedia does **not** hardcode product folders. Each package (or the host app) **registers** a top-level folder + default **Library** album, then uses it for uploads/pickers.
+
+### 1. Register + ensure on boot
+
+In your package `ServiceProvider` (or `AppServiceProvider`):
+
+```php
+use Voodflow\Vmedia\Support\Integration\RegistersPluginVault;
+
+public function boot(): void
+{
+    if (! class_exists(RegistersPluginVault::class)) {
+        return;
+    }
+
+    // source = stable id (integration_source), slug = folder slug in the UI
+    RegistersPluginVault::register(
+        source: 'acme',
+        slug: 'acme',
+        name: 'Acme', // or fn (): string => __('acme::nav.media_root')
+        // integrationKey: 'root:acme', // optional; default root:{slug}
+    );
+    RegistersPluginVault::ensureOnBoot($this->app, 'acme');
+}
+```
+
+Equivalent low-level API:
+
+```php
+use Voodflow\Vmedia\Vmedia;
+
+Vmedia::registerPluginVault('acme', 'acme', 'Acme');
+Vmedia::ensurePluginVault('acme'); // or RegistersPluginVault::ensureOnBoot(...)
+```
+
+After boot you get a folder **Acme** with a child **Library** album (upload target when browsing that folder).
+
+Sync all *registered* roots (after companions have booted):
+
+```bash
+php artisan vmedia:ensure-plugin-roots
+```
+
+### 2. Use the vault in code
+
+```php
+use Voodflow\Vmedia\Support\Integration\PluginVaultRootGroup;
+use Voodflow\Vmedia\Support\Integration\PluginVaultLibraryGallery;
+use Voodflow\Vmedia\Support\MediaLibrary;
+use Voodflow\Vmedia\Filament\Forms\Components\VmediaPicker;
+
+// Top-level folder (KIND_GROUP)
+$root = PluginVaultRootGroup::for('acme');
+
+// Default Library album under that folder (KIND_ALBUM) — prefer this for uploads
+$library = PluginVaultLibraryGallery::album('acme');
+
+MediaLibrary::store($uploadedFile, $library);
+
+// Lock a Filament picker to your plugin library
+VmediaPicker::make('hero')
+    ->images()
+    ->attachToRecord(false)
+    ->vaultGallery(fn (): int => (int) PluginVaultLibraryGallery::album('acme')->getKey());
+```
+
+Optional: nest under a configured parent (settings / multi-tenant layout):
+
+```php
+PluginVaultRootGroup::for('acme', $optionalOuterRootId);
+```
+
+### 3. Conventions
+
+| Concept | Rule |
+| ------- | ---- |
+| `source` | Stable string stored as `integration_source` (e.g. `acme`, `voodflow`) |
+| `slug` | URL/path segment for the folder |
+| Library album | Auto-created under the root; use it as default upload target |
+| Isolation | Your package owns only its `source`; do not hardcode other products in VoodMedia |
+
+Shared **Logos** folder is provided by VoodMedia itself (`PluginVaultRootGroup::logos()`).
+
 ## Model
 
 - **Vault** — singleton Spatie owner of every file on disk (one storage copy)
@@ -148,7 +235,6 @@ VMEDIA_CONVERSIONS=true
 VMEDIA_DETECT_DUPLICATES=true
 VMEDIA_PROTECT_DELETE=true
 VMEDIA_PUBLIC_GALLERIES=true
-VMEDIA_VOODBUILDER_EDITOR_ROUTES=true
 ```
 
 ## Docs

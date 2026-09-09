@@ -10,9 +10,6 @@ use Voodflow\Vmedia\Http\Middleware\EnsureVmediaAuthorized;
 
 /**
  * Package-owned media HTTP routes (galleries browser + vault upload).
- *
- * Always registers under the configured vmedia prefix. Optionally also
- * registers page-builder editor path aliases for transitional compatibility.
  */
 final class VmediaRoutes
 {
@@ -50,21 +47,6 @@ final class VmediaRoutes
                 Route::post('media/replace', [MediaController::class, 'replace'])->name('media.replace');
                 Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
             });
-
-        if ((bool) config('vmedia.integrations.voodbuilder.editor_routes', true)) {
-            $compatPrefix = (string) config('vmedia.integrations.voodbuilder.prefix', 'voodbuilder/editor');
-            $compatName = (string) config('vmedia.integrations.voodbuilder.name_prefix', 'voodbuilder.editor.');
-
-            Route::middleware($middleware)
-                ->prefix($compatPrefix)
-                ->name($compatName)
-                ->group(function (): void {
-                    Route::get('media/galleries', [MediaController::class, 'galleries'])->name('media.galleries');
-                    Route::get('media', [MediaController::class, 'index'])->name('media.index');
-                    Route::post('upload', [MediaController::class, 'store'])->name('upload');
-                    Route::post('media/replace', [MediaController::class, 'replace'])->name('media.replace');
-                });
-        }
     }
 
     public static function reset(): void

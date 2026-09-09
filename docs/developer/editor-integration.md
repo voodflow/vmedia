@@ -69,8 +69,6 @@ On the **first** replace, vmedia copies the previous file to `{directory}/.origi
 
 **Save as copy** uses `POST /vmedia/media/upload` with optional `derived_from_uuid` instead.
 
-Compat route alias: `POST /voodbuilder/editor/media/replace` when editor routes are enabled.
-
 ## PHP: `GalleryUploadTarget`
 
 ```php
@@ -133,7 +131,7 @@ See [companion-integration.md](../../../voodbuilder/docs/developer/companion-int
 
 ## Plugin vault folders
 
-Each companion can register a root **folder** + `Library` album (`PluginVaultRootGroup`, `PluginVaultLibraryGallery`). Selecting **Builder** in the editor uploads to `Builder/Library`, not the site-wide default.
+Each companion registers a root **folder** + `Library` album via `Vmedia::registerPluginVault()` / `RegistersPluginVault`. Selecting **Builder** in the editor uploads to `Builder/Library`, not the site-wide default.
 
 Ensure roots exist (and prune duplicate plugin Library albums):
 

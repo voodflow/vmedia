@@ -117,18 +117,6 @@ return [
     ],
 
     /*
-    | Optional compatibility aliases for page-builder editor Asset Manager URLs.
-    | Host apps can turn these off once the builder points at vmedia.* routes.
-    */
-    'integrations' => [
-        'voodbuilder' => [
-            'editor_routes' => env('VMEDIA_VOODBUILDER_EDITOR_ROUTES', true),
-            'prefix' => 'voodbuilder/editor',
-            'name_prefix' => 'voodbuilder.editor.',
-        ],
-    ],
-
-    /*
     | Media policy authorization (galleries / items / tags).
     |
     | auto         — Shield present → named abilities (ViewAny:MediaItem, …);

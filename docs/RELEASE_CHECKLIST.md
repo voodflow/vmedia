@@ -4,7 +4,7 @@
 
 - [x] Marketplace / sales overview from `docs/sales/README.md`
 - [x] Install command + migration story for fresh hosts
-- [ ] Document deprecation timeline for `voodbuilder/editor` aliases (host-specific)
+- [x] Plugin vault roots owned by companions (`Vmedia::registerPluginVault`) — no hardcoded builder list / editor route aliases
 
 ## Shipped (sprints A–C)
 

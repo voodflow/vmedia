@@ -10,12 +10,22 @@ use Voodflow\Vmedia\Support\GalleryUploadTarget;
 use Voodflow\Vmedia\Support\Integration\PluginVaultLibraryGallery;
 use Voodflow\Vmedia\Support\Integration\PluginVaultRootGroup;
 use Voodflow\Vmedia\Tests\TestCase;
+use Voodflow\Vmedia\Vmedia;
 
 class GalleryUploadTargetTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Vmedia::registerPluginVault('voodbuilder', 'voodbuilder', 'Builder');
+        Vmedia::registerPluginVault('vtuts', 'vtuts', 'Tutorials');
+        Vmedia::registerPluginVault('vdocs', 'vdocs', 'Documents');
+    }
+
     public function test_resolves_plugin_group_to_library_album(): void
     {
-        $builderRoot = PluginVaultRootGroup::voodbuilder();
+        $builderRoot = PluginVaultRootGroup::for('voodbuilder');
         $library = PluginVaultLibraryGallery::album('voodbuilder');
 
         $resolved = GalleryUploadTarget::resolve((int) $builderRoot->getKey());
@@ -36,7 +46,7 @@ class GalleryUploadTargetTest extends TestCase
     public function test_plugin_vault_library_matches_group_resolve(): void
     {
         $library = PluginVaultLibraryGallery::album('voodbuilder');
-        $resolved = GalleryUploadTarget::resolve((int) PluginVaultRootGroup::voodbuilder()->getKey());
+        $resolved = GalleryUploadTarget::resolve((int) PluginVaultRootGroup::for('voodbuilder')->getKey());
 
         $this->assertSame((int) $library->getKey(), (int) $resolved->getKey());
         $this->assertStringStartsWith('voodbuilder/library', GalleryPath::toPath($library));

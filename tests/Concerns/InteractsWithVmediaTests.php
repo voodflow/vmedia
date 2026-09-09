@@ -45,7 +45,6 @@ trait InteractsWithVmediaTests
     {
         config()->set('vmedia.enabled', true);
         config()->set('vmedia.auto_register', true);
-        config()->set('vmedia.integrations.voodbuilder.editor_routes', true);
         config()->set('vmedia.authorization.ability', null);
         config()->set('vmedia.disk', 'public');
         config()->set('vmedia.conversions.enabled', false);

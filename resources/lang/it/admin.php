@@ -168,6 +168,7 @@ return [
         'vtuts' => 'Tutorial',
         'vdocs' => 'Documenti',
         'voodbuilder' => 'Builder',
+        'voodflow' => 'Workflow',
         'vforms' => 'Moduli',
         'logos' => 'Loghi',
         'logos_library' => 'Libreria',

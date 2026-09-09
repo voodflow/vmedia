@@ -9,12 +9,14 @@ use Voodflow\Vmedia\Support\GalleryUploadTarget;
 use Voodflow\Vmedia\Support\Integration\DuplicateLibraryAlbumPruner;
 use Voodflow\Vmedia\Support\Integration\PluginVaultRootGroup;
 use Voodflow\Vmedia\Tests\TestCase;
+use Voodflow\Vmedia\Vmedia;
 
 class DuplicateLibraryAlbumPrunerTest extends TestCase
 {
     public function test_prune_removes_duplicate_empty_library_album_under_plugin_folder(): void
     {
-        $builder = PluginVaultRootGroup::voodbuilder();
+        Vmedia::registerPluginVault('voodbuilder', 'voodbuilder', 'Builder');
+        $builder = PluginVaultRootGroup::for('voodbuilder');
         $canonical = GalleryUploadTarget::resolve((int) $builder->getKey());
 
         $duplicate = MediaGallery::query()->create([

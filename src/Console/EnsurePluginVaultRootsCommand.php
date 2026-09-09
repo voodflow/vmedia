@@ -12,7 +12,7 @@ final class EnsurePluginVaultRootsCommand extends Command
 {
     protected $signature = 'vmedia:ensure-plugin-roots';
 
-    protected $description = 'Create or sync top-level vmedia folders for voodflow plugins and the shared Logos library';
+    protected $description = 'Create or sync registered companion vault roots and the shared Logos library';
 
     public function handle(): int
     {

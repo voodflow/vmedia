@@ -6,14 +6,23 @@ namespace Voodflow\Vmedia\Tests\Unit;
 
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Support\Integration\PluginVaultLibraryGallery;
+use Voodflow\Vmedia\Support\Integration\PluginVaultRegistry;
 use Voodflow\Vmedia\Support\Integration\PluginVaultRootBootstrap;
 use Voodflow\Vmedia\Support\Integration\PluginVaultRootGroup;
 use Voodflow\Vmedia\Support\Integration\SharedLogosGallery;
 use Voodflow\Vmedia\Tests\TestCase;
+use Voodflow\Vmedia\Vmedia;
 
 class PluginVaultRootGroupTest extends TestCase
 {
-    public function test_each_plugin_gets_a_top_level_root_folder(): void
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->registerFixtureVaults();
+    }
+
+    public function test_each_registered_plugin_gets_a_top_level_root_folder(): void
     {
         PluginVaultRootBootstrap::ensureAll();
 
@@ -25,6 +34,7 @@ class PluginVaultRootGroupTest extends TestCase
         $this->assertRoot('vdocs', 'root:vdocs', 'vdocs');
         $this->assertRoot('voodbuilder', 'root:voodbuilder', 'voodbuilder');
         $this->assertRoot('vforms', 'root:vforms', 'vforms');
+        $this->assertRoot('voodflow', 'root:voodflow', 'voodflow');
     }
 
     public function test_logos_folder_is_shared_and_idempotent(): void
@@ -53,11 +63,11 @@ class PluginVaultRootGroupTest extends TestCase
 
     public function test_resolve_parent_or_plugin_root_falls_back_to_plugin_folder(): void
     {
-        $eventsRoot = PluginVaultRootGroup::events();
+        $eventsRoot = PluginVaultRootGroup::for('vevents');
 
         $resolved = PluginVaultRootGroup::resolveParentOrPluginRoot(
             null,
-            fn (): MediaGallery => PluginVaultRootGroup::events(),
+            fn (): MediaGallery => PluginVaultRootGroup::for('vevents'),
         );
 
         $this->assertNotNull($resolved);
@@ -70,9 +80,28 @@ class PluginVaultRootGroupTest extends TestCase
 
         $this->assertTrue($album->isAlbum());
         $this->assertSame(
-            (int) PluginVaultRootGroup::vtuts()->getKey(),
+            (int) PluginVaultRootGroup::for('vtuts')->getKey(),
             (int) $album->parent_id,
         );
+    }
+
+    protected function registerFixtureVaults(): void
+    {
+        PluginVaultRegistry::reset();
+
+        foreach ([
+            ['vexhibitors', 'exhibitors'],
+            ['vevents', 'events'],
+            ['vsponsors', 'sponsors'],
+            ['vpartners', 'partners'],
+            ['vtuts', 'vtuts'],
+            ['vdocs', 'vdocs'],
+            ['voodbuilder', 'voodbuilder'],
+            ['vforms', 'vforms'],
+            ['voodflow', 'voodflow'],
+        ] as [$source, $slug]) {
+            Vmedia::registerPluginVault($source, $slug, ucfirst($slug), 'root:'.$slug);
+        }
     }
 
     protected function assertRoot(string $source, string $key, string $slug): void

@@ -62,13 +62,26 @@ Authenticated (`web`, `auth`, throttle, optional Gate ability):
 - `POST vmedia/media/upload` — body: `file`, optional `gallery_id` (folder or album; folders → library album)
 - `DELETE vmedia/media/{media}` (`?force=1`)
 
-Optional builder aliases when `VMEDIA_VOODBUILDER_EDITOR_ROUTES=true`.
+## Plugin vault roots
+
+Any package or host app owns its top-level folder. Register then ensure:
+
+```php
+use Voodflow\Vmedia\Support\Integration\RegistersPluginVault;
+
+RegistersPluginVault::register('myplugin', 'myplugin', 'My Plugin');
+RegistersPluginVault::ensureOnBoot($this->app, 'myplugin');
+```
+
+Then resolve with `PluginVaultRootGroup::for('myplugin')` / `PluginVaultLibraryGallery::album('myplugin')`.
+
+Full walkthrough: [README — Plugin vault roots](../../README.md#plugin-vault-roots-for-packages--host-apps).
 
 ## Extension points
 
 - Policies for gallery/media CRUD
 - Config disk, MIME lists, conversions, duplicates, public prefix
-- Soft page-builder bridge via route aliases + morph aliases
+- Plugin vault registration (`Vmedia::registerPluginVault` / `RegistersPluginVault`)
 
 ## Do / don't
 

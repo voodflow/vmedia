@@ -9,104 +9,32 @@ use Voodflow\Vmedia\Support\EntityVaultGallery;
 use Voodflow\Vmedia\Support\GalleryProvisioner;
 
 /**
- * Top-level vault folder per voodflow plugin, plus a shared Logos folder for brand marks.
+ * Top-level vault folders: plugin-registered roots + shared Logos (owned by VoodMedia).
  */
 final class PluginVaultRootGroup
 {
-    public static function exhibitors(?int $outerRootId = null): MediaGallery
+    /**
+     * Ensure the registered plugin root folder exists (and is synced).
+     */
+    public static function for(string $integrationSource, ?int $outerRootId = null): MediaGallery
     {
-        return self::pluginRoot(
-            integrationSource: 'vexhibitors',
-            integrationKey: 'root:exhibitors',
-            name: (string) __('vmedia::admin.plugin_roots.exhibitors'),
-            slug: 'exhibitors',
-            outerRootId: $outerRootId,
-        );
-    }
+        $definition = PluginVaultRegistry::get($integrationSource);
 
-    public static function events(?int $outerRootId = null): MediaGallery
-    {
-        return self::pluginRoot(
-            integrationSource: 'vevents',
-            integrationKey: 'root:events',
-            name: (string) __('vmedia::admin.plugin_roots.events'),
-            slug: 'events',
-            outerRootId: $outerRootId,
-        );
-    }
-
-    public static function sponsors(?int $outerRootId = null): MediaGallery
-    {
-        return self::pluginRoot(
-            integrationSource: 'vsponsors',
-            integrationKey: 'root:sponsors',
-            name: (string) __('vmedia::admin.plugin_roots.sponsors'),
-            slug: 'sponsors',
-            outerRootId: $outerRootId,
-        );
-    }
-
-    public static function partners(?int $outerRootId = null): MediaGallery
-    {
-        return self::pluginRoot(
-            integrationSource: 'vpartners',
-            integrationKey: 'root:partners',
-            name: (string) __('vmedia::admin.plugin_roots.partners'),
-            slug: 'partners',
-            outerRootId: $outerRootId,
-        );
-    }
-
-    public static function vtuts(?int $outerRootId = null): MediaGallery
-    {
-        return self::pluginRoot(
-            integrationSource: 'vtuts',
-            integrationKey: 'root:vtuts',
-            name: (string) __('vmedia::admin.plugin_roots.vtuts'),
-            slug: 'vtuts',
-            outerRootId: $outerRootId,
-        );
-    }
-
-    public static function vdocs(?int $outerRootId = null): MediaGallery
-    {
-        return self::pluginRoot(
-            integrationSource: 'vdocs',
-            integrationKey: 'root:vdocs',
-            name: (string) __('vmedia::admin.plugin_roots.vdocs'),
-            slug: 'vdocs',
-            outerRootId: $outerRootId,
-        );
-    }
-
-    public static function voodbuilder(?int $outerRootId = null): MediaGallery
-    {
-        return self::pluginRoot(
-            integrationSource: 'voodbuilder',
-            integrationKey: 'root:voodbuilder',
-            name: (string) __('vmedia::admin.plugin_roots.voodbuilder'),
-            slug: 'voodbuilder',
-            outerRootId: $outerRootId,
-        );
-    }
-
-    public static function vforms(?int $outerRootId = null): MediaGallery
-    {
-        return self::pluginRoot(
-            integrationSource: 'vforms',
-            integrationKey: 'root:vforms',
-            name: (string) __('vmedia::admin.plugin_roots.vforms'),
-            slug: 'vforms',
+        return self::ensure(
+            integrationSource: $definition['source'],
+            integrationKey: $definition['key'],
+            name: PluginVaultRegistry::resolveName($definition['name']),
+            slug: $definition['slug'],
             outerRootId: $outerRootId,
         );
     }
 
     /**
-     * Shared logos folder — integration keys are global so the first plugin needing logos creates it.
+     * Shared logos folder — integration keys are global so the first consumer creates it.
      */
     public static function logos(?int $outerRootId = null): MediaGallery
     {
-        return self::pluginRoot(
+        return self::ensure(
             integrationSource: 'vmedia',
             integrationKey: 'root:logos',
             name: (string) __('vmedia::admin.plugin_roots.logos'),

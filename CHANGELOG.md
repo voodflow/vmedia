@@ -2,9 +2,16 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Plugin vault roots are **registered by companions** (`Vmedia::registerPluginVault` / `RegistersPluginVault`); VoodMedia no longer hardcodes Builder/Vtuts/… folders
+- Removed `VMEDIA_VOODBUILDER_EDITOR_ROUTES` and `/voodbuilder/editor/media*` compatibility aliases — Asset Manager uses `/vmedia/*` only
+- Shared **Logos** folder remains owned by VoodMedia
+
 ### Docs
 
 - Document PHP `gd` with JPEG (and recommended WebP/FreeType) as a hard runtime requirement for Spatie thumb conversions
+- README branding as VoodMedia + admin screenshots
 
 ## [0.2.8] - 2026-09-07
 

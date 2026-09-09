@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Event;
 use Voodflow\Vmedia\Support\GalleryIntegrationSchema;
 
 /**
- * Idempotent top-level vault folders for voodflow companion plugins.
+ * Idempotent provisioning for registered plugin vault roots (+ shared Logos).
  */
 final class PluginVaultRootBootstrap
 {
@@ -17,6 +17,8 @@ final class PluginVaultRootBootstrap
     private static array $deferredSources = [];
 
     private static bool $migrateListenerRegistered = false;
+
+    private static bool $deferLogos = false;
 
     public static function ensureFor(string $integrationSource): void
     {
@@ -36,20 +38,13 @@ final class PluginVaultRootBootstrap
 
     public static function ensureAll(): void
     {
+        $sources = PluginVaultRegistry::sources();
+
         if (self::shouldDeferUntilMigrateEnds()) {
-            foreach ([
-                'vexhibitors',
-                'vevents',
-                'vsponsors',
-                'vpartners',
-                'vtuts',
-                'vdocs',
-                'voodbuilder',
-                'vforms',
-            ] as $source) {
+            foreach ($sources as $source) {
                 self::$deferredSources[$source] = true;
             }
-
+            self::$deferLogos = true;
             self::registerMigrateEndedListener();
 
             return;
@@ -59,16 +54,7 @@ final class PluginVaultRootBootstrap
             return;
         }
 
-        foreach ([
-            'vexhibitors',
-            'vevents',
-            'vsponsors',
-            'vpartners',
-            'vtuts',
-            'vdocs',
-            'voodbuilder',
-            'vforms',
-        ] as $source) {
+        foreach ($sources as $source) {
             self::provisionFor($source);
         }
 
@@ -83,17 +69,19 @@ final class PluginVaultRootBootstrap
 
     protected static function provisionFor(string $integrationSource): void
     {
-        match ($integrationSource) {
-            'vexhibitors' => PluginVaultRootGroup::exhibitors(),
-            'vevents' => PluginVaultRootGroup::events(),
-            'vsponsors' => PluginVaultRootGroup::sponsors(),
-            'vpartners' => PluginVaultRootGroup::partners(),
-            'vtuts' => PluginVaultRootGroup::vtuts(),
-            'vdocs' => PluginVaultRootGroup::vdocs(),
-            'voodbuilder' => PluginVaultRootGroup::voodbuilder(),
-            'vforms' => PluginVaultRootGroup::vforms(),
-            default => null,
-        };
+        if ($integrationSource === 'vmedia' || $integrationSource === 'logos') {
+            PluginVaultRootGroup::logos();
+            SharedLogosGallery::album();
+
+            return;
+        }
+
+        if (! PluginVaultRegistry::has($integrationSource)) {
+            return;
+        }
+
+        PluginVaultRootGroup::for($integrationSource);
+        PluginVaultLibraryGallery::album($integrationSource);
     }
 
     protected static function shouldDeferUntilMigrateEnds(): bool
@@ -106,7 +94,6 @@ final class PluginVaultRootBootstrap
             return false;
         }
 
-        // Targeted package/test migrations should not defer vault provisioning.
         return ! self::isPathLimitedMigrateCommand();
     }
 
@@ -142,12 +129,14 @@ final class PluginVaultRootBootstrap
 
             $sources = array_keys(self::$deferredSources);
             self::$deferredSources = [];
+            $withLogos = self::$deferLogos;
+            self::$deferLogos = false;
 
             foreach ($sources as $source) {
                 self::provisionFor($source);
             }
 
-            if ($sources !== []) {
+            if ($withLogos || $sources !== []) {
                 PluginVaultRootGroup::logos();
                 SharedLogosGallery::album();
             }

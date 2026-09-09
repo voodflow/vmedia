@@ -14,7 +14,6 @@ use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Support\GalleryPath;
 use Voodflow\Vmedia\Support\GalleryUploadTarget;
-use Voodflow\Vmedia\Support\Integration\PluginVaultRootGroup;
 use Voodflow\Vmedia\Support\MediaLibrary;
 use Voodflow\Vmedia\Support\UploadGuard;
 
@@ -116,10 +115,6 @@ class MediaController extends Controller
         UploadGuard::assertAllowedMime($validated['file']);
 
         $galleryId = isset($validated['gallery_id']) ? (int) $validated['gallery_id'] : null;
-
-        if ($galleryId === null && $request->routeIs('voodbuilder.editor.upload')) {
-            $galleryId = (int) PluginVaultRootGroup::voodbuilder()->getKey();
-        }
 
         $targetGallery = GalleryUploadTarget::resolve($galleryId);
 
