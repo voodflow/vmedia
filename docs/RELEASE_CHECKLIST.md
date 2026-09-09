@@ -26,7 +26,6 @@
 
 ## Nice-to-have later
 
-- [ ] External storage (S3) buyer guide with sample `.env`
 - [ ] ffmpeg-based auto video poster frames
 - [ ] Livewire interactive public gallery
 
