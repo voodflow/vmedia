@@ -239,6 +239,55 @@ VMEDIA_PROTECT_DELETE=true
 VMEDIA_PUBLIC_GALLERIES=true
 ```
 
+### Storage disk (local / S3 / …)
+
+`VMEDIA_DISK` is any disk from Laravel’s `config/filesystems.php`. Spatie stores vault files on that disk (`MediaVault` → `useDisk(...)`).
+
+**Local (default):**
+
+```env
+VMEDIA_DISK=public
+```
+
+**S3 (or compatible):** define the disk as usual, then point VoodMedia at it:
+
+```env
+FILESYSTEM_DISK=s3
+AWS_ACCESS_KEY_ID=…
+AWS_SECRET_ACCESS_KEY=…
+AWS_DEFAULT_REGION=eu-west-1
+AWS_BUCKET=your-bucket
+AWS_URL=https://your-bucket.s3.eu-west-1.amazonaws.com
+# optional: AWS_ENDPOINT=…  AWS_USE_PATH_STYLE_ENDPOINT=true  (MinIO, R2, …)
+
+VMEDIA_DISK=s3
+```
+
+`config/filesystems.php` (stock Laravel `s3` disk is enough):
+
+```php
+'s3' => [
+    'driver' => 's3',
+    'key' => env('AWS_ACCESS_KEY_ID'),
+    'secret' => env('AWS_SECRET_ACCESS_KEY'),
+    'region' => env('AWS_DEFAULT_REGION'),
+    'bucket' => env('AWS_BUCKET'),
+    'url' => env('AWS_URL'),
+    'endpoint' => env('AWS_ENDPOINT'),
+    'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+],
+```
+
+Require the Flysystem S3 adapter if the host app does not already:
+
+```bash
+composer require league/flysystem-aws-s3-v3 "^3.0"
+```
+
+No VoodMedia-specific S3 code path: Filament uploads and Spatie conversions use the configured disk. Keep Livewire temporary uploads on a local disk if you prefer (`LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK=local`); only the final vault objects need `VMEDIA_DISK=s3`.
+
+Public URLs come from `Storage::disk(...)->url(...)` (local → `/storage/...`, S3 → bucket/CloudFront URL). Use a **public** bucket (or CDN `AWS_URL`) so thumbs and embeds resolve without signed URLs.
+
 ## Docs
 
 - Release checklist (internal): [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)

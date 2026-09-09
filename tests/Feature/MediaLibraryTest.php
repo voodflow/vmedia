@@ -30,7 +30,10 @@ class MediaLibraryTest extends TestCase
         $this->assertArrayHasKey('alt', $payload);
         $this->assertArrayHasKey('credits', $payload);
         $this->assertArrayHasKey('file_name', $payload);
-        $this->assertStringStartsWith('/storage/', $payload['src']);
+        $this->assertTrue(
+            str_starts_with($payload['src'], '/storage/')
+            || str_contains($payload['src'], '://'),
+        );
         $this->assertStringNotContainsString('..', $payload['src']);
         $this->assertContains((int) MediaGallery::default()->getKey(), $payload['gallery_ids']);
     }

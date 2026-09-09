@@ -395,7 +395,7 @@ final class MediaLibrary
     {
         $relative = UploadGuard::assertSafeRelativePath((string) $media->getPathRelativeToRoot());
 
-        return '/storage/'.$relative;
+        return Storage::disk((string) $media->disk)->url($relative);
     }
 
     public static function thumbUrl(MediaItem $media): ?string
@@ -413,7 +413,7 @@ final class MediaLibrary
                     (string) $media->getPathRelativeToRoot('thumb'),
                 );
 
-                return '/storage/'.$relative;
+                return Storage::disk((string) $media->disk)->url($relative);
             } catch (\Throwable) {
                 // Fall through to original.
             }

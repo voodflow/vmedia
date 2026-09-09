@@ -117,13 +117,24 @@ class MediaItemResource extends Resource
                     ->square()
                     ->visibility('public')
                     ->state(function (MediaItem $record): ?string {
-                        $thumb = MediaLibrary::thumbUrl($record);
+                        try {
+                            if (
+                                ! $record->isVideo()
+                                && ! $record->isFile()
+                                && (bool) config('vmedia.conversions.enabled', true)
+                                && $record->hasGeneratedConversion('thumb')
+                            ) {
+                                return UploadGuard::assertSafeRelativePath(
+                                    (string) $record->getPathRelativeToRoot('thumb'),
+                                );
+                            }
 
-                        if ($thumb === null) {
+                            return UploadGuard::assertSafeRelativePath(
+                                (string) $record->getPathRelativeToRoot(),
+                            );
+                        } catch (\Throwable) {
                             return null;
                         }
-
-                        return ltrim(str_replace('/storage/', '', $thumb), '/');
                     })
                     ->defaultImageUrl(fn (MediaItem $record): string => FileTypeIcon::dataUriFor($record)),
                 TextColumn::make('name')
