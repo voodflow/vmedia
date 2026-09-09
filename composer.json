@@ -1,7 +1,7 @@
 {
     "name": "voodflow/vmedia",
     "description": "Filament Media Vault (Filament 5 + Spatie Media Library). Standalone admin, HTTP API, galleries; plugins register their own vault roots.",
-    "version": "0.2.8",
+    "version": "0.2.9",
     "type": "library",
     "license": "MIT",
     "keywords": [

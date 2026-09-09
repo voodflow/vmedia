@@ -1,9 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.9] - 2026-09-09
 
 ### Changed
 
+- Filament navigation group default label is **VoodMedia** (was `Media`; still overridable via `VMEDIA_NAV_GROUP`)
 - Plugin vault roots are **registered by companions** (`Vmedia::registerPluginVault` / `RegistersPluginVault`); VoodMedia no longer hardcodes Builder/Vtuts/… folders
 - Removed `VMEDIA_VOODBUILDER_EDITOR_ROUTES` and `/voodbuilder/editor/media*` compatibility aliases — Asset Manager uses `/vmedia/*` only
 - Shared **Logos** folder remains owned by VoodMedia
