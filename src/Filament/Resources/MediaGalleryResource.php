@@ -49,7 +49,7 @@ class MediaGalleryResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return (string) config('vmedia.navigation.group', 'Media');
+        return (string) config('vmedia.navigation.group', 'VoodMedia');
     }
 
     public static function getNavigationSort(): ?int
