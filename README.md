@@ -1,8 +1,34 @@
-# voodflow/vmedia
+# VoodMedia (`voodflow/vmedia`)
 
-**Media Vault** for the Voodflow plugin family: one vault storage copy, many gallery memberships, morph attachments for your domain models.
+**Media Vault** for the Voodflow plugin family: upload once, reuse everywhere. One vault storage copy, many gallery memberships, morph attachments for your domain models.
 
-Built on Filament 5 and [Spatie Media Library](https://github.com/spatie/laravel-medialibrary). Works **standalone** (admin + HTTP API + public galleries). Integrates with VoodBuilder Asset Manager.
+Built on Filament 5 and [Spatie Media Library](https://github.com/spatie/laravel-medialibrary). Works **standalone** (admin + HTTP API + public galleries). Integrates with VoodBuilder Asset Manager and Voodflow (e.g. Approval Page heroes).
+
+## Screenshots
+
+### Media library
+
+Central library: preview, galleries, **usage** counts, type, size, and upload time. Upload media or **Import ZIP** from the header.
+
+![VoodMedia media library](docs/images/library.png)
+
+### Galleries (folders & albums)
+
+Organize vault media with a hierarchy: **Folder** = container (year, product, plugin…); **Album** = holds photos/files. Mark a **default gallery** and toggle **public** albums.
+
+![VoodMedia galleries list](docs/images/galleries.png)
+
+### Album editor
+
+Edit album metadata (parent, slug, public/default), manage images (browse library, upload, ZIP import, drag reorder), and assign **album tags**.
+
+![VoodMedia album edit](docs/images/album-edit.png)
+
+### Picker (`VmediaPicker`)
+
+Modal for forms and builders: upload into the selected folder/album, filter by parent/gallery, search, grid/list view, multi-select → **Use selection**.
+
+![VoodMedia choose from media library](docs/images/picker.png)
 
 ## Requirements
 
@@ -81,18 +107,20 @@ VmediaPicker::make('gallery')
 
 - **Vault** — singleton Spatie owner of every file on disk (one storage copy)
 - **Galleries** — many-to-many membership (a photo/video/file can sit in several galleries)
-- **Default gallery** — only target for editor/frontend uploads; Choose can browse any gallery
+- **Folders vs albums** — folders nest structure; albums hold media
+- **Default gallery** — fallback target for uploads when no gallery is selected; Choose can browse any gallery
 - **Attachments** — `HasAttachedMedia` morph pivot (domain models never own Spatie collections)
 
 ## Features
 
 | Area | What you get |
 |------|----------------|
-| Admin | Library + galleries, metadata (alt, caption, credits; video poster on videos), soft delete / trash |
+| Admin | Library + galleries hierarchy, metadata (alt, caption, credits; video poster on videos), soft delete / trash |
 | Picker | `VmediaPicker` + `VmediaFileUpload` for other plugins |
 | Files | Photos, videos, and documents (PDF/Office/ZIP…) |
 | Thumbs | Spatie `thumb` conversion (WebP) for images |
 | Usage | Attachment counts; delete protected when media is in use |
+| Tags | Media tags + album tags; bulk assign |
 | Duplicates | SHA-256 reuse (optional) |
 | ZIP import | Bulk extract into the vault |
 | Events | `MediaStored`, `MediaAttached`, `MediaDetached`, `MediaDeleted`, `MediaRestored` |
