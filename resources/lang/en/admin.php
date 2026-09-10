@@ -176,7 +176,7 @@ return [
     ],
     'editor' => [
         'modal_heading' => 'Insert from media library',
-        'attach_from_library' => 'Media library',
+        'attach_from_library' => 'Insert image from media library',
         'upload_subtitle' => 'Uploads go to :path · browse any gallery to choose',
         'upload_drop_hint' => 'Uploads → :path',
     ],

@@ -395,7 +395,9 @@ final class MediaLibrary
     {
         $relative = UploadGuard::assertSafeRelativePath((string) $media->getPathRelativeToRoot());
 
-        return Storage::disk((string) $media->disk)->url($relative);
+        return self::browserUrl(
+            Storage::disk((string) $media->disk)->url($relative),
+        );
     }
 
     public static function thumbUrl(MediaItem $media): ?string
@@ -413,13 +415,33 @@ final class MediaLibrary
                     (string) $media->getPathRelativeToRoot('thumb'),
                 );
 
-                return Storage::disk((string) $media->disk)->url($relative);
+                return self::browserUrl(
+                    Storage::disk((string) $media->disk)->url($relative),
+                );
             } catch (\Throwable) {
                 // Fall through to original.
             }
         }
 
         return self::publicUrl($media);
+    }
+
+    /**
+     * Prefer root-relative `/storage/...` for the local public disk so thumbs
+     * and embeds survive APP_URL / Docker port mismatches. Keep absolute URLs
+     * for remote disks (S3, CDN, …).
+     */
+    public static function browserUrl(string $url): string
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+
+        if (! is_string($path) || ! str_starts_with($path, '/storage/')) {
+            return $url;
+        }
+
+        $query = parse_url($url, PHP_URL_QUERY);
+
+        return is_string($query) && $query !== '' ? $path.'?'.$query : $path;
     }
 
     public static function posterUrl(MediaItem $media): ?string

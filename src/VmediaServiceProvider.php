@@ -20,6 +20,7 @@ use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaVault;
 use Voodflow\Vmedia\Policies\MediaGalleryPolicy;
 use Voodflow\Vmedia\Policies\MediaItemPolicy;
+use Voodflow\Voodbuilder\Voodbuilder;
 
 class VmediaServiceProvider extends PackageServiceProvider
 {
@@ -77,6 +78,13 @@ class VmediaServiceProvider extends PackageServiceProvider
         });
 
         $this->registerPublicRoutes();
+
+        if (class_exists(Voodbuilder::class)) {
+            Voodbuilder::reservePathPrefix(
+                (string) config('vmedia.routes.prefix', 'vmedia'),
+                (string) config('vmedia.public.prefix', 'galleries'),
+            );
+        }
     }
 
     protected function registerPublicRoutes(): void

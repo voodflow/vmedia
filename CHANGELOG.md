@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Public/thumb browser URLs for the local `public` disk are root-relative (`/storage/...`) so library previews and markdown embeds keep working when `APP_URL` host/port differs from the active request (common in Docker)
+
+### Changed
+
+- Markdown editor “media library” toolbar icon: custom photo + stack mark (was a plain folder); RichEditor tool uses `Photo` (clearer than `RectangleStack`)
+
 ## [0.2.9] - 2026-09-09
 
 ### Changed

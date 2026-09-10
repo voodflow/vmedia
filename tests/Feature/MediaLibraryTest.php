@@ -38,6 +38,22 @@ class MediaLibraryTest extends TestCase
         $this->assertContains((int) MediaGallery::default()->getKey(), $payload['gallery_ids']);
     }
 
+    public function test_browser_url_strips_local_storage_origin(): void
+    {
+        $this->assertSame(
+            '/storage/33/photo.jpg',
+            MediaLibrary::browserUrl('http://localhost:8010/storage/33/photo.jpg'),
+        );
+        $this->assertSame(
+            '/storage/33/photo.jpg?v=1',
+            MediaLibrary::browserUrl('http://localhost:8010/storage/33/photo.jpg?v=1'),
+        );
+        $this->assertSame(
+            'https://cdn.example.com/media/photo.jpg',
+            MediaLibrary::browserUrl('https://cdn.example.com/media/photo.jpg'),
+        );
+    }
+
     public function test_assign_galleries_can_replace_memberships(): void
     {
         Storage::fake('public');
