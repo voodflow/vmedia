@@ -1,6 +1,6 @@
 # VoodMedia (`voodflow/vmedia`)
 
-![VoodMedia — Filament Media Vault by VoodFlow](docs/images/promo.png)
+<img class="filament-hidden" src="docs/images/promo.png" alt="VoodMedia — Filament Media Vault by VoodFlow" />
 
 **Media Vault** for Laravel + Filament: upload once, reuse everywhere. One vault storage copy, many gallery memberships, morph attachments for your domain models.
 
