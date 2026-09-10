@@ -34,7 +34,9 @@ final class Vmedia
     {
         self::$active = false;
         VmediaRoutes::reset();
-        PluginVaultRegistry::reset();
+        // Keep PluginVaultRegistry: companions register vaults in packageBooted, while
+        // Core may call reset() from a booted callback (ensureMediaRuntime). Wiping the
+        // registry there races and drops Builder/Popups/… roots for the whole request.
     }
 
     public static function isActive(): bool

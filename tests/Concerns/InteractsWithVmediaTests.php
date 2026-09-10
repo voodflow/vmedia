@@ -7,6 +7,7 @@ namespace Voodflow\Vmedia\Tests\Concerns;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Voodflow\Vmedia\Models\MediaItem;
+use Voodflow\Vmedia\Support\Integration\PluginVaultRegistry;
 use Voodflow\Vmedia\Tests\User;
 use Voodflow\Vmedia\Vmedia;
 
@@ -18,6 +19,7 @@ trait InteractsWithVmediaTests
         $this->grantVmediaAbilities();
 
         Vmedia::reset();
+        PluginVaultRegistry::reset();
         Vmedia::activate();
     }
 
