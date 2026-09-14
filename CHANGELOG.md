@@ -1,14 +1,16 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.10] - 2026-09-14
 
 ### Fixed
 
 - Public/thumb browser URLs for the local `public` disk are root-relative (`/storage/...`) so library previews and markdown embeds keep working when `APP_URL` host/port differs from the active request (common in Docker)
+- Companion plugin vault registrations survive `Vmedia::reset()` during application boot
 
 ### Changed
 
 - Markdown editor “media library” toolbar icon: custom photo + stack mark (was a plain folder); RichEditor tool uses `Photo` (clearer than `RectangleStack`)
+- VoodMedia reserves its configured route prefixes with Voodbuilder when both packages are installed
 
 ## [0.2.9] - 2026-09-09
 
@@ -70,4 +72,3 @@
 ### Fixed
 
 - Shield-less Filament installs can upload/list media (policies use panel access when Shield is absent)
-
