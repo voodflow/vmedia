@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "226778dcaac206a54a224ca1f08e02f0",
+    "content-hash": "a8057aa57c4718b3d8e507a9fd6f70ef",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -11315,7 +11315,8 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.4"
+        "php": "^8.4",
+        "ext-gd": "*"
     },
     "platform-dev": {},
     "plugin-api-version": "2.9.0"
