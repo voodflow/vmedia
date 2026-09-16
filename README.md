@@ -290,7 +290,7 @@ Public URLs come from `Storage::disk(...)->url(...)` (local → `/storage/...`, 
 
 ## Docs
 
-- Release checklist (internal): [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)
+Public documentation: [docs.voodflow.com](https://docs.voodflow.com)
 
 ## License
 

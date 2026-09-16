@@ -1,3 +1,10 @@
+## [0.2.11] - 2026-09-16
+
+### Changed
+
+- Remove in-repo work documentation (checklists, sales/developer stubs, internal notes); keep public README assets under `docs/images/` (and product academy/manual where applicable)
+
+
 # Changelog
 
 ## [0.2.10] - 2026-09-14

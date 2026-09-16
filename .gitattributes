@@ -7,8 +7,7 @@
 /.gitignore export-ignore
 /CHANGELOG.md export-ignore
 /composer.lock export-ignore
-/docs export-ignore
-/docs/** export-ignore
 /phpunit.xml.dist export-ignore
 /tests export-ignore
 /tests/** export-ignore
+# Ship docs/images (README promo/screenshots) in Composer dist.
