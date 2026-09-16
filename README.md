@@ -1,6 +1,6 @@
 # VoodMedia (`voodflow/vmedia`)
 
-<img class="filament-hidden" src="docs/images/promo.png" alt="VoodMedia — Filament Media Vault by VoodFlow" />
+<img class="filament-hidden" src="https://raw.githubusercontent.com/voodflow/voodflow-public-docs/main/vmedia/images/promo.png" alt="VoodMedia — Filament Media Vault by VoodFlow" />
 
 **Media Vault** for Laravel + Filament: upload once, reuse everywhere. One vault storage copy, many gallery memberships, morph attachments for your domain models.
 
@@ -14,25 +14,25 @@ Built on Filament 5 and [Spatie Media Library](https://github.com/spatie/laravel
 
 Central library: preview, galleries, **usage** counts, type, size, and upload time. Upload media or **Import ZIP** from the header.
 
-![VoodMedia media library](docs/images/library.png)
+![VoodMedia media library](https://raw.githubusercontent.com/voodflow/voodflow-public-docs/main/vmedia/images/library.png)
 
 ### Galleries (folders & albums)
 
 Organize vault media with a hierarchy: **Folder** = container (year, product, plugin…); **Album** = holds photos/files. Mark a **default gallery** and toggle **public** albums.
 
-![VoodMedia galleries list](docs/images/galleries.png)
+![VoodMedia galleries list](https://raw.githubusercontent.com/voodflow/voodflow-public-docs/main/vmedia/images/galleries.png)
 
 ### Album editor
 
 Edit album metadata (parent, slug, public/default), manage images (browse library, upload, ZIP import, drag reorder), and assign **album tags**.
 
-![VoodMedia album edit](docs/images/album-edit.png)
+![VoodMedia album edit](https://raw.githubusercontent.com/voodflow/voodflow-public-docs/main/vmedia/images/album-edit.png)
 
 ### Picker (`VmediaPicker`)
 
 Modal for forms and builders: upload into the selected folder/album, filter by parent/gallery, search, grid/list view, multi-select → **Use selection**.
 
-![VoodMedia choose from media library](docs/images/picker.png)
+![VoodMedia choose from media library](https://raw.githubusercontent.com/voodflow/voodflow-public-docs/main/vmedia/images/picker.png)
 
 ## Requirements
 
