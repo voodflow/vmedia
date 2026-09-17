@@ -6,6 +6,7 @@ namespace Voodflow\Vmedia\Console;
 
 use Composer\InstalledVersions;
 use Illuminate\Console\Command;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 class InstallCommand extends Command
@@ -84,9 +85,17 @@ class InstallCommand extends Command
             return;
         }
 
-        if (! Schema::hasColumn('media', 'deleted_at')) {
-            $this->components->error('`media.deleted_at` is missing after migrate. Re-run `php artisan migrate` (vmedia ensure soft-deletes migration).');
+        if (Schema::hasColumn('media', 'deleted_at')) {
+            return;
         }
+
+        // Spatie `create_media_table` is published with "now" timestamp, so it often
+        // runs AFTER package soft-deletes migrations (already recorded as no-ops).
+        Schema::table('media', function (Blueprint $table): void {
+            $table->softDeletes();
+        });
+
+        $this->components->info('Added missing `media.deleted_at` (create_media_table raced ahead of soft-deletes migrations).');
     }
 
     protected function mediaTableMigrationIsAvailable(): bool

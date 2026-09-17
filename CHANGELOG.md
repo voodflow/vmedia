@@ -1,3 +1,10 @@
+## [0.2.12] - 2026-09-17
+
+### Fixed
+
+- `vmedia:install` now adds missing `media.deleted_at` when Spatie `create_media_table` is published with a later timestamp than the package soft-deletes migrations (common fresh install race)
+- Late ensure migration `2099_01_01_000000_ensure_media_soft_deletes_column` so a plain `php artisan migrate` also repairs the column
+
 ## [0.2.11] - 2026-09-16
 
 ### Changed
