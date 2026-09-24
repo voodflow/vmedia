@@ -1,3 +1,9 @@
+## [0.3.1] - 2026-09-24
+
+### Fixed
+
+- Media library table thumbs use request-aware URLs (`url(/storage/...)`) instead of Filament `disk()->url()` / `APP_URL`, so previews load behind Docker ports and reverse proxies
+
 ## [0.3.0] - 2026-09-24
 
 ### Added

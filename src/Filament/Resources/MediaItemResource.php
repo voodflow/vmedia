@@ -44,7 +44,6 @@ use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaTag;
 use Voodflow\Vmedia\Models\MediaVault;
-use Voodflow\Vmedia\Support\ConversionLadder;
 use Voodflow\Vmedia\Support\FileTypeIcon;
 use Voodflow\Vmedia\Support\GalleryDisplay;
 use Voodflow\Vmedia\Support\MediaLibrary;
@@ -105,39 +104,41 @@ class MediaItemResource extends Resource
 
     public static function table(Table $table): Table
     {
-        $disk = (string) config('vmedia.disk', 'public');
-
         return $table
             ->defaultSort('id', 'desc')
             ->columns([
                 ImageColumn::make('preview')
                     ->label(__('vmedia::admin.library.preview'))
-                    ->disk($disk)
                     ->height(48)
                     ->width(48)
                     ->square()
-                    ->visibility('public')
                     ->state(function (MediaItem $record): ?string {
-                        try {
-                            $thumbKey = ConversionLadder::thumbKey();
+                        $path = MediaLibrary::thumbUrl($record);
 
-                            if (
-                                ! $record->isVideo()
-                                && ! $record->isFile()
-                                && (bool) config('vmedia.conversions.enabled', true)
-                                && $record->hasGeneratedConversion($thumbKey)
-                            ) {
-                                return UploadGuard::assertSafeRelativePath(
-                                    (string) $record->getPathRelativeToRoot($thumbKey),
-                                );
+                        if ($path === null || $path === '') {
+                            if ($record->isVideo() || $record->isFile()) {
+                                return null;
                             }
 
-                            return UploadGuard::assertSafeRelativePath(
-                                (string) $record->getPathRelativeToRoot(),
-                            );
-                        } catch (\Throwable) {
+                            $path = MediaLibrary::publicUrl($record);
+                        }
+
+                        if ($path === '') {
                             return null;
                         }
+
+                        // Absolute / data URLs pass through; root-relative /storage/...
+                        // must use the current request host (not APP_URL) or Filament's
+                        // disk()->url() embeds localhost and breaks in Docker / proxies.
+                        if (
+                            str_starts_with($path, 'http://')
+                            || str_starts_with($path, 'https://')
+                            || str_starts_with($path, 'data:')
+                        ) {
+                            return $path;
+                        }
+
+                        return url($path);
                     })
                     ->defaultImageUrl(fn (MediaItem $record): string => FileTypeIcon::dataUriFor($record)),
                 TextColumn::make('name')
