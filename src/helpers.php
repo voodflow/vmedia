@@ -79,7 +79,6 @@ if (! function_exists('vmedia_aggregate_gallery')) {
     /**
      * Paginated media from a group and all descendant albums.
      *
-     * @param  string|int|MediaGallery  $gallery
      * @param  array<string, mixed>  $options
      * @return array{data: list<array<string, mixed>>, meta: array<string, mixed>, gallery: MediaGallery|null, album_ids: list<int>}
      */

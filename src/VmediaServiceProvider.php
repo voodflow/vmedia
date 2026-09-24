@@ -13,6 +13,7 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Voodflow\Vmedia\Console\EnsurePluginVaultRootsCommand;
 use Voodflow\Vmedia\Console\InstallCommand;
 use Voodflow\Vmedia\Console\PruneOrphansCommand;
+use Voodflow\Vmedia\Console\RegenerateConversionsCommand;
 use Voodflow\Vmedia\Console\StatsCommand;
 use Voodflow\Vmedia\Http\Controllers\PublicGalleryController;
 use Voodflow\Vmedia\Models\MediaGallery;
@@ -42,6 +43,7 @@ class VmediaServiceProvider extends PackageServiceProvider
                 StatsCommand::class,
                 PruneOrphansCommand::class,
                 EnsurePluginVaultRootsCommand::class,
+                RegenerateConversionsCommand::class,
             ]);
     }
 

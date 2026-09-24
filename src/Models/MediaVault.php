@@ -9,6 +9,7 @@ use Spatie\ImageOptimizer\OptimizerChain;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Voodflow\Vmedia\Support\ConversionLadder;
 
 /**
  * Singleton Spatie owner for all library files (galleries are membership only).
@@ -70,46 +71,23 @@ class MediaVault extends Model implements HasMedia
         $optimize = (bool) config('vmedia.conversions.optimize', true);
         $queued = (bool) config('vmedia.conversions.queued', false);
 
-        $thumbWidth = (int) config('vmedia.conversions.thumb.width', 400);
-        $thumbHeight = (int) config('vmedia.conversions.thumb.height', 400);
-        $thumbFormat = (string) config('vmedia.conversions.thumb.format', 'webp');
+        foreach (ConversionLadder::definitions() as $definition) {
+            $conversion = $this->addMediaConversion($definition['key'])
+                ->width(max(1, $definition['width']))
+                ->format($definition['format'])
+                ->performOnCollections(MediaGallery::COLLECTION_IMAGES);
 
-        $thumb = $this->addMediaConversion('thumb')
-            ->width(max(1, $thumbWidth))
-            ->height(max(1, $thumbHeight))
-            ->format($thumbFormat)
-            ->performOnCollections(MediaGallery::COLLECTION_IMAGES);
+            if ($definition['height'] > 0) {
+                $conversion->height($definition['height']);
+            }
 
-        // Spatie Image Optimizer (optional composer package).
-        if ($optimize && class_exists(OptimizerChain::class)) {
-            $thumb->optimize();
-        }
+            if ($optimize && class_exists(OptimizerChain::class)) {
+                $conversion->optimize();
+            }
 
-        if (! $queued) {
-            $thumb->nonQueued();
-        }
-
-        $previewWidth = (int) config('vmedia.conversions.preview.width', 0);
-
-        if ($previewWidth <= 0) {
-            return;
-        }
-
-        $previewHeight = (int) config('vmedia.conversions.preview.height', 1280);
-        $previewFormat = (string) config('vmedia.conversions.preview.format', 'webp');
-
-        $preview = $this->addMediaConversion('preview')
-            ->width(max(1, $previewWidth))
-            ->height(max(1, $previewHeight))
-            ->format($previewFormat)
-            ->performOnCollections(MediaGallery::COLLECTION_IMAGES);
-
-        if ($optimize && class_exists(OptimizerChain::class)) {
-            $preview->optimize();
-        }
-
-        if (! $queued) {
-            $preview->nonQueued();
+            if (! $queued) {
+                $conversion->nonQueued();
+            }
         }
     }
 }

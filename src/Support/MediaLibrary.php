@@ -153,7 +153,27 @@ final class MediaLibrary
     }
 
     /**
-     * @return array{src: string, type: string, name: string, file_name: string, caption: string|null, alt: string|null, credits: string|null, uuid: string, id: int, gallery_ids: list<int>, thumb: string|null, poster: string|null, object_position: string|null, icon: string, icon_label: string}
+     * @return array{
+     *   src: string,
+     *   display: string,
+     *   type: string,
+     *   name: string,
+     *   file_name: string,
+     *   caption: string|null,
+     *   alt: string|null,
+     *   credits: string|null,
+     *   uuid: string,
+     *   id: int,
+     *   gallery_ids: list<int>,
+     *   thumb: string|null,
+     *   poster: string|null,
+     *   object_position: string|null,
+     *   icon: string,
+     *   icon_label: string,
+     *   variants: list<array{key: string, width: int, url: string}>,
+     *   srcset: string|null,
+     *   sizes: string|null
+     * }
      */
     public static function toAssetPayload(MediaItem $media): array
     {
@@ -164,9 +184,12 @@ final class MediaLibrary
         $src = self::publicUrl($media);
         $type = self::assetType($media);
         $icon = FileTypeIcon::forMedia($media);
+        $variants = self::variantsPayload($media);
+        $display = self::displayUrl($media) ?? $src;
 
         return [
             'src' => $src,
+            'display' => $display,
             'type' => $type,
             'name' => $media->displayTitle(),
             'file_name' => (string) $media->file_name,
@@ -181,6 +204,9 @@ final class MediaLibrary
             'object_position' => $media->objectPositionCss(),
             'icon' => $icon['icon'],
             'icon_label' => $icon['icon_label'],
+            'variants' => $variants,
+            'srcset' => self::srcset($media, $variants),
+            'sizes' => $type === 'image' ? self::defaultSizesHint() : null,
         ];
     }
 
@@ -406,24 +432,146 @@ final class MediaLibrary
             return self::posterUrl($media);
         }
 
-        if (
-            (bool) config('vmedia.conversions.enabled', true)
-            && $media->hasGeneratedConversion('thumb')
-        ) {
-            try {
-                $relative = UploadGuard::assertSafeRelativePath(
-                    (string) $media->getPathRelativeToRoot('thumb'),
-                );
+        return self::conversionUrl($media, ConversionLadder::thumbKey())
+            ?? self::publicUrl($media);
+    }
 
-                return self::browserUrl(
-                    Storage::disk((string) $media->disk)->url($relative),
-                );
-            } catch (\Throwable) {
-                // Fall through to original.
+    /**
+     * Best display URL for backgrounds / hero fills (never forces the original).
+     */
+    public static function displayUrl(MediaItem $media, ?int $maxWidth = null): ?string
+    {
+        if ($media->isVideo() || $media->isFile()) {
+            return null;
+        }
+
+        if ($maxWidth !== null && $maxWidth > 0) {
+            return self::urlForWidth($media, $maxWidth);
+        }
+
+        return self::conversionUrl($media, ConversionLadder::defaultDisplayKey())
+            ?? self::urlForWidth($media, 2048)
+            ?? self::publicUrl($media);
+    }
+
+    /**
+     * Smallest conversion whose width is ≥ target (or the largest available).
+     * Never upscales past the original file when no conversion exists.
+     */
+    public static function urlForWidth(MediaItem $media, int $targetWidth): ?string
+    {
+        if ($media->isVideo() || $media->isFile()) {
+            return null;
+        }
+
+        $targetWidth = max(1, $targetWidth);
+        $variants = self::variantsPayload($media);
+
+        if ($variants === []) {
+            return self::publicUrl($media);
+        }
+
+        $chosen = null;
+
+        foreach ($variants as $variant) {
+            if ($variant['width'] >= $targetWidth) {
+                $chosen = $variant;
+                break;
             }
         }
 
-        return self::publicUrl($media);
+        $chosen ??= $variants[array_key_last($variants)];
+
+        return $chosen['url'] ?? self::publicUrl($media);
+    }
+
+    public static function conversionUrl(MediaItem $media, string $key): ?string
+    {
+        $key = ConversionLadder::sanitizeKey($key);
+
+        if (
+            $key === ''
+            || ! (bool) config('vmedia.conversions.enabled', true)
+            || ! $media->hasGeneratedConversion($key)
+        ) {
+            return null;
+        }
+
+        try {
+            $relative = UploadGuard::assertSafeRelativePath(
+                (string) $media->getPathRelativeToRoot($key),
+            );
+
+            return self::browserUrl(
+                Storage::disk((string) $media->disk)->url($relative),
+            );
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @return list<array{key: string, width: int, url: string}>
+     */
+    public static function variantsPayload(MediaItem $media): array
+    {
+        if ($media->isVideo() || $media->isFile()) {
+            return [];
+        }
+
+        if (! (bool) config('vmedia.conversions.enabled', true)) {
+            return [];
+        }
+
+        $out = [];
+
+        foreach (ConversionLadder::definitions() as $definition) {
+            if ($definition['role'] === ConversionLadder::ROLE_THUMB) {
+                continue;
+            }
+
+            $url = self::conversionUrl($media, $definition['key']);
+
+            if ($url === null) {
+                continue;
+            }
+
+            $out[] = [
+                'key' => $definition['key'],
+                'width' => $definition['width'],
+                'url' => $url,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  list<array{key: string, width: int, url: string}>|null  $variants
+     */
+    public static function srcset(MediaItem $media, ?array $variants = null): ?string
+    {
+        $variants ??= self::variantsPayload($media);
+
+        if ($variants === []) {
+            return null;
+        }
+
+        $parts = [];
+
+        foreach ($variants as $variant) {
+            $parts[] = $variant['url'].' '.$variant['width'].'w';
+        }
+
+        return $parts === [] ? null : implode(', ', $parts);
+    }
+
+    public static function defaultSizesHint(): string
+    {
+        return (string) config(
+            'vmedia.conversions.default_sizes',
+            '(max-width: 768px) 100vw, min(100vw, 1200px)',
+        );
     }
 
     /**

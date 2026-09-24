@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Voodflow\Vmedia\Support;
 
 use Illuminate\Support\Facades\Schema;
+use Voodflow\Vmedia\Models\MediaGallery;
 
 /**
  * Guards gallery provisioning until hierarchy columns exist on vmedia_galleries.
@@ -13,7 +14,7 @@ final class GalleryIntegrationSchema
 {
     public static function isReady(): bool
     {
-        if (! class_exists(\Voodflow\Vmedia\Models\MediaGallery::class)) {
+        if (! class_exists(MediaGallery::class)) {
             return false;
         }
 

@@ -66,6 +66,7 @@ if (class_exists(\Tests\TestCase::class)) {
                 '2026_08_26_160000_add_properties_to_vmedia_attachments_table.php',
                 '2026_08_28_100000_add_hierarchy_to_vmedia_galleries.php',
                 '2026_08_28_100001_create_vmedia_tags_tables.php',
+                '2026_09_24_120000_create_vmedia_settings_table.php',
             ];
 
             foreach ($files as $file) {

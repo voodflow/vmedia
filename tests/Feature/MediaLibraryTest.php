@@ -30,6 +30,10 @@ class MediaLibraryTest extends TestCase
         $this->assertArrayHasKey('alt', $payload);
         $this->assertArrayHasKey('credits', $payload);
         $this->assertArrayHasKey('file_name', $payload);
+        $this->assertArrayHasKey('display', $payload);
+        $this->assertArrayHasKey('variants', $payload);
+        $this->assertArrayHasKey('srcset', $payload);
+        $this->assertArrayHasKey('sizes', $payload);
         $this->assertTrue(
             str_starts_with($payload['src'], '/storage/')
             || str_contains($payload['src'], '://'),

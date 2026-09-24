@@ -10,6 +10,7 @@ use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
 use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Support\Facades\File;
+use Voodflow\Vmedia\Filament\Pages\VmediaSettingsPage;
 use Voodflow\Vmedia\Filament\Resources\MediaGalleryResource;
 use Voodflow\Vmedia\Filament\Resources\MediaItemResource;
 use Voodflow\Vmedia\Filament\Resources\MediaTagResource;
@@ -52,6 +53,9 @@ class VmediaPlugin implements Plugin
         $this->registerAssets();
 
         $panel
+            ->pages([
+                VmediaSettingsPage::class,
+            ])
             ->resources([
                 MediaGalleryResource::class,
                 MediaItemResource::class,

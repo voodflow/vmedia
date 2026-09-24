@@ -1,3 +1,17 @@
+## [0.3.0] - 2026-09-24
+
+### Added
+
+- Configurable image size ladder (thumb / sm / md / lg / xl by default) via Filament **VoodMedia → Settings** repeater
+- API asset payload fields: `display`, `variants`, `srcset`, `sizes` for responsive delivery
+- `vmedia:regenerate-conversions` Artisan command (also from Settings UI)
+- `ConversionLadder` + `VmediaSettings` (JSON settings table)
+
+### Changed
+
+- `MediaVault` registers Spatie conversions from the ladder (not only fixed thumb/preview)
+- Default display conversion (`lg`, ~2048px) is preferred for backgrounds / hero fills over the raw original
+
 ## [0.2.12] - 2026-09-17
 
 ### Fixed

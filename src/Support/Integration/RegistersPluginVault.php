@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Voodflow\Vmedia\Support\Integration;
 
 use Closure;
+use Illuminate\Contracts\Foundation\Application;
 use Voodflow\Vmedia\Vmedia;
 
 /**
@@ -26,7 +27,7 @@ final class RegistersPluginVault
     }
 
     /**
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
+     * @param  Application  $app
      */
     public static function ensureOnBoot(mixed $app, string $source): void
     {

@@ -6,9 +6,7 @@ namespace Voodflow\Vmedia\Support;
 
 use Illuminate\Database\Eloquent\Builder;
 use Voodflow\Vmedia\Models\MediaGallery;
-use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaTag;
-use Voodflow\Vmedia\Models\MediaVault;
 
 /**
  * Resolve hierarchical gallery paths and descendant album ids.

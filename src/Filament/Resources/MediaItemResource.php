@@ -44,6 +44,7 @@ use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaTag;
 use Voodflow\Vmedia\Models\MediaVault;
+use Voodflow\Vmedia\Support\ConversionLadder;
 use Voodflow\Vmedia\Support\FileTypeIcon;
 use Voodflow\Vmedia\Support\GalleryDisplay;
 use Voodflow\Vmedia\Support\MediaLibrary;
@@ -118,14 +119,16 @@ class MediaItemResource extends Resource
                     ->visibility('public')
                     ->state(function (MediaItem $record): ?string {
                         try {
+                            $thumbKey = ConversionLadder::thumbKey();
+
                             if (
                                 ! $record->isVideo()
                                 && ! $record->isFile()
                                 && (bool) config('vmedia.conversions.enabled', true)
-                                && $record->hasGeneratedConversion('thumb')
+                                && $record->hasGeneratedConversion($thumbKey)
                             ) {
                                 return UploadGuard::assertSafeRelativePath(
-                                    (string) $record->getPathRelativeToRoot('thumb'),
+                                    (string) $record->getPathRelativeToRoot($thumbKey),
                                 );
                             }
 

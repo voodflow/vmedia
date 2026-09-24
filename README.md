@@ -207,7 +207,7 @@ Shared **Logos** folder is provided by VoodMedia itself (`PluginVaultRootGroup::
 | Admin | Library + galleries hierarchy, metadata (alt, caption, credits; video poster on videos), soft delete / trash |
 | Picker | `VmediaPicker` + `VmediaFileUpload` for other plugins |
 | Files | Photos, videos, and documents (PDF/Office/ZIP…) |
-| Thumbs | Spatie `thumb` conversion (WebP) for images |
+| Thumbs | Configurable Spatie conversion ladder (thumb + sm/md/lg/xl WebP by default); API exposes `display` / `srcset` / `sizes` |
 | Usage | Attachment counts; delete protected when media is in use |
 | Tags | Media tags + album tags; bulk assign |
 | Duplicates | SHA-256 reuse (optional) |

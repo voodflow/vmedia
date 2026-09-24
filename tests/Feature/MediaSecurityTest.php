@@ -6,6 +6,7 @@ namespace Voodflow\Vmedia\Tests\Feature;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Voodflow\Vmedia\Models\MediaGallery;
@@ -239,7 +240,7 @@ class MediaSecurityTest extends TestCase
         $this->assertVmediaRouteRegistered('vmedia.media.index');
         $this->assertVmediaRouteRegistered('vmedia.media.upload');
         $this->assertVmediaRouteRegistered('vmedia.media.destroy');
-        $this->assertFalse(\Illuminate\Support\Facades\Route::has('voodbuilder.editor.media.galleries'));
-        $this->assertFalse(\Illuminate\Support\Facades\Route::has('voodbuilder.editor.upload'));
+        $this->assertFalse(Route::has('voodbuilder.editor.media.galleries'));
+        $this->assertFalse(Route::has('voodbuilder.editor.upload'));
     }
 }

@@ -59,19 +59,43 @@ return [
         'enabled' => env('VMEDIA_CONVERSIONS', true),
         'queued' => env('VMEDIA_CONVERSIONS_QUEUED', false),
         'optimize' => env('VMEDIA_CONVERSIONS_OPTIMIZE', true),
+
+        /*
+        | Default display conversion key used for CSS backgrounds / hero fills
+        | when the consumer does not pass a target width (Framer "Large").
+        */
+        'default_display' => env('VMEDIA_DEFAULT_DISPLAY', 'lg'),
+
+        /*
+        | Optional hardcoded ladder. Empty = built-in Framer-style defaults
+        | (thumb/sm/md/lg/xl), overridable from Filament → VoodMedia → Settings.
+        |
+        | Each row: key, label, width, height (0 = keep aspect / width-only),
+        | format (webp|jpg|png|avif), role (thumb|display).
+        */
+        'variants' => [],
+
+        /*
+        | Legacy single-size keys (still read when building built-in defaults).
+        */
         'thumb' => [
             'width' => (int) env('VMEDIA_THUMB_WIDTH', 400),
             'height' => (int) env('VMEDIA_THUMB_HEIGHT', 400),
             'format' => env('VMEDIA_THUMB_FORMAT', 'webp'),
         ],
-        /*
-        | Optional larger preview (admin lightbox / embeds). Disabled when width is 0.
-        */
         'preview' => [
-            'width' => (int) env('VMEDIA_PREVIEW_WIDTH', 1280),
+            'width' => (int) env('VMEDIA_PREVIEW_WIDTH', 0),
             'height' => (int) env('VMEDIA_PREVIEW_HEIGHT', 1280),
             'format' => env('VMEDIA_PREVIEW_FORMAT', 'webp'),
         ],
+
+        /*
+        | Default HTML sizes="" hint for <img> when the consumer does not override.
+        */
+        'default_sizes' => env(
+            'VMEDIA_DEFAULT_SIZES',
+            '(max-width: 768px) 100vw, min(100vw, 1200px)',
+        ),
     ],
 
     'duplicates' => [
@@ -158,6 +182,7 @@ return [
         'gallery_tags' => 'vmedia_gallery_tags',
         'media_tags' => 'vmedia_media_tags',
         'gallery_allowed_tags' => 'vmedia_gallery_allowed_tags',
+        'settings' => 'vmedia_settings',
     ],
 
     'browser' => [
