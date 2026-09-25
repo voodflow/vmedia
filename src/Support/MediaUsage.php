@@ -112,12 +112,12 @@ final class MediaUsage
             ->whereNotExists(function ($query) use ($galleryPivot): void {
                 $query->selectRaw('1')
                     ->from($galleryPivot)
-                    ->whereColumn($galleryPivot.'.media_id', 'media.id');
+                    ->whereColumn($galleryPivot . '.media_id', 'media.id');
             })
             ->whereNotExists(function ($query) use ($attachments): void {
                 $query->selectRaw('1')
                     ->from($attachments)
-                    ->whereColumn($attachments.'.media_id', 'media.id');
+                    ->whereColumn($attachments . '.media_id', 'media.id');
             });
     }
 

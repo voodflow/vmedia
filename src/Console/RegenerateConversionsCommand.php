@@ -44,7 +44,7 @@ class RegenerateConversionsCommand extends Command
         $keys = array_values(array_unique($keys));
 
         $this->components->info(
-            'Conversion keys: '.($keys === [] ? implode(', ', ConversionLadder::keys()) : implode(', ', $keys)),
+            'Conversion keys: ' . ($keys === [] ? implode(', ', ConversionLadder::keys()) : implode(', ', $keys)),
         );
 
         if (! $this->option('force') && ! $this->confirm('Regenerate conversions for all vault images?', true)) {

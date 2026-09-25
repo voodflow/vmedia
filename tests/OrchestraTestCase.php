@@ -47,7 +47,7 @@ abstract class OrchestraTestCase extends BaseTestCase
             'prefix' => '',
             'foreign_key_constraints' => true,
         ]);
-        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
+        $app['config']->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
         $app['config']->set('auth.providers.users.model', User::class);
     }
 
@@ -83,6 +83,6 @@ abstract class OrchestraTestCase extends BaseTestCase
             $table->softDeletes();
         });
 
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
     }
 }

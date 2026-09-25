@@ -56,7 +56,7 @@ class GalleryHierarchyTest extends TestCase
             'kind' => MediaGallery::KIND_ALBUM,
             'parent' => $folder,
             'integration_source' => 'test',
-            'integration_key' => 'group:'.$folder->getKey().':library',
+            'integration_key' => 'group:' . $folder->getKey() . ':library',
         ]);
 
         $media = MediaLibrary::store(

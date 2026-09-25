@@ -15,7 +15,7 @@ if (! function_exists('vmedia_gallery')) {
      * @param  string|null  $view  blade view (defaults to package public gallery partial)
      * @param  array<string, mixed>  $options  aggregate options when rendering a group
      */
-    function vmedia_gallery(string|int $gallery, ?string $view = null, array $options = []): string
+    function vmedia_gallery(string | int $gallery, ?string $view = null, array $options = []): string
     {
         $model = vmedia_resolve_gallery($gallery);
 
@@ -59,7 +59,7 @@ if (! function_exists('vmedia_gallery')) {
 }
 
 if (! function_exists('vmedia_resolve_gallery')) {
-    function vmedia_resolve_gallery(string|int $gallery): ?MediaGallery
+    function vmedia_resolve_gallery(string | int $gallery): ?MediaGallery
     {
         if (is_numeric($gallery)) {
             return MediaGallery::query()->find((int) $gallery);
@@ -82,7 +82,7 @@ if (! function_exists('vmedia_aggregate_gallery')) {
      * @param  array<string, mixed>  $options
      * @return array{data: list<array<string, mixed>>, meta: array<string, mixed>, gallery: MediaGallery|null, album_ids: list<int>}
      */
-    function vmedia_aggregate_gallery(string|int|MediaGallery $gallery, array $options = []): array
+    function vmedia_aggregate_gallery(string | int | MediaGallery $gallery, array $options = []): array
     {
         $model = $gallery instanceof MediaGallery
             ? $gallery
@@ -113,7 +113,7 @@ if (! function_exists('vmedia_gallery_shortcode')) {
      */
     function vmedia_gallery_shortcode(string $slug): string
     {
-        return '[vmedia-gallery slug="'.addslashes($slug).'"]';
+        return '[vmedia-gallery slug="' . addslashes($slug) . '"]';
     }
 }
 

@@ -119,6 +119,7 @@ class VmediaSettings extends Model
                 foreach ($variants as $variant) {
                     if ($variant['role'] === ConversionLadder::ROLE_DISPLAY) {
                         $defaultDisplay = $variant['key'];
+
                         break;
                     }
                 }

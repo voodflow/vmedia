@@ -103,7 +103,7 @@ final class MediaTagSelect
         return MediaTag::query()
             ->whereIn('id', $ids)
             ->pluck('name', 'id')
-            ->mapWithKeys(fn (string $name, int|string $id): array => [(string) $id => $name])
+            ->mapWithKeys(fn (string $name, int | string $id): array => [(string) $id => $name])
             ->all();
     }
 
@@ -130,10 +130,10 @@ final class MediaTagSelect
         $path = GalleryPath::toPath($folder);
 
         if (GalleryPath::depth($folder) === 0 || $path === (string) $folder->name) {
-            return $indent.$folder->name;
+            return $indent . $folder->name;
         }
 
-        return $indent.$folder->name.' · '.$path;
+        return $indent . $folder->name . ' · ' . $path;
     }
 
     public static function parentFolderSelect(): Select

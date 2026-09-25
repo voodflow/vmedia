@@ -105,11 +105,11 @@ class MediaController extends Controller
                 'file',
                 File::types($extensions)->max($maxKb),
             ],
-            'gallery_id' => ['nullable', 'integer', 'exists:'.(new MediaGallery)->getTable().',id'],
+            'gallery_id' => ['nullable', 'integer', 'exists:' . (new MediaGallery)->getTable() . ',id'],
             'name' => ['nullable', 'string', 'max:255'],
             'caption' => ['nullable', 'string', 'max:1000'],
             'alt' => ['nullable', 'string', 'max:255'],
-            'derived_from_uuid' => ['nullable', 'uuid', 'exists:'.(new MediaItem)->getTable().',uuid'],
+            'derived_from_uuid' => ['nullable', 'uuid', 'exists:' . (new MediaItem)->getTable() . ',uuid'],
         ]);
 
         UploadGuard::assertAllowedMime($validated['file']);

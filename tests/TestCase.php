@@ -58,7 +58,7 @@ if (class_exists(\Tests\TestCase::class)) {
                 $table->softDeletes();
             });
 
-            $migrationPath = dirname(__DIR__).'/database/migrations';
+            $migrationPath = dirname(__DIR__) . '/database/migrations';
             $files = [
                 '2026_07_31_160000_create_vmedia_galleries_table.php',
                 '2026_07_31_170000_create_vmedia_vault_and_gallery_pivot.php',
@@ -71,7 +71,7 @@ if (class_exists(\Tests\TestCase::class)) {
 
             foreach ($files as $file) {
                 $this->artisan('migrate', [
-                    '--path' => $migrationPath.'/'.$file,
+                    '--path' => $migrationPath . '/' . $file,
                     '--realpath' => true,
                     '--force' => true,
                 ]);

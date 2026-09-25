@@ -51,7 +51,7 @@ final class Vmedia
     public static function registerPluginVault(
         string $source,
         string $slug,
-        string|Closure $name,
+        string | Closure $name,
         ?string $integrationKey = null,
     ): void {
         PluginVaultRegistry::register($source, $slug, $name, $integrationKey);

@@ -92,6 +92,7 @@ trait InteractsWithVmediaTests
         foreach (Route::getRoutes() as $route) {
             if ($route->getName() === $name) {
                 $matched = true;
+
                 break;
             }
         }

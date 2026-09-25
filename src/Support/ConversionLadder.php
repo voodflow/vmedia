@@ -227,6 +227,7 @@ final class ConversionLadder
             foreach ($rows as $row) {
                 if ($row['key'] === 'md' || $row['width'] === $previewWidth) {
                     $hasMd = true;
+
                     break;
                 }
             }

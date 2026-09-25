@@ -122,7 +122,7 @@ class MediaSprintFeaturesTest extends TestCase
         $gallery = MediaGallery::default();
         $gallery->forceFill(['is_public' => true])->save();
 
-        $this->get('/galleries/'.$gallery->slug)->assertOk();
+        $this->get('/galleries/' . $gallery->slug)->assertOk();
     }
 
     public function test_zip_import_stores_allowed_files(): void

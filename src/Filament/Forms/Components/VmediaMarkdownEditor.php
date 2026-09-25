@@ -20,7 +20,7 @@ use Voodflow\Vmedia\Support\MediaLibrary;
  */
 class VmediaMarkdownEditor extends MarkdownEditor
 {
-    protected string|Closure $vaultPlugin = 'voodbuilder';
+    protected string | Closure $vaultPlugin = 'voodbuilder';
 
     protected function setUp(): void
     {
@@ -31,7 +31,7 @@ class VmediaMarkdownEditor extends MarkdownEditor
         ]);
     }
 
-    public function vaultPlugin(string|Closure $plugin): static
+    public function vaultPlugin(string | Closure $plugin): static
     {
         $this->vaultPlugin = $plugin;
 
@@ -110,7 +110,7 @@ JS;
                         $url = MediaLibrary::publicUrl($item);
                         $alt = AttachmentMeta::markdownAlt($item);
 
-                        return '!['.str_replace(['[', ']'], ['\\[', '\\]'], (string) $alt).']('.$url.')';
+                        return '![' . str_replace(['[', ']'], ['\\[', '\\]'], (string) $alt) . '](' . $url . ')';
                     })
                     ->all();
 

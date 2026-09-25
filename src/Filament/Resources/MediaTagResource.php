@@ -22,7 +22,7 @@ class MediaTagResource extends Resource
 {
     protected static ?string $model = MediaTag::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-tag';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-tag';
 
     protected static ?string $slug = 'vmedia/tags';
 
@@ -111,7 +111,7 @@ class MediaTagResource extends Resource
                             return $query;
                         }
 
-                        return $query->where('type', 'like', '%'.$type.'%');
+                        return $query->where('type', 'like', '%' . $type . '%');
                     }),
             ])
             ->recordActions([

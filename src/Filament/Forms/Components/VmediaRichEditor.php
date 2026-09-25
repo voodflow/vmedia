@@ -12,7 +12,7 @@ use Filament\Forms\Components\RichEditor;
  */
 class VmediaRichEditor extends RichEditor
 {
-    protected string|Closure $vaultPlugin = 'voodbuilder';
+    protected string | Closure $vaultPlugin = 'voodbuilder';
 
     protected function setUp(): void
     {
@@ -25,7 +25,7 @@ class VmediaRichEditor extends RichEditor
         $this->enableToolbarButtons(['vmediaAttach']);
     }
 
-    public function vaultPlugin(string|Closure $plugin): static
+    public function vaultPlugin(string | Closure $plugin): static
     {
         $this->vaultPlugin = $plugin;
 

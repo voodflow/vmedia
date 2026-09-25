@@ -74,11 +74,11 @@ final class GalleryDisplay
         $parent = $gallery->parent;
 
         if ($parent instanceof MediaGallery) {
-            return $parent->name.' › '.$name;
+            return $parent->name . ' › ' . $name;
         }
 
         if ($name !== '' && GalleryPath::toPath($gallery) !== '' && GalleryPath::toPath($gallery) !== strtolower($name)) {
-            return $name.' · '.GalleryPath::toPath($gallery);
+            return $name . ' · ' . GalleryPath::toPath($gallery);
         }
 
         return $name;

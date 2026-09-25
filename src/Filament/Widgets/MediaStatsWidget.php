@@ -14,7 +14,7 @@ class MediaStatsWidget extends StatsOverviewWidget
 
     protected static bool $isLazy = true;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     protected function getHeading(): ?string
     {
@@ -26,8 +26,8 @@ class MediaStatsWidget extends StatsOverviewWidget
         $stats = MediaUsage::stats();
         $bytes = $stats['bytes'];
         $human = $bytes >= 1_048_576
-            ? number_format($bytes / 1_048_576, 1).' MB'
-            : number_format($bytes / 1024, 1).' KB';
+            ? number_format($bytes / 1_048_576, 1) . ' MB'
+            : number_format($bytes / 1024, 1) . ' KB';
 
         return [
             Stat::make(__('vmedia::admin.stats.media'), (string) $stats['media'])

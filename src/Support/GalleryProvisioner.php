@@ -24,7 +24,7 @@ final class GalleryProvisioner
                 continue;
             }
 
-            $rendered = str_replace('{'.$key.'}', (string) ($value ?? ''), $rendered);
+            $rendered = str_replace('{' . $key . '}', (string) ($value ?? ''), $rendered);
         }
 
         return trim(preg_replace('/\s+/u', ' ', $rendered) ?? $rendered);

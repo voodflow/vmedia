@@ -229,7 +229,7 @@ class MediaItem extends Media
             return null;
         }
 
-        return ($x ?? 50).'% '.($y ?? 50).'%';
+        return ($x ?? 50) . '% ' . ($y ?? 50) . '%';
     }
 
     protected function stringCustomProperty(string $key): ?string

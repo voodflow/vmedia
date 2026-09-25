@@ -117,7 +117,7 @@ final class MediaLibrary
         }
 
         if (filled($search)) {
-            $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $search).'%';
+            $term = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $search) . '%';
             $query->where(function ($builder) use ($term): void {
                 $builder
                     ->where('name', 'like', $term)
@@ -252,7 +252,7 @@ final class MediaLibrary
      */
     public static function store(
         UploadedFile $file,
-        iterable|MediaGallery|null $galleries = null,
+        iterable | MediaGallery | null $galleries = null,
         ?string $name = null,
         ?string $caption = null,
         array $customProperties = [],
@@ -323,7 +323,7 @@ final class MediaLibrary
     {
         return MediaItem::query()
             ->where('model_type', (new MediaVault)->getMorphClass())
-            ->where('custom_properties->'.MediaItem::CUSTOM_CONTENT_HASH, $hash)
+            ->where('custom_properties->' . MediaItem::CUSTOM_CONTENT_HASH, $hash)
             ->first();
     }
 
@@ -368,7 +368,7 @@ final class MediaLibrary
         }
 
         if ($fromClient !== '' && preg_match('/^edited[-_.](.+)$/i', $fromClient, $matches)) {
-            return 'edited-'.$matches[1];
+            return 'edited-' . $matches[1];
         }
 
         return 'image';
@@ -476,6 +476,7 @@ final class MediaLibrary
         foreach ($variants as $variant) {
             if ($variant['width'] >= $targetWidth) {
                 $chosen = $variant;
+
                 break;
             }
         }
@@ -560,7 +561,7 @@ final class MediaLibrary
         $parts = [];
 
         foreach ($variants as $variant) {
-            $parts[] = $variant['url'].' '.$variant['width'].'w';
+            $parts[] = $variant['url'] . ' ' . $variant['width'] . 'w';
         }
 
         return $parts === [] ? null : implode(', ', $parts);
@@ -589,7 +590,7 @@ final class MediaLibrary
 
         $query = parse_url($url, PHP_URL_QUERY);
 
-        return is_string($query) && $query !== '' ? $path.'?'.$query : $path;
+        return is_string($query) && $query !== '' ? $path . '?' . $query : $path;
     }
 
     public static function posterUrl(MediaItem $media): ?string
@@ -680,7 +681,7 @@ final class MediaLibrary
         }
 
         $extension = pathinfo((string) $media->file_name, PATHINFO_EXTENSION) ?: 'jpg';
-        $backupPath = dirname($source).'/.originals/'.($media->uuid).'.'.$extension;
+        $backupPath = dirname($source) . '/.originals/' . ($media->uuid) . '.' . $extension;
 
         if (! $disk->exists($backupPath)) {
             $disk->makeDirectory(dirname($backupPath));
@@ -770,7 +771,7 @@ final class MediaLibrary
      * @param  iterable<int|MediaGallery>|MediaGallery|null  $galleries
      * @return list<MediaGallery>
      */
-    protected static function normalizeGalleries(iterable|MediaGallery|null $galleries): array
+    protected static function normalizeGalleries(iterable | MediaGallery | null $galleries): array
     {
         if ($galleries instanceof MediaGallery) {
             $galleries = [$galleries];

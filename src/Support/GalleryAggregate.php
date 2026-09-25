@@ -139,7 +139,7 @@ final class GalleryAggregate
         $search = $options['search'] ?? null;
 
         if (is_string($search) && trim($search) !== '') {
-            $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], trim($search)).'%';
+            $term = '%' . str_replace(['%', '_'], ['\\%', '\\_'], trim($search)) . '%';
             $query->where(function (Builder $builder) use ($term, $mediaTable): void {
                 $builder
                     ->where("{$mediaTable}.name", 'like', $term)

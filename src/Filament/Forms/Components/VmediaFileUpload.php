@@ -17,7 +17,7 @@ use Voodflow\Vmedia\Support\MediaLibrary;
 
 class VmediaFileUpload extends FileUpload
 {
-    protected string|Closure|null $collection = null;
+    protected string | Closure | null $collection = null;
 
     /**
      * @var array<string, mixed>
@@ -27,7 +27,7 @@ class VmediaFileUpload extends FileUpload
     /**
      * @var array<string, mixed>|Closure|null
      */
-    protected array|Closure|null $customProperties = null;
+    protected array | Closure | null $customProperties = null;
 
     protected function setUp(): void
     {
@@ -125,7 +125,7 @@ class VmediaFileUpload extends FileUpload
         });
     }
 
-    public function collection(string|Closure|null $collection): static
+    public function collection(string | Closure | null $collection): static
     {
         $this->collection = $collection;
 
@@ -135,7 +135,7 @@ class VmediaFileUpload extends FileUpload
     /**
      * @param  array<string, mixed>|Closure|null  $properties
      */
-    public function customProperties(array|Closure|null $properties): static
+    public function customProperties(array | Closure | null $properties): static
     {
         $this->customProperties = $properties;
 
@@ -164,7 +164,7 @@ class VmediaFileUpload extends FileUpload
     /**
      * @return array<string, mixed>
      */
-    public function getCustomProperties(TemporaryUploadedFile|UploadedFile $file): array
+    public function getCustomProperties(TemporaryUploadedFile | UploadedFile $file): array
     {
         return $this->evaluate($this->customProperties, [
             'file' => $file,

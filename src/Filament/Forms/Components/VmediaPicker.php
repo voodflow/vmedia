@@ -42,22 +42,22 @@ class VmediaPicker extends Field
 {
     protected string $view = 'vmedia::forms.components.vmedia-picker';
 
-    protected string|Closure|null $collection = 'default';
+    protected string | Closure | null $collection = 'default';
 
     /**
      * images | videos | files | any
      */
-    protected string|Closure $accept = 'images';
+    protected string | Closure $accept = 'images';
 
-    protected bool|Closure $attachToRecord = true;
+    protected bool | Closure $attachToRecord = true;
 
-    protected bool|Closure $isMultiple = false;
+    protected bool | Closure $isMultiple = false;
 
-    protected bool|Closure $uploadEnabled = true;
+    protected bool | Closure $uploadEnabled = true;
 
-    protected int|Closure|null $vaultGalleryId = null;
+    protected int | Closure | null $vaultGalleryId = null;
 
-    protected bool|Closure $vaultGalleryLocked = false;
+    protected bool | Closure $vaultGalleryLocked = false;
 
     protected function setUp(): void
     {
@@ -233,6 +233,7 @@ class VmediaPicker extends Field
                         'credits' => filled($data['credits'] ?? null) ? trim((string) $data['credits']) : null,
                     ];
                     $found = true;
+
                     break;
                 }
 
@@ -600,14 +601,14 @@ class VmediaPicker extends Field
         };
     }
 
-    public function collection(string|Closure|null $collection): static
+    public function collection(string | Closure | null $collection): static
     {
         $this->collection = $collection;
 
         return $this;
     }
 
-    public function accept(string|Closure $accept): static
+    public function accept(string | Closure $accept): static
     {
         $this->accept = $accept;
 
@@ -634,7 +635,7 @@ class VmediaPicker extends Field
         return $this->accept('any');
     }
 
-    public function multiple(bool|Closure $condition = true): static
+    public function multiple(bool | Closure $condition = true): static
     {
         $this->isMultiple = $condition;
 
@@ -646,7 +647,7 @@ class VmediaPicker extends Field
         return (bool) $this->evaluate($this->isMultiple);
     }
 
-    public function uploadable(bool|Closure $condition = true): static
+    public function uploadable(bool | Closure $condition = true): static
     {
         $this->uploadEnabled = $condition;
 
@@ -658,7 +659,7 @@ class VmediaPicker extends Field
         return (bool) $this->evaluate($this->uploadEnabled);
     }
 
-    public function attachToRecord(bool|Closure $condition = true): static
+    public function attachToRecord(bool | Closure $condition = true): static
     {
         $this->attachToRecord = $condition;
 
@@ -684,7 +685,7 @@ class VmediaPicker extends Field
         return (bool) $this->evaluate($this->attachToRecord);
     }
 
-    public function vaultGallery(int|Closure|null $galleryId, bool|Closure $lock = true): static
+    public function vaultGallery(int | Closure | null $galleryId, bool | Closure $lock = true): static
     {
         $this->vaultGalleryId = $galleryId;
         $this->vaultGalleryLocked = $lock;
@@ -885,7 +886,7 @@ class VmediaPicker extends Field
         $options = [];
 
         foreach ($this->browserAssets($galleryId) as $asset) {
-            $options[$asset['uuid']] = $asset['name'].' ('.$asset['type'].')';
+            $options[$asset['uuid']] = $asset['name'] . ' (' . $asset['type'] . ')';
         }
 
         return $options;

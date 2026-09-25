@@ -29,7 +29,7 @@ final class DuplicateLibraryAlbumPruner
 
     protected static function pruneUnderGroup(MediaGallery $group): int
     {
-        $scopedKey = 'group:'.(int) $group->getKey().':library';
+        $scopedKey = 'group:' . (int) $group->getKey() . ':library';
 
         $libraries = $group->children()
             ->where('kind', MediaGallery::KIND_ALBUM)
@@ -85,7 +85,7 @@ final class DuplicateLibraryAlbumPruner
             return;
         }
 
-        $scopedKey = 'group:'.(int) $group->getKey().':library';
+        $scopedKey = 'group:' . (int) $group->getKey() . ':library';
         $updates = [];
 
         if ($album->integration_key !== $scopedKey) {

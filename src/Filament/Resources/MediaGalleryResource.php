@@ -43,7 +43,7 @@ class MediaGalleryResource extends Resource
 {
     protected static ?string $model = MediaGallery::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-folder';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-folder';
 
     protected static ?string $slug = 'vmedia/galleries';
 
@@ -72,7 +72,7 @@ class MediaGalleryResource extends Resource
         return __('vmedia::admin.galleries.plural');
     }
 
-    public static function libraryUrlForGallery(MediaGallery|int|string $gallery): string
+    public static function libraryUrlForGallery(MediaGallery | int | string $gallery): string
     {
         $id = $gallery instanceof MediaGallery ? $gallery->getKey() : $gallery;
 
@@ -197,7 +197,7 @@ class MediaGalleryResource extends Resource
                     ->wrap()
                     ->lineClamp(2)
                     ->extraCellAttributes(['class' => 'max-w-md'])
-                    ->formatStateUsing(fn (string $state, MediaGallery $record): string => str_repeat('— ', GalleryPath::depth($record)).GalleryDisplay::navLabel($record))
+                    ->formatStateUsing(fn (string $state, MediaGallery $record): string => str_repeat('— ', GalleryPath::depth($record)) . GalleryDisplay::navLabel($record))
                     ->description(function (MediaGallery $record): ?string {
                         if (blank($record->description)) {
                             return null;

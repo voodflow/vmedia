@@ -74,9 +74,9 @@ class VmediaPlugin implements Plugin
     protected function registerAssets(): void
     {
         $assets = [
-            'media-browser' => dirname(__DIR__).'/resources/css/media-browser.css',
-            'vmedia-markdown-editor' => dirname(__DIR__).'/resources/css/markdown-editor.css',
-            'vmedia-markdown-editor-setup' => dirname(__DIR__).'/resources/js/filament/vmedia-markdown-editor-setup.js',
+            'media-browser' => dirname(__DIR__) . '/resources/css/media-browser.css',
+            'vmedia-markdown-editor' => dirname(__DIR__) . '/resources/css/markdown-editor.css',
+            'vmedia-markdown-editor-setup' => dirname(__DIR__) . '/resources/js/filament/vmedia-markdown-editor-setup.js',
         ];
 
         $registered = [];

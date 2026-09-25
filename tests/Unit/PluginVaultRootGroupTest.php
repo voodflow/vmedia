@@ -100,7 +100,7 @@ class PluginVaultRootGroupTest extends TestCase
             ['vforms', 'vforms'],
             ['voodflow', 'voodflow'],
         ] as [$source, $slug]) {
-            Vmedia::registerPluginVault($source, $slug, ucfirst($slug), 'root:'.$slug);
+            Vmedia::registerPluginVault($source, $slug, ucfirst($slug), 'root:' . $slug);
         }
     }
 

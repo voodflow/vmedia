@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     public function up(): void
-{
+    {
         $table = (string) config('vmedia.tables.galleries', 'vmedia_galleries');
 
         if (! Schema::hasTable($table)) {

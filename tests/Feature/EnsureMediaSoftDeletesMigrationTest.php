@@ -19,7 +19,7 @@ class EnsureMediaSoftDeletesMigrationTest extends TestCase
 
         $this->assertFalse(Schema::hasColumn('media', 'deleted_at'));
 
-        $migration = require __DIR__.'/../../database/migrations/2026_09_07_160000_ensure_media_soft_deletes_column.php';
+        $migration = require __DIR__ . '/../../database/migrations/2026_09_07_160000_ensure_media_soft_deletes_column.php';
         $migration->up();
 
         $this->assertTrue(Schema::hasColumn('media', 'deleted_at'));

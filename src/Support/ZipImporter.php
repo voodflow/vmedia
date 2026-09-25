@@ -25,7 +25,7 @@ final class ZipImporter
      * @param  iterable<int|MediaGallery>|MediaGallery|null  $galleries
      * @return array{items: list<MediaItem>, skipped: int, imported: int}
      */
-    public static function import(UploadedFile|string $zip, iterable|MediaGallery|null $galleries = null): array
+    public static function import(UploadedFile | string $zip, iterable | MediaGallery | null $galleries = null): array
     {
         $path = $zip instanceof UploadedFile ? $zip->getRealPath() : $zip;
 
@@ -63,7 +63,7 @@ final class ZipImporter
             ]);
         }
 
-        $tempDir = storage_path('app/vmedia-zip-'.Str::random(12));
+        $tempDir = storage_path('app/vmedia-zip-' . Str::random(12));
         File::ensureDirectoryExists($tempDir);
 
         $stored = [];
@@ -82,6 +82,7 @@ final class ZipImporter
             for ($i = 0; $i < $archive->numFiles; $i++) {
                 if ($extracted >= $maxFiles) {
                     $skipped += max(0, $archive->numFiles - $i);
+
                     break;
                 }
 
@@ -130,7 +131,7 @@ final class ZipImporter
                     continue;
                 }
 
-                $target = $tempDir.DIRECTORY_SEPARATOR.$extracted.'_'.$basename;
+                $target = $tempDir . DIRECTORY_SEPARATOR . $extracted . '_' . $basename;
                 $contents = stream_get_contents($stream);
                 fclose($stream);
 

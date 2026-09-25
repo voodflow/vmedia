@@ -17,7 +17,7 @@ final class FileTypeIcon
     /**
      * @return array{icon: string, icon_label: string}
      */
-    public static function forMedia(MediaItem|Media $media): array
+    public static function forMedia(MediaItem | Media $media): array
     {
         $mime = strtolower((string) ($media->mime_type ?? ''));
         $fileName = (string) ($media->file_name ?? $media->name ?? '');
@@ -112,7 +112,7 @@ final class FileTypeIcon
         };
     }
 
-    public static function dataUriFor(MediaItem|Media $media): string
+    public static function dataUriFor(MediaItem | Media $media): string
     {
         $meta = self::forMedia($media);
 
@@ -146,7 +146,7 @@ final class FileTypeIcon
 </svg>
 SVG;
 
-        return 'data:image/svg+xml;base64,'.base64_encode($svg);
+        return 'data:image/svg+xml;base64,' . base64_encode($svg);
     }
 
     private static function extension(?string $fileName): string

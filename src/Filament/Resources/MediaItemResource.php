@@ -58,7 +58,7 @@ class MediaItemResource extends Resource
 {
     protected static ?string $model = MediaItem::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-photo';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-photo';
 
     protected static ?string $slug = 'vmedia/library';
 
@@ -157,7 +157,7 @@ class MediaItemResource extends Resource
                         }
 
                         if ($alt !== null) {
-                            $parts[] = 'alt: '.$alt;
+                            $parts[] = 'alt: ' . $alt;
                         }
 
                         return implode(' — ', $parts);

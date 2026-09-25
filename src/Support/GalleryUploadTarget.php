@@ -68,7 +68,7 @@ final class GalleryUploadTarget
     protected static function resolveAlbumForGroup(MediaGallery $group): MediaGallery
     {
         $parentId = (int) $group->getKey();
-        $scopedKey = 'group:'.$parentId.':library';
+        $scopedKey = 'group:' . $parentId . ':library';
 
         $library = MediaGallery::query()
             ->where('parent_id', $parentId)

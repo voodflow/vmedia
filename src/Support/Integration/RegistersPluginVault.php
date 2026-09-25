@@ -16,7 +16,7 @@ final class RegistersPluginVault
     public static function register(
         string $source,
         string $slug,
-        string|Closure $name,
+        string | Closure $name,
         ?string $integrationKey = null,
     ): void {
         if (! class_exists(Vmedia::class)) {

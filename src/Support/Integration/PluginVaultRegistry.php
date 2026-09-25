@@ -25,7 +25,7 @@ final class PluginVaultRegistry
     public static function register(
         string $source,
         string $slug,
-        string|Closure $name,
+        string | Closure $name,
         ?string $integrationKey = null,
     ): void {
         $source = trim($source);
@@ -39,7 +39,7 @@ final class PluginVaultRegistry
             'source' => $source,
             'slug' => $slug,
             'name' => $name,
-            'key' => $integrationKey ?? 'root:'.$slug,
+            'key' => $integrationKey ?? 'root:' . $slug,
         ];
     }
 
@@ -76,7 +76,7 @@ final class PluginVaultRegistry
         return array_values(self::$definitions);
     }
 
-    public static function resolveName(string|Closure $name): string
+    public static function resolveName(string | Closure $name): string
     {
         return is_string($name) ? $name : (string) $name();
     }

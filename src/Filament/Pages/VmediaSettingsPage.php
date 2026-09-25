@@ -32,7 +32,7 @@ class VmediaSettingsPage extends Page
 {
     use CanUseDatabaseTransactions;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cog-6-tooth';
 
     protected static ?string $slug = 'vmedia/settings';
 
@@ -56,7 +56,7 @@ class VmediaSettingsPage extends Page
         return __('vmedia::admin.settings.navigation');
     }
 
-    public function getTitle(): string|Htmlable
+    public function getTitle(): string | Htmlable
     {
         return __('vmedia::admin.settings.title');
     }
@@ -201,7 +201,7 @@ class VmediaSettingsPage extends Page
                                     }
 
                                     $label = trim((string) ($row['label'] ?? $key));
-                                    $options[$key] = $label.' ('.$key.')';
+                                    $options[$key] = $label . ' (' . $key . ')';
                                 }
 
                                 return $options;

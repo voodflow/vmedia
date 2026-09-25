@@ -29,12 +29,12 @@ class ManageMediaItems extends ManageRecords
         ];
     }
 
-    public function getTitle(): string|Htmlable
+    public function getTitle(): string | Htmlable
     {
         return __('vmedia::admin.library.plural');
     }
 
-    public function getSubheading(): string|Htmlable|null
+    public function getSubheading(): string | Htmlable | null
     {
         return __('vmedia::admin.library.intro');
     }
