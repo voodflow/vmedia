@@ -106,8 +106,8 @@ final class GalleryBlockSupportTest extends OrchestraTestCase
 
         $this->assertSame('above', $above['caption_position']);
         $this->assertSame('black', $above['caption_bg_color']);
-        $this->assertSame(72, $above['caption_bg_opacity']);
-        $this->assertSame('rgba(0, 0, 0, 0.72)', $above['caption_bg']);
+        $this->assertSame(82, $above['caption_bg_opacity']);
+        $this->assertSame('rgba(0, 0, 0, 0.82)', $above['caption_bg']);
 
         $overlay = GalleryBlockSupport::normalizeConfig([
             'caption_position' => 'overlay',

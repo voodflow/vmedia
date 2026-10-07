@@ -1,3 +1,10 @@
+## [0.3.13] - 2026-10-07
+
+### Fixed
+
+- Stronger credits / caption contrast (opaque strip, text-shadow, darker default caption bg)
+- Gallery settings hint: vault captions + gallery position override per-image Grapes caption display
+
 ## [0.3.12] - 2026-10-07
 
 ### Fixed

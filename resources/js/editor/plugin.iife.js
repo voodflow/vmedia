@@ -581,11 +581,20 @@
                         min: 0,
                         max: 100,
                         step: 1,
-                        value: Number(config.caption_bg_opacity ?? 72),
+                        value: Number(config.caption_bg_opacity ?? 82),
                         onChange: function (value) {
                             patchConfigs(gjsEditor, root, { caption_bg_opacity: value });
                         },
                     }));
+
+                    var captionHint = document.createElement('p');
+                    captionHint.className = 'voodbuilder-editor-hint';
+                    captionHint.textContent = label(
+                        gjsEditor,
+                        'vmediaCaptionHint',
+                        'Captions and credits come from the media library. Gallery position/visibility override any per-image caption display.',
+                    );
+                    form.fields.appendChild(captionHint);
                 }
 
                 form.fields.appendChild(createToggleField({

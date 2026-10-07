@@ -267,6 +267,7 @@ return [
         'caption_overlay' => 'Sull’immagine',
         'caption_bg' => 'Sfondo didascalia',
         'caption_bg_opacity' => 'Trasparenza didascalia',
+        'caption_hint' => 'Didascalia e crediti arrivano dalla libreria media. Posizione/visibilità del blocco Galleria hanno priorità sulla didascalia della singola foto.',
         'credits' => 'Crediti',
         'lightbox' => 'Lightbox',
         'speed' => 'Velocità scroll (secondi)',

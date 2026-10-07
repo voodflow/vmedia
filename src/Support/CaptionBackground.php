@@ -12,7 +12,7 @@ final class CaptionBackground
 {
     public const DEFAULT_COLOR = 'black';
 
-    public const DEFAULT_OPACITY = 72;
+    public const DEFAULT_OPACITY = 82;
 
     /** @var list<string> */
     private const FAMILIES = [

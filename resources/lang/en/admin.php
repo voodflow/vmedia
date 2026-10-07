@@ -267,6 +267,7 @@ return [
         'caption_overlay' => 'On image',
         'caption_bg' => 'Caption background',
         'caption_bg_opacity' => 'Caption opacity',
+        'caption_hint' => 'Captions and credits come from the media library. Gallery position/visibility override any per-image caption display.',
         'credits' => 'Credits',
         'lightbox' => 'Lightbox',
         'speed' => 'Scroll speed (seconds)',
