@@ -99,15 +99,19 @@
     align-items: center;
     justify-content: center;
     gap: clamp(0.75rem, 2vw, 1.5rem);
-    width: min(96vw, 1200px);
+    width: auto;
+    max-width: min(96vw, 1200px);
     max-height: 90vh;
 }
 
+/* Shrink-wrap to the image so portrait captions are not as wide as landscape ones. */
 .vmedia-gallery-dialog__stage {
-    flex: 1;
-    min-width: 0;
+    flex: 0 1 auto;
+    width: fit-content;
+    max-width: min(calc(96vw - 8rem), 1200px);
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     overflow: hidden;
     border-radius: 1rem;
     background: rgba(15, 23, 42, 0.35);
@@ -116,10 +120,11 @@
 
 .vmedia-gallery-dialog__image {
     display: block;
-    width: 100%;
-    max-width: 100%;
+    width: auto;
+    height: auto;
+    max-width: min(calc(96vw - 8rem), 1200px);
     max-height: min(75vh, calc(90vh - 4rem));
-    margin: 0 auto;
+    margin: 0;
     object-fit: contain;
 }
 
@@ -132,6 +137,7 @@
     font-weight: 500;
     color: #fff;
     background: rgba(0, 0, 0, 0.78);
+    box-sizing: border-box;
 }
 
 .vmedia-gallery-dialog__caption[hidden] {

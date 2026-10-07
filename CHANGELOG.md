@@ -1,3 +1,9 @@
+## [0.3.6] - 2026-10-07
+
+### Fixed
+
+- Lightbox caption bar shrink-wraps to the image width (portrait images no longer get a landscape-wide caption)
+
 ## [0.3.5] - 2026-10-07
 
 ### Fixed
