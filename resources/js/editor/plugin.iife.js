@@ -168,10 +168,32 @@
         }
     }
 
-    function scheduleFullRefresh(editor, root) {
+    function scheduleFullRefresh(editor, root, afterRefresh) {
+        var runAfter = typeof afterRefresh === 'function' ? afterRefresh : null;
+
+        function finish() {
+            bumpPageCss(editor);
+            try {
+                // Theme vp-* captions: server HTML uses color-mix(var(--color-vp-*)),
+                // which often paints black in the canvas after remount. Re-bake rgba.
+                rebakeCaptionBgAfterRefresh(editor, root, {
+                    vmedia: editor && editor.__voodbuilderVmedia,
+                });
+            } catch (err) {
+                // ignore paint failures
+            }
+            if (runAfter) {
+                try {
+                    runAfter();
+                } catch (err2) {
+                    // ignore
+                }
+            }
+        }
+
         if (! refreshTimers) {
             editor.trigger('voodbuilder:refresh-dynamic-block', root);
-            window.setTimeout(function () { bumpPageCss(editor); }, 220);
+            window.setTimeout(finish, 280);
             return;
         }
         var existing = refreshTimers.get(root);
@@ -183,18 +205,18 @@
             delete root.__voodbuilderLastDynamicRenderFingerprint;
             delete root.__voodbuilderLastDynamicRenderHtml;
             editor.trigger('voodbuilder:refresh-dynamic-block', root);
-            window.setTimeout(function () { bumpPageCss(editor); }, 220);
+            window.setTimeout(finish, 280);
         }, 160));
     }
 
-    function writeConfig(editor, root, config) {
+    function writeConfig(editor, root, config, afterRefresh) {
         persistConfig(editor, root, config);
-        scheduleFullRefresh(editor, root);
+        scheduleFullRefresh(editor, root, afterRefresh);
     }
 
-    function patchConfigs(editor, root, patch) {
+    function patchConfigs(editor, root, patch, afterRefresh) {
         var next = Object.assign({}, readConfig(root), patch);
-        writeConfig(editor, root, next);
+        writeConfig(editor, root, next, afterRefresh);
     }
 
     /** Persist block config without re-rendering / page CSS rebuild (fluid preview). */
@@ -216,6 +238,118 @@
         return view && view.el ? view.el : null;
     }
 
+    function canvasDocument(editor) {
+        try {
+            if (editor && editor.Canvas && typeof editor.Canvas.getDocument === 'function') {
+                return editor.Canvas.getDocument() || document;
+            }
+        } catch (err) {
+            // ignore
+        }
+        return document;
+    }
+
+    function rgbChannelsFromCssColor(editor, cssColor) {
+        var value = String(cssColor || '').trim();
+        if (value === '') {
+            return null;
+        }
+
+        var hexMatch = value.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+        if (hexMatch) {
+            var raw = hexMatch[1];
+            if (raw.length === 3) {
+                raw = raw[0] + raw[0] + raw[1] + raw[1] + raw[2] + raw[2];
+            }
+            return {
+                r: parseInt(raw.slice(0, 2), 16) || 0,
+                g: parseInt(raw.slice(2, 4), 16) || 0,
+                b: parseInt(raw.slice(4, 6), 16) || 0,
+            };
+        }
+
+        var doc = canvasDocument(editor);
+        var probe = doc.createElement('div');
+        probe.style.cssText = 'position:absolute;left:-99999px;top:0;color:' + value;
+        (doc.body || doc.documentElement).appendChild(probe);
+        var computed = '';
+        try {
+            computed = (doc.defaultView || window).getComputedStyle(probe).color || '';
+        } catch (err) {
+            computed = '';
+        }
+        probe.remove();
+
+        var rgb = computed.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/i);
+        if (! rgb) {
+            return null;
+        }
+
+        return {
+            r: Math.round(Number(rgb[1])) || 0,
+            g: Math.round(Number(rgb[2])) || 0,
+            b: Math.round(Number(rgb[3])) || 0,
+        };
+    }
+
+    function channelsToHex(channels) {
+        if (! channels) {
+            return null;
+        }
+        function part(n) {
+            var h = Math.max(0, Math.min(255, n)).toString(16);
+            return h.length === 1 ? '0' + h : h;
+        }
+        return '#' + part(channels.r) + part(channels.g) + part(channels.b);
+    }
+
+    /**
+     * Resolve theme token (vp-brand-1, …) to a concrete hex from the canvas theme,
+     * not the editor chrome defaults (those look blue/indigo).
+     */
+    function resolveThemeTokenHex(editor, token) {
+        var name = String(token || '').trim();
+        if (name.indexOf('vp-') !== 0) {
+            return null;
+        }
+
+        var doc = canvasDocument(editor);
+        var roots = [doc.documentElement, doc.body, document.documentElement];
+        for (var i = 0; i < roots.length; i += 1) {
+            if (! roots[i]) {
+                continue;
+            }
+            var raw = '';
+            try {
+                raw = (doc.defaultView || window).getComputedStyle(roots[i])
+                    .getPropertyValue('--color-' + name)
+                    .trim();
+            } catch (err) {
+                raw = '';
+            }
+            if (raw) {
+                var fromVar = channelsToHex(rgbChannelsFromCssColor(editor, raw));
+                if (fromVar) {
+                    return fromVar;
+                }
+            }
+        }
+
+        var paletteCss = String(editor && editor.__voodbuilderThemePaletteCss || '').trim();
+        if (paletteCss !== '') {
+            var re = new RegExp('--color-' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*([^;}{]+)');
+            var match = paletteCss.match(re);
+            if (match && match[1]) {
+                var fromCss = channelsToHex(rgbChannelsFromCssColor(editor, match[1].trim()));
+                if (fromCss) {
+                    return fromCss;
+                }
+            }
+        }
+
+        return channelsToHex(rgbChannelsFromCssColor(editor, 'var(--color-' + name + ')'));
+    }
+
     function hexToCaptionCss(hex, opacityPercent) {
         var raw = String(hex || '#000000').replace('#', '');
         if (raw.length === 3) {
@@ -235,24 +369,26 @@
         return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
     }
 
-    function themeVarCaptionCss(token, opacityPercent) {
-        var cssVar = 'var(--color-' + String(token).trim() + ')';
-        var pct = Math.max(0, Math.min(100, Number(opacityPercent) || 0));
-        if (pct >= 100) {
-            return cssVar;
-        }
-        if (pct <= 0) {
-            return 'transparent';
-        }
-        return 'color-mix(in srgb, ' + cssVar + ' ' + pct + '%, transparent)';
-    }
-
-    function resolveCaptionBgCss(context, colorToken, opacityPercent) {
+    function resolveCaptionBgCss(editor, context, colorToken, opacityPercent) {
         var token = String(colorToken || 'black').trim();
         if (token.indexOf('vp-') === 0) {
-            return themeVarCaptionCss(token, opacityPercent);
+            var themeHex = resolveThemeTokenHex(editor, token);
+            if (themeHex) {
+                // Bake concrete rgba so canvas remounts don't flash black when
+                // color-mix(var(--color-vp-*)) fails to resolve momentarily.
+                return hexToCaptionCss(themeHex, opacityPercent);
+            }
+            var pct = Math.max(0, Math.min(100, Number(opacityPercent) || 0));
+            var cssVar = 'var(--color-' + token + ')';
+            if (pct >= 100) {
+                return cssVar;
+            }
+            if (pct <= 0) {
+                return 'transparent';
+            }
+            return 'color-mix(in srgb, ' + cssVar + ' ' + pct + '%, transparent)';
         }
-        var options = captionColorOptions(context);
+        var options = captionColorOptions(editor, context);
         var hex = '#000000';
         for (var i = 0; i < options.length; i += 1) {
             if (String(options[i].value) === token && options[i].hex) {
@@ -264,6 +400,52 @@
             hex = '#ffffff';
         }
         return hexToCaptionCss(hex, opacityPercent);
+    }
+
+    function mergeCaptionBgStyle(styleText, cssValue) {
+        var next = String(styleText || '')
+            .replace(/(?:^|;)\s*--vmedia-caption-bg\s*:[^;]*/gi, '')
+            .replace(/;;+/g, ';')
+            .replace(/^;|;$/g, '')
+            .trim();
+        var baked = '--vmedia-caption-bg: ' + cssValue;
+        return next === '' ? baked : (next + '; ' + baked);
+    }
+
+    function bakeCaptionBgOnComponents(root, cssValue) {
+        if (! root || ! cssValue) {
+            return;
+        }
+
+        function walk(component) {
+            if (! component) {
+                return;
+            }
+            var tag = String(component.get ? (component.get('tagName') || '') : '').toLowerCase();
+            var attrs = component.getAttributes ? component.getAttributes() : {};
+            var className = String(attrs.class || '');
+            var isCaption = tag === 'figcaption'
+                || className.indexOf('vmedia-gallery-item__caption') !== -1
+                || className.indexOf('vmedia-gallery-dialog') !== -1
+                || Object.prototype.hasOwnProperty.call(attrs, 'data-vmedia-gallery-dialog');
+
+            if (isCaption || (attrs.style && String(attrs.style).indexOf('--vmedia-caption-bg') !== -1)) {
+                component.addAttributes({
+                    style: mergeCaptionBgStyle(attrs.style, cssValue),
+                });
+            }
+
+            var children = component.components ? component.components() : null;
+            if (children && typeof children.forEach === 'function') {
+                children.forEach(walk);
+            } else if (children && typeof children.length === 'number') {
+                for (var i = 0; i < children.length; i += 1) {
+                    walk(children.at ? children.at(i) : children[i]);
+                }
+            }
+        }
+
+        walk(root);
     }
 
     function livePaintCaptionBg(root, cssValue) {
@@ -282,10 +464,17 @@
         }
     }
 
-    function paintCaptionBgFromConfig(root, context, config) {
+    function paintCaptionBgFromConfig(editor, root, context, config) {
         var color = String((config && config.caption_bg_color) || 'black');
         var opacity = Number((config && config.caption_bg_opacity) ?? 82);
-        livePaintCaptionBg(root, resolveCaptionBgCss(context, color, opacity));
+        var cssValue = resolveCaptionBgCss(editor, context, color, opacity);
+        livePaintCaptionBg(root, cssValue);
+        bakeCaptionBgOnComponents(root, cssValue);
+        return cssValue;
+    }
+
+    function rebakeCaptionBgAfterRefresh(editor, root, context) {
+        paintCaptionBgFromConfig(editor, root, context, readConfig(root));
     }
 
     function galleryOptions(editor, context) {
@@ -408,17 +597,23 @@
         return field;
     }
 
-    function captionColorOptions(context) {
+    function captionColorOptions(editor, context) {
         var bridge = (context && context.vmedia)
+            || (editor && editor.__voodbuilderVmedia)
             || (typeof window !== 'undefined' ? window.__voodbuilderVmedia : null)
             || {};
         var colors = Array.isArray(bridge.captionColors) ? bridge.captionColors : [];
         if (colors.length > 0) {
             return colors.map(function (item) {
+                var value = String(item.value);
+                var hex = item.hex ? String(item.hex) : undefined;
+                if (! hex && value.indexOf('vp-') === 0) {
+                    hex = resolveThemeTokenHex(editor, value) || undefined;
+                }
                 return {
-                    value: String(item.value),
+                    value: value,
                     label: String(item.label || item.value),
-                    hex: item.hex ? String(item.hex) : undefined,
+                    hex: hex,
                     css: item.css ? String(item.css) : undefined,
                 };
             });
@@ -698,12 +893,10 @@
                         name: 'caption_bg_color',
                         value: String(config.caption_bg_color || 'black'),
                         searchable: true,
-                        options: captionColorOptions(context),
+                        options: captionColorOptions(gjsEditor, context),
                         onChange: function (value) {
                             var next = Object.assign({}, readConfig(root), { caption_bg_color: value });
-                            // Instant feedback, then one refresh so Grapes/getHtml bake the real CSS
-                            // (DOM style.setProperty alone is not serialized into the page HTML).
-                            paintCaptionBgFromConfig(root, context, next);
+                            paintCaptionBgFromConfig(gjsEditor, root, context, next);
                             patchConfigs(gjsEditor, root, { caption_bg_color: value });
                         },
                     }));
@@ -718,11 +911,12 @@
                         value: Number(config.caption_bg_opacity ?? 82),
                         onInput: function (value) {
                             var color = String(readConfig(root).caption_bg_color || 'black');
-                            livePaintCaptionBg(root, resolveCaptionBgCss(context, color, value));
+                            livePaintCaptionBg(
+                                root,
+                                resolveCaptionBgCss(gjsEditor, context, color, value),
+                            );
                         },
                         onChange: function (value) {
-                            // Drag stays fluid (onInput); mouseup refreshes once so saved HTML
-                            // matches config (silent paint alone left black captions after Save).
                             patchConfigs(gjsEditor, root, { caption_bg_opacity: value });
                         },
                     }));

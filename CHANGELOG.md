@@ -1,3 +1,10 @@
+## [0.3.18] - 2026-10-07
+
+### Fixed
+
+- Caption `vp-*` swatches resolve the canvas theme colour (not editor-chrome indigo defaults)
+- After gallery remount, caption backgrounds are re-baked to concrete `rgba(...)` so theme tokens no longer flash/stick black in the editor
+
 ## [0.3.17] - 2026-10-07
 
 ### Fixed
