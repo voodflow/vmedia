@@ -75,7 +75,9 @@ final class GalleryBlockSupportTest extends OrchestraTestCase
         ] as $blockClass) {
             $html = $blockClass::toPreviewHtml($blockClass::defaultConfig(), []);
 
-            $this->assertStringContainsString($blockClass::getId(), $html);
+            // Block id is stamped by EditorRichContentBlockAdapter::wrap (not Blade),
+            // so preview HTML must expose the gallery root class instead.
+            $this->assertStringContainsString('vmedia-gallery-block', $html);
         }
     }
 
@@ -128,5 +130,17 @@ final class GalleryBlockSupportTest extends OrchestraTestCase
         $this->assertSame('below', $legacy['caption_position']);
         $this->assertSame('black', $legacy['caption_bg_color']);
         $this->assertSame(50, $legacy['caption_bg_opacity']);
+
+        $theme = GalleryBlockSupport::normalizeConfig([
+            'caption_bg_color' => 'vp-brand-1',
+            'caption_bg_opacity' => 70,
+        ], GalleryBlockSupport::LAYOUT_GRID);
+
+        $this->assertSame('vp-brand-1', $theme['caption_bg_color']);
+        $this->assertSame(70, $theme['caption_bg_opacity']);
+        $this->assertSame(
+            'color-mix(in srgb, var(--color-vp-brand-1) 70%, transparent)',
+            $theme['caption_bg'],
+        );
     }
 }

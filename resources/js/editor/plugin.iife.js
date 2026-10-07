@@ -18,24 +18,48 @@
         return (editor && editor.__voodbuilderLabels && editor.__voodbuilderLabels[key]) || fallback;
     }
 
+    /**
+     * Match voodbuilder/resources/js/editor/voodbuilder-dynamic-config.js —
+     * Grapes getHtml() breaks raw JSON quotes inside double-quoted attributes,
+     * which blanks gallery settings on save/reload.
+     */
     function parseBlockConfig(raw) {
-        if (! raw || typeof raw !== 'string') {
+        if (! raw || typeof raw !== 'string' || raw === '{}') {
             return {};
         }
-        try {
-            var parsed = JSON.parse(raw);
-            return parsed && typeof parsed === 'object' && ! Array.isArray(parsed) ? parsed : {};
-        } catch (err) {
-            return {};
+
+        var textarea = document.createElement('textarea');
+        textarea.innerHTML = raw;
+        var entityDecoded = textarea.value || raw;
+        var candidates = [entityDecoded, raw];
+
+        for (var i = 0; i < candidates.length; i += 1) {
+            try {
+                var parsed = JSON.parse(candidates[i]);
+                if (parsed && typeof parsed === 'object' && ! Array.isArray(parsed)) {
+                    return parsed;
+                }
+            } catch (err) {
+                // try next
+            }
         }
+
+        return {};
     }
 
     function encodeBlockConfig(config) {
+        var json = '{}';
         try {
-            return JSON.stringify(config || {});
+            json = JSON.stringify(config || {});
         } catch (err) {
-            return '{}';
+            json = '{}';
         }
+
+        return json
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
     }
 
     function findBlockRoot(component) {
@@ -211,18 +235,35 @@
         return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
     }
 
-    function resolveCaptionColorHex(context, colorToken) {
+    function themeVarCaptionCss(token, opacityPercent) {
+        var cssVar = 'var(--color-' + String(token).trim() + ')';
+        var pct = Math.max(0, Math.min(100, Number(opacityPercent) || 0));
+        if (pct >= 100) {
+            return cssVar;
+        }
+        if (pct <= 0) {
+            return 'transparent';
+        }
+        return 'color-mix(in srgb, ' + cssVar + ' ' + pct + '%, transparent)';
+    }
+
+    function resolveCaptionBgCss(context, colorToken, opacityPercent) {
         var token = String(colorToken || 'black').trim();
+        if (token.indexOf('vp-') === 0) {
+            return themeVarCaptionCss(token, opacityPercent);
+        }
         var options = captionColorOptions(context);
+        var hex = '#000000';
         for (var i = 0; i < options.length; i += 1) {
             if (String(options[i].value) === token && options[i].hex) {
-                return String(options[i].hex);
+                hex = String(options[i].hex);
+                break;
             }
         }
         if (token === 'white') {
-            return '#ffffff';
+            hex = '#ffffff';
         }
-        return '#000000';
+        return hexToCaptionCss(hex, opacityPercent);
     }
 
     function livePaintCaptionBg(root, cssValue) {
@@ -244,7 +285,7 @@
     function paintCaptionBgFromConfig(root, context, config) {
         var color = String((config && config.caption_bg_color) || 'black');
         var opacity = Number((config && config.caption_bg_opacity) ?? 82);
-        livePaintCaptionBg(root, hexToCaptionCss(resolveCaptionColorHex(context, color), opacity));
+        livePaintCaptionBg(root, resolveCaptionBgCss(context, color, opacity));
     }
 
     function galleryOptions(editor, context) {
@@ -298,6 +339,8 @@
             option.textContent = opt.label;
             if (opt.hex) {
                 option.setAttribute('data-hex', String(opt.hex));
+            } else if (opt.css) {
+                option.setAttribute('data-hex', String(opt.css));
             }
             if (String(opt.value) === String(options.value ?? '')) {
                 option.selected = true;
@@ -376,6 +419,7 @@
                     value: String(item.value),
                     label: String(item.label || item.value),
                     hex: item.hex ? String(item.hex) : undefined,
+                    css: item.css ? String(item.css) : undefined,
                 };
             });
         }
@@ -672,10 +716,7 @@
                         value: Number(config.caption_bg_opacity ?? 82),
                         onInput: function (value) {
                             var color = String(readConfig(root).caption_bg_color || 'black');
-                            livePaintCaptionBg(
-                                root,
-                                hexToCaptionCss(resolveCaptionColorHex(context, color), value),
-                            );
+                            livePaintCaptionBg(root, resolveCaptionBgCss(context, color, value));
                         },
                         onChange: function (value) {
                             // Persist only — live paint already updated the canvas.

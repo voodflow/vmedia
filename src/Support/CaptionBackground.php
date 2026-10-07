@@ -14,6 +14,25 @@ final class CaptionBackground
 
     public const DEFAULT_OPACITY = 82;
 
+    /**
+     * Theme tokens (CSS vars --color-vp-*). Same set as Decorations → Background.
+     *
+     * @var list<string>
+     */
+    private const THEME_TOKENS = [
+        'vp-bg',
+        'vp-bg-alt',
+        'vp-bg-elv',
+        'vp-gray-soft',
+        'vp-brand-1',
+        'vp-brand-2',
+        'vp-brand-3',
+        'vp-text-1',
+        'vp-text-2',
+        'vp-text-3',
+        'vp-divider',
+    ];
+
     /** @var list<string> */
     private const FAMILIES = [
         'slate', 'gray', 'zinc', 'neutral', 'stone',
@@ -57,7 +76,7 @@ final class CaptionBackground
     ];
 
     /**
-     * @return list<array{value: string, label: string, hex: string}>
+     * @return list<array{value: string, label: string, hex: string|null, css?: string}>
      */
     public static function editorOptions(): array
     {
@@ -65,6 +84,15 @@ final class CaptionBackground
             ['value' => 'black', 'label' => 'black', 'hex' => '#000000'],
             ['value' => 'white', 'label' => 'white', 'hex' => '#ffffff'],
         ];
+
+        foreach (self::THEME_TOKENS as $token) {
+            $options[] = [
+                'value' => $token,
+                'label' => $token,
+                'hex' => null,
+                'css' => 'var(--color-'.$token.')',
+            ];
+        }
 
         foreach (self::FAMILIES as $family) {
             foreach (self::SHADES as $shade) {
@@ -85,6 +113,11 @@ final class CaptionBackground
         return $options;
     }
 
+    public static function isThemeToken(string $token): bool
+    {
+        return in_array(trim($token), self::THEME_TOKENS, true);
+    }
+
     public static function hexFor(string $token): ?string
     {
         $token = trim($token);
@@ -97,6 +130,10 @@ final class CaptionBackground
             return '#ffffff';
         }
 
+        if (self::isThemeToken($token)) {
+            return null;
+        }
+
         if (preg_match('/^([a-z]+)-(\d{2,3})$/', $token, $matches) !== 1) {
             return null;
         }
@@ -106,7 +143,9 @@ final class CaptionBackground
 
     public static function isValidColor(string $token): bool
     {
-        return self::hexFor($token) !== null;
+        $token = trim($token);
+
+        return self::isThemeToken($token) || self::hexFor($token) !== null;
     }
 
     /**
@@ -145,8 +184,23 @@ final class CaptionBackground
 
     public static function toCss(string $color, int $opacity): string
     {
-        $hex = self::hexFor($color) ?? '#000000';
         $opacity = max(0, min(100, $opacity));
+
+        if (self::isThemeToken($color)) {
+            $cssVar = 'var(--color-'.$color.')';
+
+            if ($opacity >= 100) {
+                return $cssVar;
+            }
+
+            if ($opacity <= 0) {
+                return 'transparent';
+            }
+
+            return sprintf('color-mix(in srgb, %s %d%%, transparent)', $cssVar, $opacity);
+        }
+
+        $hex = self::hexFor($color) ?? '#000000';
         [$r, $g, $b] = self::hexToRgb($hex);
         $alpha = round($opacity / 100, 2);
 

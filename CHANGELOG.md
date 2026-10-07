@@ -1,3 +1,10 @@
+## [0.3.16] - 2026-10-07
+
+### Fixed
+
+- Gallery block settings survive editor save/reload: plugin encodes `data-voodbuilder-config` like VoodBuilder (entity-escaped JSON); Blade no longer stamps `data-voodbuilder-block` alone so the adapter attaches block+config together
+- Caption background colour list includes theme `vp-*` tokens (CSS variables / color-mix)
+
 ## [0.3.15] - 2026-10-07
 
 ### Fixed

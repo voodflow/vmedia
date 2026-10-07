@@ -13,9 +13,9 @@
 @if ($empty)
     @include('vmedia::blocks.partials.empty', ['blockId' => $blockId])
 @else
+{{-- No data-voodbuilder-block here: EditorRichContentBlockAdapter stamps block+config together. --}}
 <section
     class="voodbuilder-editor-section vmedia-gallery-block"
-    data-voodbuilder-block="{{ $blockId }}"
     @if ($lightbox) data-vmedia-gallery-lightbox @endif
 >
     <div class="voodbuilder-editor-container w-full" data-voodbuilder-role="content" data-voodbuilder-content-width="wide">
