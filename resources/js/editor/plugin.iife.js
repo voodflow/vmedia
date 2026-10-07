@@ -215,10 +215,16 @@
         var select = document.createElement('select');
         select.className = 'voodbuilder-editor-input';
         select.name = options.name;
+        if (options.searchable) {
+            select.setAttribute('data-vb-search', '1');
+        }
         (options.options || []).forEach(function (opt) {
             var option = document.createElement('option');
             option.value = opt.value;
             option.textContent = opt.label;
+            if (opt.hex) {
+                option.setAttribute('data-hex', String(opt.hex));
+            }
             if (String(opt.value) === String(options.value ?? '')) {
                 option.selected = true;
             }
@@ -230,6 +236,68 @@
 
         field.append(labelEl, select);
         return field;
+    }
+
+    function createRangeField(options) {
+        var field = document.createElement('div');
+        field.className = 'voodbuilder-editor-form-field';
+
+        var head = document.createElement('div');
+        head.style.display = 'flex';
+        head.style.alignItems = 'center';
+        head.style.justifyContent = 'space-between';
+        head.style.gap = '0.5rem';
+
+        var labelEl = document.createElement('label');
+        labelEl.className = 'voodbuilder-editor-form-label';
+        labelEl.style.margin = '0';
+        labelEl.textContent = options.label;
+
+        var readout = document.createElement('span');
+        readout.className = 'voodbuilder-editor-hint';
+        readout.style.margin = '0';
+        readout.textContent = String(options.value) + '%';
+
+        head.append(labelEl, readout);
+
+        var input = document.createElement('input');
+        input.type = 'range';
+        input.className = 'voodbuilder-editor-input';
+        input.name = options.name;
+        input.min = String(options.min != null ? options.min : 0);
+        input.max = String(options.max != null ? options.max : 100);
+        input.step = String(options.step != null ? options.step : 1);
+        input.value = String(options.value ?? 100);
+        input.style.width = '100%';
+        input.addEventListener('input', function () {
+            readout.textContent = String(input.value) + '%';
+        });
+        input.addEventListener('change', function () {
+            options.onChange(Number(input.value) || 0);
+        });
+
+        field.append(head, input);
+        return field;
+    }
+
+    function captionColorOptions(context) {
+        var bridge = (context && context.vmedia)
+            || (typeof window !== 'undefined' ? window.__voodbuilderVmedia : null)
+            || {};
+        var colors = Array.isArray(bridge.captionColors) ? bridge.captionColors : [];
+        if (colors.length > 0) {
+            return colors.map(function (item) {
+                return {
+                    value: String(item.value),
+                    label: String(item.label || item.value),
+                    hex: item.hex ? String(item.hex) : undefined,
+                };
+            });
+        }
+        return [
+            { value: 'black', label: 'black', hex: '#000000' },
+            { value: 'white', label: 'white', hex: '#ffffff' },
+        ];
     }
 
     function createTextInputField(options) {
@@ -496,12 +564,26 @@
                         },
                     }));
 
-                    form.fields.appendChild(createTextInputField({
+                    form.fields.appendChild(createSelectField({
                         label: label(gjsEditor, 'vmediaCaptionBg', 'Caption background'),
-                        name: 'caption_bg',
-                        value: String(config.caption_bg || 'rgba(0, 0, 0, 0.72)'),
+                        name: 'caption_bg_color',
+                        value: String(config.caption_bg_color || 'black'),
+                        searchable: true,
+                        options: captionColorOptions(context),
                         onChange: function (value) {
-                            patchConfigs(gjsEditor, root, { caption_bg: value });
+                            patchConfigs(gjsEditor, root, { caption_bg_color: value });
+                        },
+                    }));
+
+                    form.fields.appendChild(createRangeField({
+                        label: label(gjsEditor, 'vmediaCaptionBgOpacity', 'Caption opacity'),
+                        name: 'caption_bg_opacity',
+                        min: 0,
+                        max: 100,
+                        step: 1,
+                        value: Number(config.caption_bg_opacity ?? 72),
+                        onChange: function (value) {
+                            patchConfigs(gjsEditor, root, { caption_bg_opacity: value });
                         },
                     }));
                 }

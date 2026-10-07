@@ -1,3 +1,9 @@
+## [0.3.11] - 2026-10-07
+
+### Changed
+
+- Caption background uses the Tailwind colour select (with swatches) plus an opacity slider — no raw CSS field
+
 ## [0.3.10] - 2026-10-07
 
 ### Fixed

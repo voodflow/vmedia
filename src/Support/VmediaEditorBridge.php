@@ -22,6 +22,7 @@ final class VmediaEditorBridge
         Voodbuilder::editorConfig(static fn (): array => [
             'vmedia' => [
                 'galleries' => self::galleryOptions(),
+                'captionColors' => CaptionBackground::editorOptions(),
             ],
         ]);
 
@@ -39,6 +40,7 @@ final class VmediaEditorBridge
             'vmediaCaptionAbove' => __('vmedia::admin.editor.caption_above'),
             'vmediaCaptionOverlay' => __('vmedia::admin.editor.caption_overlay'),
             'vmediaCaptionBg' => __('vmedia::admin.editor.caption_bg'),
+            'vmediaCaptionBgOpacity' => __('vmedia::admin.editor.caption_bg_opacity'),
             'vmediaCredits' => __('vmedia::admin.editor.credits'),
             'vmediaLightbox' => __('vmedia::admin.editor.lightbox'),
             'vmediaSpeed' => __('vmedia::admin.editor.speed'),

@@ -22,6 +22,7 @@ use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaVault;
 use Voodflow\Vmedia\Policies\MediaGalleryPolicy;
 use Voodflow\Vmedia\Policies\MediaItemPolicy;
+use Voodflow\Vmedia\Support\CaptionBackground;
 use Voodflow\Vmedia\Support\VmediaEditorBlocks;
 use Voodflow\Vmedia\Support\VmediaEditorBridge;
 use Voodflow\Voodbuilder\Voodbuilder;
@@ -167,6 +168,7 @@ class VmediaServiceProvider extends PackageServiceProvider
 
             $bridge = [
                 'galleries' => VmediaEditorBridge::galleryOptions(),
+                'captionColors' => CaptionBackground::editorOptions(),
             ];
 
             $view->getFactory()->startPush('scripts');

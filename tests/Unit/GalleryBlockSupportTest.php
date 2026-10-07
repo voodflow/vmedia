@@ -105,21 +105,28 @@ final class GalleryBlockSupportTest extends OrchestraTestCase
         ], GalleryBlockSupport::LAYOUT_GRID);
 
         $this->assertSame('above', $above['caption_position']);
+        $this->assertSame('black', $above['caption_bg_color']);
+        $this->assertSame(72, $above['caption_bg_opacity']);
+        $this->assertSame('rgba(0, 0, 0, 0.72)', $above['caption_bg']);
 
         $overlay = GalleryBlockSupport::normalizeConfig([
             'caption_position' => 'overlay',
-            'caption_bg' => '#112233cc',
+            'caption_bg_color' => 'zinc-900',
+            'caption_bg_opacity' => 60,
         ], GalleryBlockSupport::LAYOUT_GRID);
 
         $this->assertSame('overlay', $overlay['caption_position']);
-        $this->assertSame('#112233cc', $overlay['caption_bg']);
+        $this->assertSame('zinc-900', $overlay['caption_bg_color']);
+        $this->assertSame(60, $overlay['caption_bg_opacity']);
+        $this->assertSame('rgba(24, 24, 27, 0.6)', $overlay['caption_bg']);
 
-        $fallback = GalleryBlockSupport::normalizeConfig([
+        $legacy = GalleryBlockSupport::normalizeConfig([
             'caption_position' => 'side',
-            'caption_bg' => 'url(evil)',
+            'caption_bg' => 'rgba(0, 0, 0, 0.5)',
         ], GalleryBlockSupport::LAYOUT_GRID);
 
-        $this->assertSame('below', $fallback['caption_position']);
-        $this->assertSame('rgba(0, 0, 0, 0.72)', $fallback['caption_bg']);
+        $this->assertSame('below', $legacy['caption_position']);
+        $this->assertSame('black', $legacy['caption_bg_color']);
+        $this->assertSame(50, $legacy['caption_bg_opacity']);
     }
 }

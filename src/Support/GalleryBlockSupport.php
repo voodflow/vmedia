@@ -81,7 +81,7 @@ final class GalleryBlockSupport
             $captionPosition = 'below';
         }
 
-        $captionBg = self::normalizeCaptionBg((string) ($config['caption_bg'] ?? 'rgba(0, 0, 0, 0.72)'));
+        $captionBg = CaptionBackground::normalize($config);
 
         $galleryId = $config['gallery_id'] ?? null;
         $galleryId = is_numeric($galleryId) ? max(0, (int) $galleryId) : null;
@@ -102,35 +102,15 @@ final class GalleryBlockSupport
             'aspect' => $aspect,
             'show_captions' => (bool) ($config['show_captions'] ?? false),
             'caption_position' => $captionPosition,
-            'caption_bg' => $captionBg,
+            'caption_bg_color' => $captionBg['caption_bg_color'],
+            'caption_bg_opacity' => $captionBg['caption_bg_opacity'],
+            'caption_bg' => $captionBg['caption_bg'],
             'lightbox' => (bool) ($config['lightbox'] ?? true),
             'speed' => max(8, min(120, (int) ($config['speed'] ?? 40))),
             'pause_on_hover' => (bool) ($config['pause_on_hover'] ?? true),
             'direction' => $direction,
             'rounded' => (bool) ($config['rounded'] ?? true),
         ];
-    }
-
-    /**
-     * Allow hex / rgb / rgba only (used as inline CSS custom property).
-     */
-    public static function normalizeCaptionBg(string $value): string
-    {
-        $value = trim($value);
-
-        if ($value === '') {
-            return 'rgba(0, 0, 0, 0.72)';
-        }
-
-        if (preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $value) === 1) {
-            return $value;
-        }
-
-        if (preg_match('/^rgba?\(\s*[\d.%]+\s*,\s*[\d.%]+\s*,\s*[\d.%]+\s*(,\s*[\d.]+\s*)?\)$/', $value) === 1) {
-            return $value;
-        }
-
-        return 'rgba(0, 0, 0, 0.72)';
     }
 
     public static function viewFor(string $layout): string
