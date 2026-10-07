@@ -1,3 +1,9 @@
+## [0.3.10] - 2026-10-07
+
+### Fixed
+
+- Lightbox no longer flashes the previous photo when opening another image (clear on close; reveal only after the new frame loads)
+
 ## [0.3.9] - 2026-10-07
 
 ### Added

@@ -116,6 +116,7 @@
         }
 
         var index = 0;
+        var loadToken = 0;
 
         function setCaption(el, text) {
             if (! el) {
@@ -125,14 +126,22 @@
             el.hidden = text === '';
         }
 
-        function render() {
-            var slide = slides[index];
-            if (! slide) {
-                return;
-            }
-            image.src = slide.url || slide.thumb || '';
-            image.alt = slide.alt || '';
+        function revealImage() {
+            image.style.opacity = '1';
+        }
 
+        function hideImage() {
+            image.style.opacity = '0';
+        }
+
+        function clearImage() {
+            loadToken += 1;
+            hideImage();
+            image.removeAttribute('src');
+            image.alt = '';
+        }
+
+        function applyMeta(slide) {
             var captionText = slide.caption || '';
             if (captionPosition === 'above' || captionPosition === 'overlay') {
                 setCaption(captionAbove, captionText);
@@ -156,10 +165,62 @@
             }
         }
 
+        function render() {
+            var slide = slides[index];
+            if (! slide) {
+                return;
+            }
+
+            var nextSrc = slide.url || slide.thumb || '';
+            var token = ++loadToken;
+
+            applyMeta(slide);
+            image.alt = slide.alt || '';
+
+            // Hide until the new frame is ready so the previous photo never flashes.
+            hideImage();
+
+            if (! nextSrc) {
+                image.removeAttribute('src');
+                return;
+            }
+
+            var showWhenReady = function () {
+                if (token !== loadToken) {
+                    return;
+                }
+                revealImage();
+            };
+
+            if (image.getAttribute('src') === nextSrc && image.complete) {
+                showWhenReady();
+                return;
+            }
+
+            image.onload = function () {
+                image.onload = null;
+                image.onerror = null;
+                showWhenReady();
+            };
+            image.onerror = function () {
+                image.onload = null;
+                image.onerror = null;
+                showWhenReady();
+            };
+            image.src = nextSrc;
+
+            // Cached images may already be complete synchronously after setting src.
+            if (image.complete) {
+                image.onload = null;
+                image.onerror = null;
+                showWhenReady();
+            }
+        }
+
         function open(nextIndex) {
             index = nextIndex;
             render();
-            if (typeof dialog.showModal === 'function') {
+            if (typeof dialog.showModal === 'function' && ! dialog.open) {
                 dialog.showModal();
             }
         }
@@ -169,6 +230,9 @@
                 closeCredits(creditsRoot);
             }
             dialog.close();
+            clearImage();
+            setCaption(captionAbove, '');
+            setCaption(captionBelow, '');
         }
 
         root.querySelectorAll('[data-vmedia-gallery-index]').forEach(function (trigger) {
