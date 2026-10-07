@@ -1,3 +1,10 @@
+## [0.3.12] - 2026-10-07
+
+### Fixed
+
+- Grid credits open as a slim top strip on the image (no large floating tooltip over the photo / next row)
+- Lightbox uses more of the desktop viewport; on mobile nav overlays the image and sizing follows `dvh`
+
 ## [0.3.11] - 2026-10-07
 
 ### Changed

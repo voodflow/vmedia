@@ -11,6 +11,11 @@
         }
         var panel = root.querySelector('[data-vmedia-credits-panel]');
         var toggle = root.querySelector('[data-vmedia-credits-toggle]');
+        root.classList.remove('is-open');
+        var item = root.closest('.vmedia-gallery-item');
+        if (item) {
+            item.classList.remove('is-credits-open');
+        }
         if (panel) {
             panel.hidden = true;
         }
@@ -30,6 +35,11 @@
         });
         var panel = root.querySelector('[data-vmedia-credits-panel]');
         var toggle = root.querySelector('[data-vmedia-credits-toggle]');
+        root.classList.add('is-open');
+        var item = root.closest('.vmedia-gallery-item');
+        if (item) {
+            item.classList.add('is-credits-open');
+        }
         if (panel) {
             panel.hidden = false;
         }

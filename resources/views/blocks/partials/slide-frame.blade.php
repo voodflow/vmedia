@@ -15,15 +15,27 @@
         && filled($slide['caption'] ?? null);
 @endphp
 
+{{-- Frame clips the credits top strip to rounded corners; panel stays inside (no floating tooltip). --}}
 <div class="vmedia-gallery-item__frame relative overflow-hidden {{ $ui['rounded'] }}">
-    @if ($lightbox)
-        <button
-            type="button"
-            class="{{ $ui['thumb'] }}"
-            data-vmedia-gallery-index="{{ $index }}"
-            data-voodbuilder-skip-cta="true"
-            aria-label="{{ $slide['alt'] ?? '' }}"
-        >
+    <div class="vmedia-gallery-item__media">
+        @if ($lightbox)
+            <button
+                type="button"
+                class="{{ $ui['thumb'] }}"
+                data-vmedia-gallery-index="{{ $index }}"
+                data-voodbuilder-skip-cta="true"
+                aria-label="{{ $slide['alt'] ?? '' }}"
+            >
+                <img
+                    src="{{ $src }}"
+                    alt="{{ $slide['alt'] ?? '' }}"
+                    loading="{{ $loading ?? 'lazy' }}"
+                    class="{{ $imageClass }}"
+                    @if ($uuid !== '') data-vb-media-uuid="{{ $uuid }}" @endif
+                    @if (is_numeric($mediaId)) data-vb-media-id="{{ (int) $mediaId }}" @endif
+                >
+            </button>
+        @else
             <img
                 src="{{ $src }}"
                 alt="{{ $slide['alt'] ?? '' }}"
@@ -32,24 +44,15 @@
                 @if ($uuid !== '') data-vb-media-uuid="{{ $uuid }}" @endif
                 @if (is_numeric($mediaId)) data-vb-media-id="{{ (int) $mediaId }}" @endif
             >
-        </button>
-    @else
-        <img
-            src="{{ $src }}"
-            alt="{{ $slide['alt'] ?? '' }}"
-            loading="{{ $loading ?? 'lazy' }}"
-            class="{{ $imageClass }}"
-            @if ($uuid !== '') data-vb-media-uuid="{{ $uuid }}" @endif
-            @if (is_numeric($mediaId)) data-vb-media-id="{{ (int) $mediaId }}" @endif
-        >
-    @endif
+        @endif
 
-    @if ($showOverlayCaption)
-        <figcaption
-            class="vmedia-gallery-item__caption vmedia-gallery-item__caption--overlay"
-            style="--vmedia-caption-bg: {{ $captionBg }}"
-        >{{ $slide['caption'] }}</figcaption>
-    @endif
+        @if ($showOverlayCaption)
+            <figcaption
+                class="vmedia-gallery-item__caption vmedia-gallery-item__caption--overlay"
+                style="--vmedia-caption-bg: {{ $captionBg }}"
+            >{{ $slide['caption'] }}</figcaption>
+        @endif
+    </div>
 
     @include('vmedia::blocks.partials.slide-credits', [
         'slide' => $slide,
