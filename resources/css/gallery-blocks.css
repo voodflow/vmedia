@@ -336,6 +336,15 @@
     border-radius: 0;
 }
 
+/* Lightbox: slightly larger credits “i” (top-right on the image) */
+.vmedia-gallery-dialog__credits .vmedia-gallery-credits__btn {
+    top: 0.65rem;
+    right: 0.65rem;
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.95rem;
+}
+
 .vmedia-gallery-dialog__close,
 .vmedia-gallery-dialog__nav {
     border: none;
@@ -449,6 +458,14 @@
         height: 1.35rem;
         top: 0.4rem;
         right: 0.4rem;
+    }
+
+    .vmedia-gallery-dialog__credits .vmedia-gallery-credits__btn {
+        width: 1.85rem;
+        height: 1.85rem;
+        font-size: 0.9rem;
+        top: 0.5rem;
+        right: 0.5rem;
     }
 
     .vmedia-gallery-credits__panel {

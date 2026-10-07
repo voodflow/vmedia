@@ -114,7 +114,6 @@
         var captionBelow = dialog.querySelector('[data-vmedia-gallery-caption-below]');
         var creditsRoot = dialog.querySelector('[data-vmedia-gallery-credits]');
         var creditsText = dialog.querySelector('[data-vmedia-gallery-credits-text]');
-        var captionPosition = dialog.getAttribute('data-vmedia-caption-position') || 'below';
         var slides = [];
         try {
             slides = JSON.parse((dataEl.textContent || dataEl.innerText || '').trim() || '[]');
@@ -153,13 +152,10 @@
 
         function applyMeta(slide) {
             var captionText = slide.caption || '';
-            if (captionPosition === 'above' || captionPosition === 'overlay') {
-                setCaption(captionAbove, captionText);
-                setCaption(captionBelow, '');
-            } else {
-                setCaption(captionAbove, '');
-                setCaption(captionBelow, captionText);
-            }
+            // Lightbox always shows caption under the image; grid "above/overlay"
+            // only applies to the page layout, not the dialog.
+            setCaption(captionAbove, '');
+            setCaption(captionBelow, captionText);
 
             var credits = String(slide.credits || '').trim();
             if (creditsRoot) {
