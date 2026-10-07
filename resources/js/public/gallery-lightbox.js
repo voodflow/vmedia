@@ -1,15 +1,91 @@
 /**
- * Public lightbox for VoodMedia gallery blocks (dialog + prev/next).
+ * Public lightbox + credits popovers for VoodMedia gallery blocks.
  * Loaded on VoodBuilder layouts — not via @push from block HTML (Grapes/DOM hydrate drop scripts).
  */
 (function () {
     'use strict';
+
+    function closeCredits(root) {
+        if (! root) {
+            return;
+        }
+        var panel = root.querySelector('[data-vmedia-credits-panel]');
+        var toggle = root.querySelector('[data-vmedia-credits-toggle]');
+        if (panel) {
+            panel.hidden = true;
+        }
+        if (toggle) {
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    function openCredits(root) {
+        if (! root) {
+            return;
+        }
+        document.querySelectorAll('[data-vmedia-credits]').forEach(function (other) {
+            if (other !== root) {
+                closeCredits(other);
+            }
+        });
+        var panel = root.querySelector('[data-vmedia-credits-panel]');
+        var toggle = root.querySelector('[data-vmedia-credits-toggle]');
+        if (panel) {
+            panel.hidden = false;
+        }
+        if (toggle) {
+            toggle.setAttribute('aria-expanded', 'true');
+        }
+    }
+
+    function bindCredits(scope) {
+        (scope || document).querySelectorAll('[data-vmedia-credits]').forEach(function (root) {
+            if (root.__vmediaCreditsBound) {
+                return;
+            }
+            root.__vmediaCreditsBound = true;
+            var toggle = root.querySelector('[data-vmedia-credits-toggle]');
+            if (! toggle) {
+                return;
+            }
+            toggle.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                var panel = root.querySelector('[data-vmedia-credits-panel]');
+                if (panel && panel.hidden) {
+                    openCredits(root);
+                } else {
+                    closeCredits(root);
+                }
+            });
+        });
+    }
+
+    if (! window.__vmediaCreditsDocBound) {
+        window.__vmediaCreditsDocBound = true;
+        document.addEventListener('click', function (event) {
+            var target = event.target;
+            if (! (target instanceof Element)) {
+                return;
+            }
+            if (target.closest('[data-vmedia-credits]')) {
+                return;
+            }
+            document.querySelectorAll('[data-vmedia-credits]').forEach(closeCredits);
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                document.querySelectorAll('[data-vmedia-credits]').forEach(closeCredits);
+            }
+        });
+    }
 
     function bindRoot(root) {
         if (! root || root.__vmediaLightboxBound || root.tagName === 'SCRIPT') {
             return;
         }
         root.__vmediaLightboxBound = true;
+        bindCredits(root);
 
         var dataEl = root.querySelector('[data-vmedia-gallery-data]');
         var dialog = root.querySelector('[data-vmedia-gallery-dialog]');
@@ -20,6 +96,8 @@
         if (dialog.parentElement !== document.body) {
             document.body.appendChild(dialog);
         }
+
+        bindCredits(dialog);
 
         var image = dialog.querySelector('[data-vmedia-gallery-image]');
         var captionAbove = dialog.querySelector('[data-vmedia-gallery-caption-above]');
@@ -56,7 +134,7 @@
             image.alt = slide.alt || '';
 
             var captionText = slide.caption || '';
-            if (captionPosition === 'above') {
+            if (captionPosition === 'above' || captionPosition === 'overlay') {
                 setCaption(captionAbove, captionText);
                 setCaption(captionBelow, '');
             } else {
@@ -66,15 +144,14 @@
 
             var credits = String(slide.credits || '').trim();
             if (creditsRoot) {
+                closeCredits(creditsRoot);
                 if (credits !== '') {
                     creditsRoot.hidden = false;
                     if (creditsText) {
                         creditsText.textContent = credits;
                     }
-                    creditsRoot.open = false;
                 } else {
                     creditsRoot.hidden = true;
-                    creditsRoot.open = false;
                 }
             }
         }
@@ -89,7 +166,7 @@
 
         function closeDialog() {
             if (creditsRoot) {
-                creditsRoot.open = false;
+                closeCredits(creditsRoot);
             }
             dialog.close();
         }
@@ -123,7 +200,6 @@
             render();
         });
 
-        // Close when clicking the dimmed area (viewport / dialog), not the image stage.
         dialog.addEventListener('click', function (event) {
             var target = event.target;
             if (target === dialog) {
@@ -138,7 +214,6 @@
                 && ! (prevBtn && prevBtn.contains(target))
                 && ! (nextBtn && nextBtn.contains(target))
                 && ! (closeBtn && closeBtn.contains(target))) {
-                // Clicks on the flex row gutters around the stage
                 if (target.classList && target.classList.contains('vmedia-gallery-dialog__row')) {
                     closeDialog();
                 }
@@ -164,6 +239,7 @@
     }
 
     function boot() {
+        bindCredits(document);
         document.querySelectorAll('[data-vmedia-gallery-lightbox]').forEach(bindRoot);
     }
 

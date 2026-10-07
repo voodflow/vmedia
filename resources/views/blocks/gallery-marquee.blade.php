@@ -1,13 +1,14 @@
 @php
     /** @var array<string, mixed> $config */
-    /** @var array<string, string> $ui */
-    /** @var list<array{url: string, thumb: string, alt: string, caption: string}> $slides */
+    /** @var array<string, string|int> $ui */
+    /** @var list<array{url: string, thumb: string, alt: string, caption: string, uuid?: string, id?: int|null}> $slides */
     $speed = (int) ($config['speed'] ?? 40);
     $pause = (bool) ($config['pause_on_hover'] ?? true);
     $direction = (string) ($config['direction'] ?? 'left');
     $lightbox = (bool) ($config['lightbox'] ?? true);
     $heading = $config['heading'] ?? null;
     $loop = array_merge($slides, $slides);
+    $marqueeImage = trim(($ui['roundedImg'] ?? '').' block aspect-[5/4] w-full object-cover transition duration-300 hover:scale-[1.02]');
 @endphp
 
 @if ($empty)
@@ -36,19 +37,17 @@
                 @foreach ($loop as $index => $slide)
                     @php $realIndex = $index % count($slides); @endphp
                     <figure class="vmedia-gallery-marquee__item" data-voodbuilder-name="Gallery item">
-                        @if ($lightbox)
-                            <button
-                                type="button"
-                                class="{{ $ui['thumb'] }} shadow-lg"
-                                data-vmedia-gallery-index="{{ $realIndex }}"
-                                data-voodbuilder-skip-cta="true"
-                                aria-label="{{ $slide['alt'] }}"
-                            >
-                                <img src="{{ $slide['thumb'] }}" alt="{{ $slide['alt'] }}" loading="lazy" class="{{ $ui['roundedImg'] }} block aspect-[5/4] w-full object-cover transition duration-300 hover:scale-[1.02]">
-                            </button>
-                        @else
-                            <img src="{{ $slide['thumb'] }}" alt="{{ $slide['alt'] }}" loading="lazy" class="{{ $ui['roundedImg'] }} block aspect-[5/4] w-full object-cover shadow-lg">
-                        @endif
+                        @include('vmedia::blocks.partials.slide-frame', [
+                            'slide' => $slide,
+                            'ui' => array_merge($ui, [
+                                'thumb' => trim(($ui['thumb'] ?? '').' shadow-lg'),
+                            ]),
+                            'index' => $realIndex,
+                            'lightbox' => $lightbox,
+                            'showCaptions' => false,
+                            'captionPosition' => 'below',
+                            'imageClass' => $marqueeImage,
+                        ])
                     </figure>
                 @endforeach
             </div>

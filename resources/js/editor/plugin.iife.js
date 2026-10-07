@@ -489,9 +489,19 @@
                         options: [
                             { value: 'below', label: label(gjsEditor, 'vmediaCaptionBelow', 'Below image') },
                             { value: 'above', label: label(gjsEditor, 'vmediaCaptionAbove', 'Above image') },
+                            { value: 'overlay', label: label(gjsEditor, 'vmediaCaptionOverlay', 'On image') },
                         ],
                         onChange: function (value) {
                             patchConfigs(gjsEditor, root, { caption_position: value });
+                        },
+                    }));
+
+                    form.fields.appendChild(createTextInputField({
+                        label: label(gjsEditor, 'vmediaCaptionBg', 'Caption background'),
+                        name: 'caption_bg',
+                        value: String(config.caption_bg || 'rgba(0, 0, 0, 0.72)'),
+                        onChange: function (value) {
+                            patchConfigs(gjsEditor, root, { caption_bg: value });
                         },
                     }));
                 }

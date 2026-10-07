@@ -37,6 +37,8 @@ final class VmediaEditorBridge
             'vmediaCaptionPosition' => __('vmedia::admin.editor.caption_position'),
             'vmediaCaptionBelow' => __('vmedia::admin.editor.caption_below'),
             'vmediaCaptionAbove' => __('vmedia::admin.editor.caption_above'),
+            'vmediaCaptionOverlay' => __('vmedia::admin.editor.caption_overlay'),
+            'vmediaCaptionBg' => __('vmedia::admin.editor.caption_bg'),
             'vmediaCredits' => __('vmedia::admin.editor.credits'),
             'vmediaLightbox' => __('vmedia::admin.editor.lightbox'),
             'vmediaSpeed' => __('vmedia::admin.editor.speed'),

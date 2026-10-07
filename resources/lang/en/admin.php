@@ -264,6 +264,8 @@ return [
         'caption_position' => 'Caption position',
         'caption_below' => 'Below image',
         'caption_above' => 'Above image',
+        'caption_overlay' => 'On image',
+        'caption_bg' => 'Caption background (CSS)',
         'credits' => 'Credits',
         'lightbox' => 'Lightbox',
         'speed' => 'Scroll speed (seconds)',

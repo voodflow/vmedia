@@ -80,7 +80,7 @@ final class GalleryBlockSupportTest extends OrchestraTestCase
     }
 
     #[Test]
-    public function ui_classes_expose_tailwind_gap_and_rounded(): void
+    public function ui_classes_expose_column_css_hook_and_gap(): void
     {
         $ui = GalleryBlockSupport::uiClasses([
             'layout' => GalleryBlockSupport::LAYOUT_GRID,
@@ -91,13 +91,14 @@ final class GalleryBlockSupportTest extends OrchestraTestCase
         ]);
 
         $this->assertStringContainsString('gap-6', $ui['grid']);
-        $this->assertStringContainsString('lg:grid-cols-3', $ui['grid']);
+        $this->assertStringContainsString('vmedia-gallery-cols', $ui['grid']);
+        $this->assertSame(3, $ui['columns']);
         $this->assertStringContainsString('rounded-xl', $ui['rounded']);
         $this->assertStringContainsString('aspect-[4/3]', $ui['aspect']);
     }
 
     #[Test]
-    public function it_normalizes_caption_position(): void
+    public function it_normalizes_caption_position_and_bg(): void
     {
         $above = GalleryBlockSupport::normalizeConfig([
             'caption_position' => 'above',
@@ -105,10 +106,20 @@ final class GalleryBlockSupportTest extends OrchestraTestCase
 
         $this->assertSame('above', $above['caption_position']);
 
+        $overlay = GalleryBlockSupport::normalizeConfig([
+            'caption_position' => 'overlay',
+            'caption_bg' => '#112233cc',
+        ], GalleryBlockSupport::LAYOUT_GRID);
+
+        $this->assertSame('overlay', $overlay['caption_position']);
+        $this->assertSame('#112233cc', $overlay['caption_bg']);
+
         $fallback = GalleryBlockSupport::normalizeConfig([
             'caption_position' => 'side',
+            'caption_bg' => 'url(evil)',
         ], GalleryBlockSupport::LAYOUT_GRID);
 
         $this->assertSame('below', $fallback['caption_position']);
+        $this->assertSame('rgba(0, 0, 0, 0.72)', $fallback['caption_bg']);
     }
 }

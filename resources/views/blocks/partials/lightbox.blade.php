@@ -1,5 +1,6 @@
 @php
     $captionPosition = (string) ($captionPosition ?? 'below');
+    $captionBg = (string) ($captionBg ?? 'rgba(0, 0, 0, 0.72)');
 @endphp
 
 @if ($lightbox ?? false)
@@ -7,6 +8,7 @@
         class="vmedia-gallery-dialog"
         data-vmedia-gallery-dialog
         data-vmedia-caption-position="{{ $captionPosition }}"
+        style="--vmedia-caption-bg: {{ $captionBg }}"
         data-voodbuilder-skip-cta="true"
         aria-label="{{ $heading ?? __('vmedia::admin.editor.gallery') }}"
     >
@@ -18,17 +20,20 @@
                     <p class="vmedia-gallery-dialog__caption" data-vmedia-gallery-caption data-vmedia-gallery-caption-above hidden></p>
                     <div class="vmedia-gallery-dialog__media">
                         <img src="" alt="" class="vmedia-gallery-dialog__image" data-vmedia-gallery-image>
-                        <details class="vmedia-gallery-credits vmedia-gallery-dialog__credits" data-vmedia-gallery-credits hidden>
-                            <summary
+                        <div class="vmedia-gallery-credits vmedia-gallery-credits--on-dark vmedia-gallery-dialog__credits" data-vmedia-credits data-vmedia-gallery-credits hidden>
+                            <button
+                                type="button"
                                 class="vmedia-gallery-credits__btn vmedia-gallery-credits__btn--on-dark"
+                                data-vmedia-credits-toggle
                                 data-voodbuilder-skip-cta="true"
+                                aria-expanded="false"
                                 aria-label="{{ __('vmedia::admin.editor.credits') }}"
                                 title="{{ __('vmedia::admin.editor.credits') }}"
                             >
                                 <span aria-hidden="true">i</span>
-                            </summary>
-                            <div class="vmedia-gallery-credits__panel vmedia-gallery-credits__panel--up" role="note" data-vmedia-gallery-credits-text></div>
-                        </details>
+                            </button>
+                            <div class="vmedia-gallery-credits__panel" data-vmedia-credits-panel data-vmedia-gallery-credits-text hidden role="note"></div>
+                        </div>
                     </div>
                     <p class="vmedia-gallery-dialog__caption" data-vmedia-gallery-caption data-vmedia-gallery-caption-below hidden></p>
                 </div>

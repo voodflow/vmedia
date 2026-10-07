@@ -264,6 +264,8 @@ return [
         'caption_position' => 'Posizione didascalia',
         'caption_below' => 'Sotto l’immagine',
         'caption_above' => 'Sopra l’immagine',
+        'caption_overlay' => 'Sull’immagine',
+        'caption_bg' => 'Sfondo didascalia (CSS)',
         'credits' => 'Crediti',
         'lightbox' => 'Lightbox',
         'speed' => 'Velocità scroll (secondi)',

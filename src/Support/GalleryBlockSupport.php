@@ -77,9 +77,11 @@ final class GalleryBlockSupport
 
         $captionPosition = (string) ($config['caption_position'] ?? 'below');
 
-        if (! in_array($captionPosition, ['above', 'below'], true)) {
+        if (! in_array($captionPosition, ['above', 'below', 'overlay'], true)) {
             $captionPosition = 'below';
         }
+
+        $captionBg = self::normalizeCaptionBg((string) ($config['caption_bg'] ?? 'rgba(0, 0, 0, 0.72)'));
 
         $galleryId = $config['gallery_id'] ?? null;
         $galleryId = is_numeric($galleryId) ? max(0, (int) $galleryId) : null;
@@ -100,12 +102,35 @@ final class GalleryBlockSupport
             'aspect' => $aspect,
             'show_captions' => (bool) ($config['show_captions'] ?? false),
             'caption_position' => $captionPosition,
+            'caption_bg' => $captionBg,
             'lightbox' => (bool) ($config['lightbox'] ?? true),
             'speed' => max(8, min(120, (int) ($config['speed'] ?? 40))),
             'pause_on_hover' => (bool) ($config['pause_on_hover'] ?? true),
             'direction' => $direction,
             'rounded' => (bool) ($config['rounded'] ?? true),
         ];
+    }
+
+    /**
+     * Allow hex / rgb / rgba only (used as inline CSS custom property).
+     */
+    public static function normalizeCaptionBg(string $value): string
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return 'rgba(0, 0, 0, 0.72)';
+        }
+
+        if (preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $value) === 1) {
+            return $value;
+        }
+
+        if (preg_match('/^rgba?\(\s*[\d.%]+\s*,\s*[\d.%]+\s*,\s*[\d.%]+\s*(,\s*[\d.]+\s*)?\)$/', $value) === 1) {
+            return $value;
+        }
+
+        return 'rgba(0, 0, 0, 0.72)';
     }
 
     public static function viewFor(string $layout): string
@@ -123,11 +148,15 @@ final class GalleryBlockSupport
      * pick them up. Custom <style> tags are stripped from the editor canvas.
      *
      * @param  array<string, mixed>  $config
+     * Column counts use --vmedia-columns (gallery-blocks.css), not Tailwind
+     * sm/lg breakpoints: those made “3 columns” look like 2 until JIT rebuilt.
+     *
      * @return array{
      *     gap: string,
      *     rounded: string,
      *     roundedImg: string,
      *     aspect: string,
+     *     columns: int,
      *     grid: string,
      *     masonry: string,
      *     featuredRow: string,
@@ -153,39 +182,16 @@ final class GalleryBlockSupport
             default => 'aspect-[4/3]',
         };
         $columns = (int) $config['columns'];
-        $grid = match ($columns) {
-            1 => 'grid grid-cols-1',
-            2 => 'grid grid-cols-1 sm:grid-cols-2',
-            4 => 'grid grid-cols-2 lg:grid-cols-4',
-            5 => 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5',
-            6 => 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6',
-            default => 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-        };
-        $masonry = match ($columns) {
-            1 => 'columns-1',
-            2 => 'columns-1 sm:columns-2',
-            4 => 'columns-2 lg:columns-4',
-            5 => 'columns-2 md:columns-3 lg:columns-5',
-            6 => 'columns-2 md:columns-3 lg:columns-6',
-            default => 'columns-1 sm:columns-2 lg:columns-3',
-        };
-        $featuredRow = match ($columns) {
-            1 => 'grid grid-cols-1',
-            2 => 'grid grid-cols-1 sm:grid-cols-2',
-            3 => 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-            5 => 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5',
-            6 => 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6',
-            default => 'grid grid-cols-2 lg:grid-cols-4',
-        };
 
         return [
             'gap' => $gap,
             'rounded' => $rounded,
             'roundedImg' => $roundedImg,
             'aspect' => $aspect,
-            'grid' => trim("{$grid} {$gap}"),
-            'masonry' => trim("{$masonry} {$gap}"),
-            'featuredRow' => trim("{$featuredRow} {$gap}"),
+            'columns' => $columns,
+            'grid' => trim("vmedia-gallery-cols {$gap}"),
+            'masonry' => trim("vmedia-gallery-masonry-cols {$gap}"),
+            'featuredRow' => trim("vmedia-gallery-cols {$gap}"),
             'thumb' => trim("block w-full overflow-hidden border-0 bg-transparent p-0 cursor-zoom-in {$rounded}"),
             'image' => trim("block w-full object-cover transition duration-300 hover:brightness-105 hover:scale-[1.02] {$aspect} {$roundedImg}"),
         ];
@@ -193,7 +199,7 @@ final class GalleryBlockSupport
 
     /**
      * @param  array<string, mixed>  $config
-     * @return list<array{url: string, thumb: string, alt: string, caption: string, credits: string, type: string}>
+     * @return list<array{url: string, thumb: string, alt: string, caption: string, credits: string, type: string, uuid: string, id: int|null}>
      */
     public static function resolveSlides(array $config, bool $preview = false): array
     {
@@ -223,10 +229,22 @@ final class GalleryBlockSupport
         }
 
         $slides = [];
+        $seenIds = [];
 
         foreach ($assets as $asset) {
             if (($asset['type'] ?? '') !== 'image') {
                 continue;
+            }
+
+            $id = isset($asset['id']) && is_numeric($asset['id']) ? (int) $asset['id'] : null;
+
+            // Defensive: avoid rendering the same vault row twice if a listing glitch
+            // or derived upload lands twice in the same album payload.
+            if ($id !== null) {
+                if (isset($seenIds[$id])) {
+                    continue;
+                }
+                $seenIds[$id] = true;
             }
 
             $url = (string) ($asset['display'] ?? $asset['src'] ?? '');
@@ -243,6 +261,8 @@ final class GalleryBlockSupport
                 'caption' => (string) ($asset['caption'] ?? ''),
                 'credits' => (string) ($asset['credits'] ?? ''),
                 'type' => 'image',
+                'uuid' => (string) ($asset['uuid'] ?? ''),
+                'id' => $id,
             ];
         }
 
@@ -254,7 +274,7 @@ final class GalleryBlockSupport
     }
 
     /**
-     * @return list<array{url: string, thumb: string, alt: string, caption: string, credits: string, type: string}>
+     * @return list<array{url: string, thumb: string, alt: string, caption: string, credits: string, type: string, uuid: string, id: int|null}>
      */
     public static function placeholderSlides(int $count = 8): array
     {
@@ -286,6 +306,8 @@ final class GalleryBlockSupport
                 'caption' => $label,
                 'credits' => $credits,
                 'type' => 'image',
+                'uuid' => '',
+                'id' => null,
             ];
         }
 

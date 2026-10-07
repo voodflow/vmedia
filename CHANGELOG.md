@@ -1,3 +1,21 @@
+## [0.3.9] - 2026-10-07
+
+### Added
+
+- Caption position **on image** (overlay) plus configurable caption background colour (CSS colour)
+- Gallery slide images expose `data-vb-media-uuid` so in-canvas “Save” replaces the vault file instead of uploading a duplicate into the album
+
+### Fixed
+
+- Column count no longer collapses to 2 columns after save / before Tailwind JIT (uses `--vmedia-columns`)
+- Credits control is a plain **i** button (no native `<details>` disclosure triangle)
+- Credits popover opens over the image (top-right), not into the row below
+- Lightbox credits no longer insert a gap between image and caption bar
+
+### Changed
+
+- Vault caption / credits remain the source of truth for gallery blocks (same media → same meta in every gallery). Grapes “IMAGE” caption trait is not wired to the vault.
+
 ## [0.3.8] - 2026-10-07
 
 ### Added
