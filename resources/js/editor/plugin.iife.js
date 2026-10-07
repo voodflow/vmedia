@@ -232,7 +232,9 @@
         }
         el.style.setProperty('--vmedia-caption-bg', cssValue);
         var nodes = el.querySelectorAll
-            ? el.querySelectorAll('[style*="--vmedia-caption-bg"], .vmedia-gallery-item__caption, .vmedia-gallery-lightbox__caption')
+            ? el.querySelectorAll(
+                '[style*="--vmedia-caption-bg"], .vmedia-gallery-item__caption, .vmedia-gallery-dialog, .vmedia-gallery-dialog__caption',
+            )
             : [];
         for (var i = 0; i < nodes.length; i += 1) {
             nodes[i].style.setProperty('--vmedia-caption-bg', cssValue);
