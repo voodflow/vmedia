@@ -1,3 +1,14 @@
+## [0.3.14] - 2026-10-07
+
+### Added
+
+- `PATCH/POST vmedia/media/meta` updates vault `caption` / `alt` / `credits` for a MediaItem (editor gallery IMAGE panel + Filament)
+- Gallery slide images expose `data-vb-media-caption|alt|credits` for the editor panel
+
+### Changed
+
+- Filament caption help: vault caption is shared by gallery blocks (one per file)
+
 ## [0.3.13] - 2026-10-07
 
 ### Fixed

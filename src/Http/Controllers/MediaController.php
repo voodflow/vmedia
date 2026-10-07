@@ -197,6 +197,46 @@ class MediaController extends Controller
         ]);
     }
 
+    public function updateMeta(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'uuid' => ['required', 'uuid', 'exists:' . (new MediaItem)->getTable() . ',uuid'],
+            'caption' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'alt' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'credits' => ['sometimes', 'nullable', 'string', 'max:1000'],
+        ]);
+
+        $media = MediaItem::query()->where('uuid', $validated['uuid'])->firstOrFail();
+
+        $this->authorize('update', $media);
+
+        if (! MediaLibrary::isVaultMedia($media)) {
+            abort(404);
+        }
+
+        if (array_key_exists('caption', $validated)) {
+            $media->setCaption(filled($validated['caption'] ?? null) ? (string) $validated['caption'] : null);
+        }
+
+        if (array_key_exists('alt', $validated)) {
+            $media->setAlt(filled($validated['alt'] ?? null) ? (string) $validated['alt'] : null);
+        }
+
+        if (array_key_exists('credits', $validated)) {
+            $media->setCredits(filled($validated['credits'] ?? null) ? (string) $validated['credits'] : null);
+        }
+
+        $media->save();
+
+        $fresh = $media->fresh(['galleries']);
+        $payload = MediaLibrary::toAssetPayload($fresh instanceof MediaItem ? $fresh : $media);
+
+        return response()->json([
+            'media' => $payload,
+            'updated' => true,
+        ]);
+    }
+
     public function destroy(Request $request, MediaItem $media): JsonResponse
     {
         $this->authorize('delete', $media);

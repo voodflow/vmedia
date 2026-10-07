@@ -33,6 +33,9 @@
                     class="{{ $imageClass }}"
                     @if ($uuid !== '') data-vb-media-uuid="{{ $uuid }}" @endif
                     @if (is_numeric($mediaId)) data-vb-media-id="{{ (int) $mediaId }}" @endif
+                    @if (filled($slide['alt'] ?? null)) data-vb-media-alt="{{ $slide['alt'] }}" @endif
+                    @if (filled($slide['caption'] ?? null)) data-vb-media-caption="{{ $slide['caption'] }}" @endif
+                    @if (filled($slide['credits'] ?? null)) data-vb-media-credits="{{ $slide['credits'] }}" @endif
                 >
             </button>
         @else
@@ -43,6 +46,9 @@
                 class="{{ $imageClass }}"
                 @if ($uuid !== '') data-vb-media-uuid="{{ $uuid }}" @endif
                 @if (is_numeric($mediaId)) data-vb-media-id="{{ (int) $mediaId }}" @endif
+                @if (filled($slide['alt'] ?? null)) data-vb-media-alt="{{ $slide['alt'] }}" @endif
+                @if (filled($slide['caption'] ?? null)) data-vb-media-caption="{{ $slide['caption'] }}" @endif
+                @if (filled($slide['credits'] ?? null)) data-vb-media-credits="{{ $slide['credits'] }}" @endif
             >
         @endif
 

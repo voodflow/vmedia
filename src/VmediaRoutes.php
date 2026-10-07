@@ -45,6 +45,7 @@ final class VmediaRoutes
                 Route::get('media', [MediaController::class, 'index'])->name('media.index');
                 Route::post('media/upload', [MediaController::class, 'store'])->name('media.upload');
                 Route::post('media/replace', [MediaController::class, 'replace'])->name('media.replace');
+                Route::match(['patch', 'post'], 'media/meta', [MediaController::class, 'updateMeta'])->name('media.meta');
                 Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
             });
     }

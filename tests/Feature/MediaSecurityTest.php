@@ -234,12 +234,54 @@ class MediaSecurityTest extends TestCase
         MediaLibrary::publicUrl($media);
     }
 
+    public function test_authenticated_user_can_update_media_meta(): void
+    {
+        $this->actingAsUser();
+        Storage::fake('public');
+        MediaGallery::default();
+
+        $media = MediaLibrary::store(
+            UploadedFile::fake()->image('meta.jpg', 16, 16),
+            null,
+            'Meta photo',
+        );
+
+        $this->patchJson(route('vmedia.media.meta'), [
+            'uuid' => $media->uuid,
+            'caption' => 'Vault caption',
+            'alt' => 'Alt text',
+            'credits' => '© Test',
+        ])
+            ->assertOk()
+            ->assertJsonPath('updated', true)
+            ->assertJsonPath('media.caption', 'Vault caption')
+            ->assertJsonPath('media.alt', 'Alt text')
+            ->assertJsonPath('media.credits', '© Test');
+
+        $fresh = $media->fresh();
+        $this->assertSame('Vault caption', $fresh?->caption());
+        $this->assertSame('Alt text', $fresh?->alt());
+        $this->assertSame('© Test', $fresh?->credits());
+    }
+
+    public function test_guest_cannot_update_media_meta(): void
+    {
+        Storage::fake('public');
+        $media = MediaLibrary::store(UploadedFile::fake()->image('g.jpg', 8, 8));
+
+        $this->patchJson(route('vmedia.media.meta'), [
+            'uuid' => $media->uuid,
+            'caption' => 'Nope',
+        ])->assertUnauthorized();
+    }
+
     public function test_package_routes_register_without_page_builder(): void
     {
         $this->assertVmediaRouteRegistered('vmedia.media.galleries');
         $this->assertVmediaRouteRegistered('vmedia.media.index');
         $this->assertVmediaRouteRegistered('vmedia.media.upload');
         $this->assertVmediaRouteRegistered('vmedia.media.destroy');
+        $this->assertVmediaRouteRegistered('vmedia.media.meta');
         $this->assertFalse(Route::has('voodbuilder.editor.media.galleries'));
         $this->assertFalse(Route::has('voodbuilder.editor.upload'));
     }
