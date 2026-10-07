@@ -173,6 +173,78 @@
         writeConfig(editor, root, next);
     }
 
+    /** Persist block config without re-rendering / page CSS rebuild (fluid preview). */
+    function patchConfigsSilent(editor, root, patch) {
+        persistConfig(editor, root, Object.assign({}, readConfig(root), patch));
+    }
+
+    function galleryDomRoot(root) {
+        if (! root) {
+            return null;
+        }
+        if (typeof root.getEl === 'function') {
+            var el = root.getEl();
+            if (el) {
+                return el;
+            }
+        }
+        var view = typeof root.getView === 'function' ? root.getView() : null;
+        return view && view.el ? view.el : null;
+    }
+
+    function hexToCaptionCss(hex, opacityPercent) {
+        var raw = String(hex || '#000000').replace('#', '');
+        if (raw.length === 3) {
+            raw = raw[0] + raw[0] + raw[1] + raw[1] + raw[2] + raw[2];
+        }
+        var r = parseInt(raw.slice(0, 2), 16) || 0;
+        var g = parseInt(raw.slice(2, 4), 16) || 0;
+        var b = parseInt(raw.slice(4, 6), 16) || 0;
+        var pct = Math.max(0, Math.min(100, Number(opacityPercent) || 0));
+        var alpha = Math.round((pct / 100) * 100) / 100;
+        if (alpha >= 1) {
+            return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+        }
+        if (alpha <= 0) {
+            return 'transparent';
+        }
+        return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+    }
+
+    function resolveCaptionColorHex(context, colorToken) {
+        var token = String(colorToken || 'black').trim();
+        var options = captionColorOptions(context);
+        for (var i = 0; i < options.length; i += 1) {
+            if (String(options[i].value) === token && options[i].hex) {
+                return String(options[i].hex);
+            }
+        }
+        if (token === 'white') {
+            return '#ffffff';
+        }
+        return '#000000';
+    }
+
+    function livePaintCaptionBg(root, cssValue) {
+        var el = galleryDomRoot(root);
+        if (! el || ! cssValue) {
+            return;
+        }
+        el.style.setProperty('--vmedia-caption-bg', cssValue);
+        var nodes = el.querySelectorAll
+            ? el.querySelectorAll('[style*="--vmedia-caption-bg"], .vmedia-gallery-item__caption, .vmedia-gallery-lightbox__caption')
+            : [];
+        for (var i = 0; i < nodes.length; i += 1) {
+            nodes[i].style.setProperty('--vmedia-caption-bg', cssValue);
+        }
+    }
+
+    function paintCaptionBgFromConfig(root, context, config) {
+        var color = String((config && config.caption_bg_color) || 'black');
+        var opacity = Number((config && config.caption_bg_opacity) ?? 82);
+        livePaintCaptionBg(root, hexToCaptionCss(resolveCaptionColorHex(context, color), opacity));
+    }
+
     function galleryOptions(editor, context) {
         var bridge = (context && context.vmedia)
             || (editor && editor.__voodbuilderVmedia)
@@ -238,45 +310,56 @@
         return field;
     }
 
+    /**
+     * Same range chrome as Decorations → Gradient stop sliders
+     * (`.voodbuilder-editor-deco-stop__range`), not a generic form input.
+     */
     function createRangeField(options) {
         var field = document.createElement('div');
         field.className = 'voodbuilder-editor-form-field';
 
-        var head = document.createElement('div');
-        head.style.display = 'flex';
-        head.style.alignItems = 'center';
-        head.style.justifyContent = 'space-between';
-        head.style.gap = '0.5rem';
-
         var labelEl = document.createElement('label');
         labelEl.className = 'voodbuilder-editor-form-label';
-        labelEl.style.margin = '0';
         labelEl.textContent = options.label;
 
-        var readout = document.createElement('span');
-        readout.className = 'voodbuilder-editor-hint';
-        readout.style.margin = '0';
-        readout.textContent = String(options.value) + '%';
+        var row = document.createElement('div');
+        row.className = 'voodbuilder-editor-deco-stop__pos';
 
-        head.append(labelEl, readout);
+        var posLabel = document.createElement('span');
+        posLabel.className = 'voodbuilder-editor-deco-stop__pos-label';
+        posLabel.textContent = options.posLabel || '%';
 
         var input = document.createElement('input');
         input.type = 'range';
-        input.className = 'voodbuilder-editor-input';
+        input.className = 'voodbuilder-editor-deco-stop__range';
         input.name = options.name;
         input.min = String(options.min != null ? options.min : 0);
         input.max = String(options.max != null ? options.max : 100);
         input.step = String(options.step != null ? options.step : 1);
         input.value = String(options.value ?? 100);
-        input.style.width = '100%';
+        input.setAttribute('aria-label', options.label);
+
+        var readout = document.createElement('span');
+        readout.className = 'voodbuilder-editor-deco-stop__pos-value';
+        readout.textContent = String(options.value ?? 100) + '%';
+
         input.addEventListener('input', function () {
-            readout.textContent = String(input.value) + '%';
+            var value = Number(input.value) || 0;
+            readout.textContent = String(value) + '%';
+            if (typeof options.onInput === 'function') {
+                options.onInput(value);
+            }
         });
         input.addEventListener('change', function () {
-            options.onChange(Number(input.value) || 0);
+            var value = Number(input.value) || 0;
+            readout.textContent = String(value) + '%';
+            if (typeof options.onChange === 'function') {
+                options.onChange(value);
+            }
         });
 
-        field.append(head, input);
+        row.append(posLabel, input, readout);
+        field.append(labelEl, row);
         return field;
     }
 
@@ -571,19 +654,30 @@
                         searchable: true,
                         options: captionColorOptions(context),
                         onChange: function (value) {
-                            patchConfigs(gjsEditor, root, { caption_bg_color: value });
+                            var next = Object.assign({}, readConfig(root), { caption_bg_color: value });
+                            paintCaptionBgFromConfig(root, context, next);
+                            patchConfigsSilent(gjsEditor, root, { caption_bg_color: value });
                         },
                     }));
 
                     form.fields.appendChild(createRangeField({
                         label: label(gjsEditor, 'vmediaCaptionBgOpacity', 'Caption opacity'),
                         name: 'caption_bg_opacity',
+                        posLabel: '%',
                         min: 0,
                         max: 100,
                         step: 1,
                         value: Number(config.caption_bg_opacity ?? 82),
+                        onInput: function (value) {
+                            var color = String(readConfig(root).caption_bg_color || 'black');
+                            livePaintCaptionBg(
+                                root,
+                                hexToCaptionCss(resolveCaptionColorHex(context, color), value),
+                            );
+                        },
                         onChange: function (value) {
-                            patchConfigs(gjsEditor, root, { caption_bg_opacity: value });
+                            // Persist only — live paint already updated the canvas.
+                            patchConfigsSilent(gjsEditor, root, { caption_bg_opacity: value });
                         },
                     }));
 

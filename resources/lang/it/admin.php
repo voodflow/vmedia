@@ -266,7 +266,7 @@ return [
         'caption_above' => 'Sopra l’immagine',
         'caption_overlay' => 'Sull’immagine',
         'caption_bg' => 'Sfondo didascalia',
-        'caption_bg_opacity' => 'Trasparenza didascalia',
+        'caption_bg_opacity' => 'Opacità didascalia',
         'caption_hint' => 'Didascalia e crediti arrivano dalla libreria media (una per file). Il blocco Galleria controlla solo mostra/posizione/sfondo.',
         'credits' => 'Crediti',
         'lightbox' => 'Lightbox',

@@ -1,3 +1,9 @@
+## [0.3.15] - 2026-10-07
+
+### Fixed
+
+- Gallery caption opacity uses the same Decorations gradient range chrome; live CSS paint while dragging (no dynamic-block refresh / page CSS rebuild on every move)
+
 ## [0.3.14] - 2026-10-07
 
 ### Added
