@@ -1,3 +1,10 @@
+## [0.3.5] - 2026-10-07
+
+### Fixed
+
+- Lightbox slide payload uses a hidden `<div>` instead of `<script type="application/json">` (DOM hydrate strips script nodes, so the modal never opened)
+- Avoid matching the layout script tag as a gallery root (`data-vmedia-lightbox-src`)
+
 ## [0.3.4] - 2026-10-07
 
 ### Fixed

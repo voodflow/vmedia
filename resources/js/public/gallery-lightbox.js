@@ -6,7 +6,7 @@
     'use strict';
 
     function bindRoot(root) {
-        if (! root || root.__vmediaLightboxBound) {
+        if (! root || root.__vmediaLightboxBound || root.tagName === 'SCRIPT') {
             return;
         }
         root.__vmediaLightboxBound = true;
@@ -25,7 +25,7 @@
         var caption = dialog.querySelector('[data-vmedia-gallery-caption]');
         var slides = [];
         try {
-            slides = JSON.parse(dataEl.textContent || '[]');
+            slides = JSON.parse((dataEl.textContent || dataEl.innerText || '').trim() || '[]');
         } catch (err) {
             slides = [];
         }

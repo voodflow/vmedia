@@ -17,5 +17,6 @@
             </div>
         </div>
     </dialog>
-    <script type="application/json" data-vmedia-gallery-data>@json($slides)</script>
+    {{-- Not <script>: EditorDynamicBlockRenderer / DOMDocument strip script nodes on public hydrate. --}}
+    <div hidden data-vmedia-gallery-data>@json($slides)</div>
 @endif

@@ -205,7 +205,7 @@ class VmediaServiceProvider extends PackageServiceProvider
                 : 'data:application/javascript;base64,' . base64_encode((string) file_get_contents($source));
 
             $view->getFactory()->startPush('scripts');
-            echo '<script src="' . e($href) . '" defer data-vmedia-gallery-lightbox></script>';
+            echo '<script src="' . e($href) . '" defer data-vmedia-lightbox-src></script>';
             $view->getFactory()->stopPush();
         });
     }
