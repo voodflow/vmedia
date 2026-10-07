@@ -66,6 +66,7 @@ abstract class AbstractGalleryBlock
 
         return view(GalleryBlockSupport::viewFor(static::layout()), [
             'config' => $config,
+            'ui' => GalleryBlockSupport::uiClasses($config),
             'slides' => $slides,
             'preview' => $preview,
             'blockId' => static::getId(),

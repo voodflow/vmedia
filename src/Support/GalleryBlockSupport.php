@@ -112,6 +112,79 @@ final class GalleryBlockSupport
     }
 
     /**
+     * Full Tailwind class names (string literals) so Grapes canvas + site JIT
+     * pick them up. Custom <style> tags are stripped from the editor canvas.
+     *
+     * @param  array<string, mixed>  $config
+     * @return array{
+     *     gap: string,
+     *     rounded: string,
+     *     roundedImg: string,
+     *     aspect: string,
+     *     grid: string,
+     *     masonry: string,
+     *     featuredRow: string,
+     *     thumb: string,
+     *     image: string
+     * }
+     */
+    public static function uiClasses(array $config): array
+    {
+        $config = self::normalizeConfig($config, (string) ($config['layout'] ?? self::LAYOUT_GRID));
+        $gap = match ($config['gap']) {
+            'sm' => 'gap-2',
+            'lg' => 'gap-6',
+            default => 'gap-4',
+        };
+        $rounded = $config['rounded'] ? 'rounded-xl' : 'rounded-none';
+        $roundedImg = $config['rounded'] ? 'rounded-xl' : 'rounded-none';
+        $aspect = match ($config['aspect']) {
+            '1/1' => 'aspect-square',
+            '16/9' => 'aspect-video',
+            '3/4' => 'aspect-[3/4]',
+            'auto' => 'aspect-auto h-auto',
+            default => 'aspect-[4/3]',
+        };
+        $columns = (int) $config['columns'];
+        $grid = match ($columns) {
+            1 => 'grid grid-cols-1',
+            2 => 'grid grid-cols-1 sm:grid-cols-2',
+            4 => 'grid grid-cols-2 lg:grid-cols-4',
+            5 => 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5',
+            6 => 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6',
+            default => 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+        };
+        $masonry = match ($columns) {
+            1 => 'columns-1',
+            2 => 'columns-1 sm:columns-2',
+            4 => 'columns-2 lg:columns-4',
+            5 => 'columns-2 md:columns-3 lg:columns-5',
+            6 => 'columns-2 md:columns-3 lg:columns-6',
+            default => 'columns-1 sm:columns-2 lg:columns-3',
+        };
+        $featuredRow = match ($columns) {
+            1 => 'grid grid-cols-1',
+            2 => 'grid grid-cols-1 sm:grid-cols-2',
+            3 => 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+            5 => 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5',
+            6 => 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6',
+            default => 'grid grid-cols-2 lg:grid-cols-4',
+        };
+
+        return [
+            'gap' => $gap,
+            'rounded' => $rounded,
+            'roundedImg' => $roundedImg,
+            'aspect' => $aspect,
+            'grid' => trim("{$grid} {$gap}"),
+            'masonry' => trim("{$masonry} {$gap}"),
+            'featuredRow' => trim("{$featuredRow} {$gap}"),
+            'thumb' => trim("block w-full overflow-hidden border-0 bg-transparent p-0 cursor-zoom-in {$rounded}"),
+            'image' => trim("block w-full object-cover transition duration-300 hover:brightness-105 hover:scale-[1.02] {$aspect} {$roundedImg}"),
+        ];
+    }
+
+    /**
      * @param  array<string, mixed>  $config
      * @return list<array{url: string, thumb: string, alt: string, caption: string, type: string}>
      */

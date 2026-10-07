@@ -1,0 +1,177 @@
+/* Marquee + lightbox chrome for VoodMedia gallery blocks (public + editor shell).
+   Grid gap/rounded/aspect use Tailwind utilities on the markup so Grapes canvas keeps them. */
+
+.vmedia-gallery-marquee {
+    position: relative;
+    overflow: hidden;
+}
+
+.vmedia-gallery-marquee__track {
+    display: flex;
+    width: max-content;
+    gap: 1rem;
+    animation: vmedia-marquee-scroll var(--vmedia-marquee-duration, 40s) linear infinite;
+    animation-direction: var(--vmedia-marquee-direction, normal);
+    will-change: transform;
+}
+
+.vmedia-gallery-marquee[data-vmedia-pause="1"]:hover .vmedia-gallery-marquee__track {
+    animation-play-state: paused;
+}
+
+.vmedia-gallery-marquee__item {
+    margin: 0;
+    flex: 0 0 auto;
+    width: min(22rem, 70vw);
+}
+
+.vmedia-gallery-marquee__fade {
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 4rem;
+    z-index: 1;
+}
+
+.vmedia-gallery-marquee__fade--left {
+    left: 0;
+    background: linear-gradient(to right, var(--color-vp-bg, #fff), transparent);
+}
+
+.vmedia-gallery-marquee__fade--right {
+    right: 0;
+    background: linear-gradient(to left, var(--color-vp-bg, #fff), transparent);
+}
+
+@keyframes vmedia-marquee-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vmedia-gallery-marquee__track {
+        animation: none;
+        flex-wrap: wrap;
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+.vmedia-gallery-dialog {
+    padding: 0;
+    border: none;
+    background: transparent;
+    margin: 0;
+    max-width: none;
+    width: 100vw;
+    height: 100vh;
+    overflow: visible;
+}
+
+.vmedia-gallery-dialog:not([open]) {
+    display: none;
+}
+
+.vmedia-gallery-dialog[open] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vmedia-gallery-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.88);
+}
+
+.vmedia-gallery-dialog__viewport {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: clamp(1rem, 3vw, 2rem);
+    box-sizing: border-box;
+}
+
+.vmedia-gallery-dialog__row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.75rem, 2vw, 1.5rem);
+    width: min(96vw, 1200px);
+    max-height: 90vh;
+}
+
+.vmedia-gallery-dialog__stage {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 1rem;
+    background: rgba(15, 23, 42, 0.35);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+}
+
+.vmedia-gallery-dialog__image {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    max-height: min(75vh, calc(90vh - 4rem));
+    margin: 0 auto;
+    object-fit: contain;
+}
+
+.vmedia-gallery-dialog__caption {
+    margin: 0;
+    padding: 0.875rem 1.25rem;
+    text-align: center;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    font-weight: 500;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.78);
+}
+
+.vmedia-gallery-dialog__caption[hidden] {
+    display: none;
+}
+
+.vmedia-gallery-dialog__close,
+.vmedia-gallery-dialog__nav {
+    border: none;
+    cursor: pointer;
+}
+
+.vmedia-gallery-dialog__close {
+    position: absolute;
+    top: clamp(0.75rem, 2vw, 1.25rem);
+    right: clamp(0.75rem, 2vw, 1.25rem);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    font-size: 1.75rem;
+    line-height: 1;
+    color: #fff;
+}
+
+.vmedia-gallery-dialog__nav {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.95);
+    font-size: 1.75rem;
+    line-height: 1;
+    color: #0f172a;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}

@@ -94,12 +94,23 @@ class VmediaServiceProvider extends PackageServiceProvider
             VmediaEditorBridge::register();
             $this->publishes([
                 __DIR__ . '/../resources/js/editor/plugin.iife.js' => public_path('vendor/vmedia/editor-plugin.js'),
+                __DIR__ . '/../resources/js/public/gallery-lightbox.js' => public_path('vendor/vmedia/gallery-lightbox.js'),
+                __DIR__ . '/../resources/css/gallery-blocks.css' => public_path('vendor/vmedia/gallery-blocks.css'),
             ], 'vmedia-assets');
             $this->ensureAssetPublished(
                 __DIR__ . '/../resources/js/editor/plugin.iife.js',
                 public_path('vendor/vmedia/editor-plugin.js'),
             );
+            $this->ensureAssetPublished(
+                __DIR__ . '/../resources/js/public/gallery-lightbox.js',
+                public_path('vendor/vmedia/gallery-lightbox.js'),
+            );
+            $this->ensureAssetPublished(
+                __DIR__ . '/../resources/css/gallery-blocks.css',
+                public_path('vendor/vmedia/gallery-blocks.css'),
+            );
             $this->registerEditorPluginScript();
+            $this->registerPublicGalleryAssets();
         }
     }
 
@@ -134,6 +145,14 @@ class VmediaServiceProvider extends PackageServiceProvider
                 return;
             }
 
+            $this->pushStylesheet(
+                $view,
+                public_path('vendor/vmedia/gallery-blocks.css'),
+                __DIR__ . '/../resources/css/gallery-blocks.css',
+                'vendor/vmedia/gallery-blocks.css',
+                'vmedia-gallery-css',
+            );
+
             $public = public_path('vendor/vmedia/editor-plugin.js');
             $source = __DIR__ . '/../resources/js/editor/plugin.iife.js';
             $path = is_file($public) ? $public : $source;
@@ -157,6 +176,60 @@ class VmediaServiceProvider extends PackageServiceProvider
             echo '<script src="' . e($href) . '" defer data-vmedia-editor-plugin></script>';
             $view->getFactory()->stopPush();
         });
+    }
+
+    private function registerPublicGalleryAssets(): void
+    {
+        View::composer([
+            'voodbuilder::layouts.app',
+            'voodbuilder::layouts.chrome-app',
+        ], function ($view): void {
+            $this->pushStylesheet(
+                $view,
+                public_path('vendor/vmedia/gallery-blocks.css'),
+                __DIR__ . '/../resources/css/gallery-blocks.css',
+                'vendor/vmedia/gallery-blocks.css',
+                'vmedia-gallery-css',
+            );
+
+            $public = public_path('vendor/vmedia/gallery-lightbox.js');
+            $source = __DIR__ . '/../resources/js/public/gallery-lightbox.js';
+            $path = is_file($public) ? $public : $source;
+
+            if (! is_file($path)) {
+                return;
+            }
+
+            $href = is_file($public)
+                ? asset('vendor/vmedia/gallery-lightbox.js') . '?v=' . filemtime($public)
+                : 'data:application/javascript;base64,' . base64_encode((string) file_get_contents($source));
+
+            $view->getFactory()->startPush('scripts');
+            echo '<script src="' . e($href) . '" defer data-vmedia-gallery-lightbox></script>';
+            $view->getFactory()->stopPush();
+        });
+    }
+
+    /**
+     * @param  \Illuminate\View\View  $view
+     */
+    private function pushStylesheet($view, string $public, string $source, string $assetPath, string $attr): void
+    {
+        $path = is_file($public) ? $public : $source;
+
+        if (! is_file($path)) {
+            return;
+        }
+
+        $view->getFactory()->startPush('head');
+
+        if (is_file($public)) {
+            echo '<link rel="stylesheet" href="' . e(asset($assetPath) . '?v=' . filemtime($public)) . '" data-' . e($attr) . '>';
+        } else {
+            echo '<style data-' . e($attr) . '>' . (string) file_get_contents($path) . '</style>';
+        }
+
+        $view->getFactory()->stopPush();
     }
 
     protected function registerPublicRoutes(): void

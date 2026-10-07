@@ -1,15 +1,15 @@
 @php
     /** @var array<string, mixed> $config */
+    /** @var array<string, string> $ui */
     /** @var list<array{url: string, thumb: string, alt: string, caption: string}> $slides */
-    $columns = (int) ($config['columns'] ?? 3);
-    $gap = (string) ($config['gap'] ?? 'md');
-    $rounded = (bool) ($config['rounded'] ?? true);
     $showCaptions = (bool) ($config['show_captions'] ?? false);
     $lightbox = (bool) ($config['lightbox'] ?? true);
     $heading = $config['heading'] ?? null;
-    $gapMap = ['sm' => '0.5rem', 'md' => '1rem', 'lg' => '1.5rem'];
-    $gapCss = $gapMap[$gap] ?? '1rem';
-    $radius = $rounded ? '0.875rem' : '0';
+    $itemGap = match ($config['gap'] ?? 'md') {
+        'sm' => 'mb-2',
+        'lg' => 'mb-6',
+        default => 'mb-4',
+    };
 @endphp
 
 @if ($empty)
@@ -26,28 +26,27 @@
         @endif
 
         <div
-            class="vmedia-gallery-masonry"
-            style="--vmedia-cols: {{ $columns }}; --vmedia-gap: {{ $gapCss }}; --vmedia-radius: {{ $radius }};"
+            class="{{ $ui['masonry'] }}"
             data-voodbuilder-role="gallery"
             data-voodbuilder-name="Gallery"
         >
             @foreach ($slides as $index => $slide)
-                <figure class="vmedia-gallery-masonry__item" data-voodbuilder-name="Gallery item">
+                <figure class="{{ $itemGap }} break-inside-avoid" data-voodbuilder-name="Gallery item">
                     @if ($lightbox)
                         <button
                             type="button"
-                            class="vmedia-gallery-masonry__thumb"
+                            class="{{ $ui['thumb'] }}"
                             data-vmedia-gallery-index="{{ $index }}"
                             data-voodbuilder-skip-cta="true"
                             aria-label="{{ $slide['alt'] }}"
                         >
-                            <img src="{{ $slide['thumb'] }}" alt="{{ $slide['alt'] }}" loading="lazy">
+                            <img src="{{ $slide['thumb'] }}" alt="{{ $slide['alt'] }}" loading="lazy" class="{{ $ui['roundedImg'] }} block h-auto w-full object-cover transition duration-300 hover:brightness-105">
                         </button>
                     @else
-                        <img src="{{ $slide['thumb'] }}" alt="{{ $slide['alt'] }}" loading="lazy" class="vmedia-gallery-masonry__img">
+                        <img src="{{ $slide['thumb'] }}" alt="{{ $slide['alt'] }}" loading="lazy" class="{{ $ui['roundedImg'] }} block h-auto w-full object-cover">
                     @endif
                     @if ($showCaptions && filled($slide['caption'] ?? null))
-                        <figcaption class="vmedia-gallery-masonry__caption">{{ $slide['caption'] }}</figcaption>
+                        <figcaption class="mt-2 text-sm text-vp-text-2">{{ $slide['caption'] }}</figcaption>
                     @endif
                 </figure>
             @endforeach
@@ -56,50 +55,4 @@
         @include('vmedia::blocks.partials.lightbox', compact('lightbox', 'slides', 'heading'))
     </div>
 </section>
-
-@once
-<style>
-    .vmedia-gallery-masonry {
-        columns: var(--vmedia-cols, 3);
-        column-gap: var(--vmedia-gap, 1rem);
-    }
-    .vmedia-gallery-masonry__item {
-        break-inside: avoid;
-        margin: 0 0 var(--vmedia-gap, 1rem);
-    }
-    .vmedia-gallery-masonry__thumb {
-        display: block;
-        width: 100%;
-        padding: 0;
-        border: none;
-        background: transparent;
-        cursor: zoom-in;
-        overflow: hidden;
-        border-radius: var(--vmedia-radius, 0.875rem);
-    }
-    .vmedia-gallery-masonry__thumb img,
-    .vmedia-gallery-masonry__img {
-        display: block;
-        width: 100%;
-        height: auto;
-        border-radius: var(--vmedia-radius, 0.875rem);
-        transition: filter 280ms ease, transform 280ms ease;
-    }
-    .vmedia-gallery-masonry__thumb:hover img {
-        filter: brightness(1.06);
-        transform: translateY(-2px);
-    }
-    .vmedia-gallery-masonry__caption {
-        margin-top: 0.5rem;
-        font-size: 0.875rem;
-        color: var(--color-vp-text-2, #64748b);
-    }
-    @media (max-width: 768px) {
-        .vmedia-gallery-masonry { columns: 2; }
-    }
-    @media (max-width: 480px) {
-        .vmedia-gallery-masonry { columns: 1; }
-    }
-</style>
-@endonce
 @endif

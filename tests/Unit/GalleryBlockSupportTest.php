@@ -75,8 +75,24 @@ final class GalleryBlockSupportTest extends OrchestraTestCase
         ] as $blockClass) {
             $html = $blockClass::toPreviewHtml($blockClass::defaultConfig(), []);
 
-            $this->assertStringContainsString('vmedia-gallery', $html);
             $this->assertStringContainsString($blockClass::getId(), $html);
         }
+    }
+
+    #[Test]
+    public function ui_classes_expose_tailwind_gap_and_rounded(): void
+    {
+        $ui = GalleryBlockSupport::uiClasses([
+            'layout' => GalleryBlockSupport::LAYOUT_GRID,
+            'gap' => 'lg',
+            'rounded' => true,
+            'columns' => 3,
+            'aspect' => '4/3',
+        ]);
+
+        $this->assertStringContainsString('gap-6', $ui['grid']);
+        $this->assertStringContainsString('lg:grid-cols-3', $ui['grid']);
+        $this->assertStringContainsString('rounded-xl', $ui['rounded']);
+        $this->assertStringContainsString('aspect-[4/3]', $ui['aspect']);
     }
 }

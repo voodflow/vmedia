@@ -1,3 +1,10 @@
+## [0.3.4] - 2026-10-07
+
+### Fixed
+
+- Gallery gap / rounded / aspect use Tailwind utility classes so Grapes canvas keeps them (`<style>` tags are stripped in the editor)
+- Lightbox JS loads from layout assets (`vendor/vmedia/gallery-lightbox.js`) instead of `@push` inside block HTML (never reached the public page after dynamic hydrate)
+
 ## [0.3.3] - 2026-10-07
 
 ### Added
