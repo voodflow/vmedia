@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\View;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Voodflow\Vmedia\Console\EnsurePluginVaultRootsCommand;
@@ -21,6 +22,8 @@ use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaVault;
 use Voodflow\Vmedia\Policies\MediaGalleryPolicy;
 use Voodflow\Vmedia\Policies\MediaItemPolicy;
+use Voodflow\Vmedia\Support\VmediaEditorBlocks;
+use Voodflow\Vmedia\Support\VmediaEditorBridge;
 use Voodflow\Voodbuilder\Voodbuilder;
 
 class VmediaServiceProvider extends PackageServiceProvider
@@ -86,7 +89,74 @@ class VmediaServiceProvider extends PackageServiceProvider
                 (string) config('vmedia.routes.prefix', 'vmedia'),
                 (string) config('vmedia.public.prefix', 'galleries'),
             );
+
+            VmediaEditorBlocks::register();
+            VmediaEditorBridge::register();
+            $this->publishes([
+                __DIR__ . '/../resources/js/editor/plugin.iife.js' => public_path('vendor/vmedia/editor-plugin.js'),
+            ], 'vmedia-assets');
+            $this->ensureAssetPublished(
+                __DIR__ . '/../resources/js/editor/plugin.iife.js',
+                public_path('vendor/vmedia/editor-plugin.js'),
+            );
+            $this->registerEditorPluginScript();
         }
+    }
+
+    private function ensureAssetPublished(string $source, string $target): void
+    {
+        if (! is_file($source)) {
+            return;
+        }
+
+        $dir = dirname($target);
+
+        if (! is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+
+        if (! is_file($target) || filemtime($source) > filemtime($target)) {
+            @copy($source, $target);
+        }
+    }
+
+    private function registerEditorPluginScript(): void
+    {
+        View::composer([
+            'voodbuilder::pages.site-page',
+            'voodbuilder::pages.chrome-layout-editor',
+        ], function ($view): void {
+            $data = $view->getData();
+            $editing = (bool) ($data['editorEditor'] ?? false)
+                || (bool) ($data['chromeLayoutEditor'] ?? false);
+
+            if (! $editing) {
+                return;
+            }
+
+            $public = public_path('vendor/vmedia/editor-plugin.js');
+            $source = __DIR__ . '/../resources/js/editor/plugin.iife.js';
+            $path = is_file($public) ? $public : $source;
+
+            if (! is_file($path)) {
+                return;
+            }
+
+            $href = is_file($public)
+                ? asset('vendor/vmedia/editor-plugin.js') . '?v=' . filemtime($public)
+                : 'data:application/javascript;base64,' . base64_encode((string) file_get_contents($source));
+
+            $bridge = [
+                'galleries' => VmediaEditorBridge::galleryOptions(),
+            ];
+
+            $view->getFactory()->startPush('scripts');
+            echo '<script data-vmedia-editor-bridge>window.__voodbuilderVmedia='
+                . json_encode($bridge, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)
+                . ';</script>';
+            echo '<script src="' . e($href) . '" defer data-vmedia-editor-plugin></script>';
+            $view->getFactory()->stopPush();
+        });
     }
 
     protected function registerPublicRoutes(): void

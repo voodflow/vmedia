@@ -1,3 +1,10 @@
+## [0.3.3] - 2026-10-07
+
+### Added
+
+- Four VoodBuilder gallery blocks (simple grid, masonry, featured hero, scrolling marquee) with right-sidebar settings: gallery pick, columns, gap, aspect, limit, lightbox, captions, marquee speed/direction/pause
+- Soft integration via `editorServerBlock` + editor plugin (`vendor/vmedia/editor-plugin.js`) when `voodflow/voodbuilder` is present
+
 ## [0.3.2] - 2026-09-25
 
 ### Changed
