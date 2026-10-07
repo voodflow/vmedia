@@ -1,3 +1,12 @@
+## [0.3.19] - 2026-10-07
+
+### Fixed
+
+- Caption colour/opacity no longer triggers “Compiling styles…” (that remount wiped the red paint back to black); bake rgba into Grapes attrs instead
+- Drop stale `caption_bg` from saved config (was stuck on default black while `caption_bg_color` was `vp-brand-1`)
+- Editor canvas forces author column count (iframe phone-width media query no longer collapses the grid)
+- Re-bake caption colours after dynamic refresh / CSS compile / boot
+
 ## [0.3.18] - 2026-10-07
 
 ### Fixed

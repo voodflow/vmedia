@@ -91,23 +91,38 @@
     function readConfig(root) {
         var attrs = root.getAttributes ? root.getAttributes() : {};
         var fromModel = root.get ? root.get('voodbuilderConfig') : null;
-        return fromModel && typeof fromModel === 'object'
+        var raw = fromModel && typeof fromModel === 'object'
             ? Object.assign({}, fromModel)
             : parseBlockConfig(attrs['data-voodbuilder-config'] || '{}');
+        return sanitizeConfig(raw);
+    }
+
+    /**
+     * Drop stale caption_bg (often default black) so server normalize + editor
+     * bake always follow caption_bg_color / opacity.
+     */
+    function sanitizeConfig(config) {
+        var next = Object.assign({}, config || {});
+        if (Object.prototype.hasOwnProperty.call(next, 'caption_bg')) {
+            delete next.caption_bg;
+        }
+        return next;
     }
 
     function persistConfig(editor, root, config) {
+        var clean = sanitizeConfig(config);
         if (root.set) {
-            root.set('voodbuilderConfig', config, { silent: true });
+            root.set('voodbuilderConfig', clean, { silent: true });
         }
         if (root.addAttributes) {
             root.addAttributes({
-                'data-voodbuilder-config': encodeBlockConfig(config),
+                'data-voodbuilder-config': encodeBlockConfig(clean),
             });
         }
         if (editor && editor.__voodbuilderTrackSaveDirty !== false) {
             editor.__voodbuilderPageSaveClean = false;
         }
+        return clean;
     }
 
     function bumpPageCss(editor) {
@@ -125,32 +140,48 @@
         }
     }
 
+    var EDITOR_COLUMN_OVERRIDE_CSS = [
+        '/* Editor: honor author column count even when the iframe is phone-narrow. */',
+        '.vmedia-gallery-block .vmedia-gallery-cols[data-vmedia-columns]{',
+        'grid-template-columns:repeat(var(--vmedia-columns, 3),minmax(0,1fr))!important;',
+        '}',
+        '.vmedia-gallery-block .vmedia-gallery-masonry-cols[data-vmedia-columns]{',
+        'column-count:var(--vmedia-columns, 3)!important;',
+        '}',
+    ].join('');
+
     function injectGalleryCanvasCss(editor) {
         var link = document.querySelector('link[data-vmedia-gallery-css]');
         var inline = document.querySelector('style[data-vmedia-gallery-css]');
         var href = link ? link.href : null;
 
         function into(doc) {
-            if (! doc || ! doc.head || doc.getElementById('vmedia-gallery-canvas-css')) {
+            if (! doc || ! doc.head) {
                 return;
             }
 
-            if (inline && inline.textContent) {
-                var style = doc.createElement('style');
-                style.id = 'vmedia-gallery-canvas-css';
-                style.setAttribute('data-vmedia-gallery-css', '1');
-                style.textContent = inline.textContent;
-                doc.head.appendChild(style);
-                return;
+            if (! doc.getElementById('vmedia-gallery-canvas-css')) {
+                if (inline && inline.textContent) {
+                    var style = doc.createElement('style');
+                    style.id = 'vmedia-gallery-canvas-css';
+                    style.setAttribute('data-vmedia-gallery-css', '1');
+                    style.textContent = inline.textContent;
+                    doc.head.appendChild(style);
+                } else if (href) {
+                    var cloned = doc.createElement('link');
+                    cloned.id = 'vmedia-gallery-canvas-css';
+                    cloned.rel = 'stylesheet';
+                    cloned.href = href;
+                    cloned.setAttribute('data-vmedia-gallery-css', '1');
+                    doc.head.appendChild(cloned);
+                }
             }
 
-            if (href) {
-                var cloned = doc.createElement('link');
-                cloned.id = 'vmedia-gallery-canvas-css';
-                cloned.rel = 'stylesheet';
-                cloned.href = href;
-                cloned.setAttribute('data-vmedia-gallery-css', '1');
-                doc.head.appendChild(cloned);
+            if (! doc.getElementById('vmedia-gallery-editor-columns')) {
+                var override = doc.createElement('style');
+                override.id = 'vmedia-gallery-editor-columns';
+                override.textContent = EDITOR_COLUMN_OVERRIDE_CSS;
+                doc.head.appendChild(override);
             }
         }
 
@@ -164,23 +195,25 @@
             editor.__vmediaGalleryCssFrameBound = true;
             editor.on('canvas:frame:load', function () {
                 into(editor.Canvas.getDocument());
+                rebakeAllGalleryCaptions(editor);
             });
         }
     }
 
-    function scheduleFullRefresh(editor, root, afterRefresh) {
-        var runAfter = typeof afterRefresh === 'function' ? afterRefresh : null;
+    function scheduleFullRefresh(editor, root, options) {
+        var opts = options && typeof options === 'object' ? options : {};
+        var rebuildCss = opts.rebuildCss === true;
+        var runAfter = typeof opts.afterRefresh === 'function' ? opts.afterRefresh : null;
 
         function finish() {
-            bumpPageCss(editor);
-            try {
-                // Theme vp-* captions: server HTML uses color-mix(var(--color-vp-*)),
-                // which often paints black in the canvas after remount. Re-bake rgba.
+            if (rebuildCss) {
+                bumpPageCss(editor);
+                // Compile finishes later — rebake again when CSS is idle / compiled.
+                scheduleRebakeWhenCssIdle(editor, root);
+            } else {
                 rebakeCaptionBgAfterRefresh(editor, root, {
                     vmedia: editor && editor.__voodbuilderVmedia,
                 });
-            } catch (err) {
-                // ignore paint failures
             }
             if (runAfter) {
                 try {
@@ -209,19 +242,44 @@
         }, 160));
     }
 
-    function writeConfig(editor, root, config, afterRefresh) {
+    function scheduleRebakeWhenCssIdle(editor, root) {
+        var context = { vmedia: editor && editor.__voodbuilderVmedia };
+        var paint = function () {
+            rebakeCaptionBgAfterRefresh(editor, root, context);
+        };
+
+        paint();
+
+        if (typeof editor.__voodbuilderWaitForPageCssIdle === 'function') {
+            editor.__voodbuilderWaitForPageCssIdle(8000).then(paint).catch(function () {
+                paint();
+            });
+            return;
+        }
+
+        window.setTimeout(paint, 600);
+        window.setTimeout(paint, 1400);
+    }
+
+    function writeConfig(editor, root, config, options) {
         persistConfig(editor, root, config);
-        scheduleFullRefresh(editor, root, afterRefresh);
+        scheduleFullRefresh(editor, root, options);
     }
 
-    function patchConfigs(editor, root, patch, afterRefresh) {
-        var next = Object.assign({}, readConfig(root), patch);
-        writeConfig(editor, root, next, afterRefresh);
+    /** Layout / structure changes — remount block (optional page CSS rebuild). */
+    function patchConfigs(editor, root, patch, options) {
+        var next = sanitizeConfig(Object.assign({}, readConfig(root), patch));
+        writeConfig(editor, root, next, options);
     }
 
-    /** Persist block config without re-rendering / page CSS rebuild (fluid preview). */
-    function patchConfigsSilent(editor, root, patch) {
-        persistConfig(editor, root, Object.assign({}, readConfig(root), patch));
+    /**
+     * Caption colour / opacity: persist + bake rgba into Grapes attrs.
+     * No dynamic remount and no "Compiling styles…" (that wiped the red paint).
+     */
+    function patchCaptionStyle(editor, root, context, patch) {
+        var next = sanitizeConfig(Object.assign({}, readConfig(root), patch));
+        persistConfig(editor, root, next);
+        paintCaptionBgFromConfig(editor, root, context, next);
     }
 
     function galleryDomRoot(root) {
@@ -477,6 +535,56 @@
         paintCaptionBgFromConfig(editor, root, context, readConfig(root));
     }
 
+    function eachGalleryRoot(editor, callback) {
+        var wrappers = editor && editor.getWrapper ? editor.getWrapper() : null;
+        if (! wrappers || typeof wrappers.find !== 'function') {
+            return;
+        }
+        var found = wrappers.find('[data-voodbuilder-block^="vmedia_gallery_"]') || [];
+        var list = typeof found.toArray === 'function' ? found.toArray() : found;
+        for (var i = 0; i < list.length; i += 1) {
+            try {
+                callback(list[i]);
+            } catch (err) {
+                // ignore per-block failures
+            }
+        }
+    }
+
+    function rebakeAllGalleryCaptions(editor) {
+        var context = { vmedia: editor && editor.__voodbuilderVmedia };
+        eachGalleryRoot(editor, function (root) {
+            rebakeCaptionBgAfterRefresh(editor, root, context);
+        });
+    }
+
+    function bindGalleryCaptionLifecycle(editor) {
+        if (! editor || typeof editor.on !== 'function' || editor.__vmediaGalleryCaptionLifecycleBound) {
+            return;
+        }
+        editor.__vmediaGalleryCaptionLifecycleBound = true;
+
+        editor.on('voodbuilder:dynamic-blocks-refreshed', function () {
+            window.setTimeout(function () {
+                rebakeAllGalleryCaptions(editor);
+            }, 50);
+        });
+
+        editor.on('voodbuilder:page-css-compiled', function () {
+            window.setTimeout(function () {
+                rebakeAllGalleryCaptions(editor);
+            }, 30);
+        });
+
+        // First paint after boot (config already has vp-brand-1 but HTML still color-mix/black).
+        window.setTimeout(function () {
+            rebakeAllGalleryCaptions(editor);
+        }, 400);
+        window.setTimeout(function () {
+            rebakeAllGalleryCaptions(editor);
+        }, 1200);
+    }
+
     function galleryOptions(editor, context) {
         var bridge = (context && context.vmedia)
             || (editor && editor.__voodbuilderVmedia)
@@ -706,6 +814,7 @@
 
         editor.__vmediaBlockSettingsRegistered = true;
         injectGalleryCanvasCss(editor);
+        bindGalleryCaptionLifecycle(editor);
 
         if (typeof editor.on === 'function' && ! editor.__vmediaGalleryInsertCssBound) {
             editor.__vmediaGalleryInsertCssBound = true;
@@ -718,7 +827,10 @@
                 injectGalleryCanvasCss(editor);
                 bumpPageCss(editor);
                 window.setTimeout(function () { bumpPageCss(editor); }, 300);
-                window.setTimeout(function () { bumpPageCss(editor); }, 900);
+                window.setTimeout(function () {
+                    bumpPageCss(editor);
+                    rebakeAllGalleryCaptions(editor);
+                }, 900);
             });
         }
 
@@ -748,7 +860,7 @@
                     onChange: function (value) {
                         patchConfigs(gjsEditor, root, {
                             gallery_id: value === '' ? null : Number(value),
-                        });
+                        }, { rebuildCss: true });
                     },
                 }));
 
@@ -895,9 +1007,7 @@
                         searchable: true,
                         options: captionColorOptions(gjsEditor, context),
                         onChange: function (value) {
-                            var next = Object.assign({}, readConfig(root), { caption_bg_color: value });
-                            paintCaptionBgFromConfig(gjsEditor, root, context, next);
-                            patchConfigs(gjsEditor, root, { caption_bg_color: value });
+                            patchCaptionStyle(gjsEditor, root, context, { caption_bg_color: value });
                         },
                     }));
 
@@ -917,7 +1027,7 @@
                             );
                         },
                         onChange: function (value) {
-                            patchConfigs(gjsEditor, root, { caption_bg_opacity: value });
+                            patchCaptionStyle(gjsEditor, root, context, { caption_bg_opacity: value });
                         },
                     }));
 
