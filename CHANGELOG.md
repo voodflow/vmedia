@@ -1,3 +1,9 @@
+## [0.3.7] - 2026-10-07
+
+### Fixed
+
+- Newly dropped gallery blocks keep grid/masonry/rounded layout in the editor canvas (inject layout CSS into the Grapes iframe + force page Tailwind rebuild; first drop used to wait until columns were toggled)
+
 ## [0.3.6] - 2026-10-07
 
 ### Fixed

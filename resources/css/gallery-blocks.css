@@ -1,5 +1,60 @@
 /* Marquee + lightbox chrome for VoodMedia gallery blocks (public + editor shell).
-   Grid gap/rounded/aspect use Tailwind utilities on the markup so Grapes canvas keeps them. */
+   Grid gap/rounded/aspect use Tailwind utilities on the markup so Grapes canvas keeps them.
+   The fallbacks below also ship in the canvas iframe: page Tailwind JIT often lags the
+   first drop, so newly inserted blocks looked unstyled until a settings remount. */
+
+.vmedia-gallery-block .grid { display: grid; }
+.vmedia-gallery-block .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.vmedia-gallery-block .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.vmedia-gallery-block .gap-2 { gap: 0.5rem; }
+.vmedia-gallery-block .gap-4 { gap: 1rem; }
+.vmedia-gallery-block .gap-6 { gap: 1.5rem; }
+.vmedia-gallery-block .rounded-xl { border-radius: 0.75rem; }
+.vmedia-gallery-block .rounded-none { border-radius: 0; }
+.vmedia-gallery-block .aspect-square { aspect-ratio: 1 / 1; }
+.vmedia-gallery-block .aspect-video { aspect-ratio: 16 / 9; }
+.vmedia-gallery-block .aspect-\[4\/3\] { aspect-ratio: 4 / 3; }
+.vmedia-gallery-block .aspect-\[3\/4\] { aspect-ratio: 3 / 4; }
+.vmedia-gallery-block .aspect-\[21\/9\] { aspect-ratio: 21 / 9; }
+.vmedia-gallery-block .aspect-\[5\/4\] { aspect-ratio: 5 / 4; }
+.vmedia-gallery-block .aspect-auto { aspect-ratio: auto; }
+.vmedia-gallery-block .object-cover { object-fit: cover; }
+.vmedia-gallery-block .columns-1 { columns: 1; }
+.vmedia-gallery-block .columns-2 { columns: 2; }
+.vmedia-gallery-block .break-inside-avoid { break-inside: avoid; }
+.vmedia-gallery-block .min-w-0 { min-width: 0; }
+.vmedia-gallery-block .w-full { width: 100%; }
+.vmedia-gallery-block .h-auto { height: auto; }
+.vmedia-gallery-block .block { display: block; }
+.vmedia-gallery-block .overflow-hidden { overflow: hidden; }
+.vmedia-gallery-block .m-0 { margin: 0; }
+.vmedia-gallery-block .mb-2 { margin-bottom: 0.5rem; }
+.vmedia-gallery-block .mb-4 { margin-bottom: 1rem; }
+.vmedia-gallery-block .mb-6 { margin-bottom: 1.5rem; }
+.vmedia-gallery-block .relative { position: relative; }
+.vmedia-gallery-block .cursor-zoom-in { cursor: zoom-in; }
+
+@media (min-width: 640px) {
+    .vmedia-gallery-block .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .vmedia-gallery-block .sm\:columns-2 { columns: 2; }
+    .vmedia-gallery-block .sm\:aspect-video { aspect-ratio: 16 / 9; }
+}
+
+@media (min-width: 768px) {
+    .vmedia-gallery-block .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .vmedia-gallery-block .md\:columns-3 { columns: 3; }
+}
+
+@media (min-width: 1024px) {
+    .vmedia-gallery-block .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .vmedia-gallery-block .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .vmedia-gallery-block .lg\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .vmedia-gallery-block .lg\:grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .vmedia-gallery-block .lg\:columns-3 { columns: 3; }
+    .vmedia-gallery-block .lg\:columns-4 { columns: 4; }
+    .vmedia-gallery-block .lg\:columns-5 { columns: 5; }
+    .vmedia-gallery-block .lg\:columns-6 { columns: 6; }
+}
 
 .vmedia-gallery-marquee {
     position: relative;

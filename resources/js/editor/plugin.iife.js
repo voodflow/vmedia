@@ -86,9 +86,68 @@
         }
     }
 
+    function bumpPageCss(editor) {
+        try {
+            if (typeof editor.__voodbuilderForcePageCssRebuild === 'function') {
+                editor.__voodbuilderForcePageCssRebuild(120);
+            }
+        } catch (err) {
+            // ignore
+        }
+        try {
+            editor.trigger('voodbuilder:page-css-invalidate');
+        } catch (err) {
+            // ignore
+        }
+    }
+
+    function injectGalleryCanvasCss(editor) {
+        var link = document.querySelector('link[data-vmedia-gallery-css]');
+        var inline = document.querySelector('style[data-vmedia-gallery-css]');
+        var href = link ? link.href : null;
+
+        function into(doc) {
+            if (! doc || ! doc.head || doc.getElementById('vmedia-gallery-canvas-css')) {
+                return;
+            }
+
+            if (inline && inline.textContent) {
+                var style = doc.createElement('style');
+                style.id = 'vmedia-gallery-canvas-css';
+                style.setAttribute('data-vmedia-gallery-css', '1');
+                style.textContent = inline.textContent;
+                doc.head.appendChild(style);
+                return;
+            }
+
+            if (href) {
+                var cloned = doc.createElement('link');
+                cloned.id = 'vmedia-gallery-canvas-css';
+                cloned.rel = 'stylesheet';
+                cloned.href = href;
+                cloned.setAttribute('data-vmedia-gallery-css', '1');
+                doc.head.appendChild(cloned);
+            }
+        }
+
+        into(document);
+        var frameDoc = editor && editor.Canvas && typeof editor.Canvas.getDocument === 'function'
+            ? editor.Canvas.getDocument()
+            : null;
+        into(frameDoc);
+
+        if (editor && typeof editor.on === 'function' && ! editor.__vmediaGalleryCssFrameBound) {
+            editor.__vmediaGalleryCssFrameBound = true;
+            editor.on('canvas:frame:load', function () {
+                into(editor.Canvas.getDocument());
+            });
+        }
+    }
+
     function scheduleFullRefresh(editor, root) {
         if (! refreshTimers) {
             editor.trigger('voodbuilder:refresh-dynamic-block', root);
+            window.setTimeout(function () { bumpPageCss(editor); }, 220);
             return;
         }
         var existing = refreshTimers.get(root);
@@ -100,6 +159,7 @@
             delete root.__voodbuilderLastDynamicRenderFingerprint;
             delete root.__voodbuilderLastDynamicRenderHtml;
             editor.trigger('voodbuilder:refresh-dynamic-block', root);
+            window.setTimeout(function () { bumpPageCss(editor); }, 220);
         }, 160));
     }
 
@@ -253,6 +313,22 @@
         }
 
         editor.__vmediaBlockSettingsRegistered = true;
+        injectGalleryCanvasCss(editor);
+
+        if (typeof editor.on === 'function' && ! editor.__vmediaGalleryInsertCssBound) {
+            editor.__vmediaGalleryInsertCssBound = true;
+            editor.on('component:add', function (component) {
+                var root = findBlockRoot(component) || component;
+                var blockId = readBlockId(root);
+                if (! blockId || blockId.indexOf('vmedia_gallery_') !== 0) {
+                    return;
+                }
+                injectGalleryCanvasCss(editor);
+                bumpPageCss(editor);
+                window.setTimeout(function () { bumpPageCss(editor); }, 300);
+                window.setTimeout(function () { bumpPageCss(editor); }, 900);
+            });
+        }
 
         registerBlockSettings({
             id: 'vmedia_gallery_blocks',
