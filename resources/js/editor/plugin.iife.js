@@ -701,8 +701,10 @@
                         options: captionColorOptions(context),
                         onChange: function (value) {
                             var next = Object.assign({}, readConfig(root), { caption_bg_color: value });
+                            // Instant feedback, then one refresh so Grapes/getHtml bake the real CSS
+                            // (DOM style.setProperty alone is not serialized into the page HTML).
                             paintCaptionBgFromConfig(root, context, next);
-                            patchConfigsSilent(gjsEditor, root, { caption_bg_color: value });
+                            patchConfigs(gjsEditor, root, { caption_bg_color: value });
                         },
                     }));
 
@@ -719,8 +721,9 @@
                             livePaintCaptionBg(root, resolveCaptionBgCss(context, color, value));
                         },
                         onChange: function (value) {
-                            // Persist only — live paint already updated the canvas.
-                            patchConfigsSilent(gjsEditor, root, { caption_bg_opacity: value });
+                            // Drag stays fluid (onInput); mouseup refreshes once so saved HTML
+                            // matches config (silent paint alone left black captions after Save).
+                            patchConfigs(gjsEditor, root, { caption_bg_opacity: value });
                         },
                     }));
 

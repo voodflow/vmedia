@@ -1,3 +1,9 @@
+## [0.3.17] - 2026-10-07
+
+### Fixed
+
+- Caption background colour/opacity: live-paint while dragging, then one dynamic-block refresh on commit so Grapes HTML stores the real `--vmedia-caption-bg` (silent paint alone left black captions after Save while config kept the custom colour)
+
 ## [0.3.16] - 2026-10-07
 
 ### Fixed
