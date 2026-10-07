@@ -25,6 +25,7 @@ use Voodflow\Vmedia\Policies\MediaItemPolicy;
 use Voodflow\Vmedia\Support\CaptionBackground;
 use Voodflow\Vmedia\Support\VmediaEditorBlocks;
 use Voodflow\Vmedia\Support\VmediaEditorBridge;
+use Voodflow\Voodbuilder\Support\VoodbuilderPaths;
 use Voodflow\Voodbuilder\Voodbuilder;
 
 class VmediaServiceProvider extends PackageServiceProvider
@@ -110,9 +111,32 @@ class VmediaServiceProvider extends PackageServiceProvider
                 __DIR__ . '/../resources/css/gallery-blocks.css',
                 public_path('vendor/vmedia/gallery-blocks.css'),
             );
+            $this->registerVoodbuilderCanvasStyles();
             $this->registerEditorPluginScript();
             $this->registerPublicGalleryAssets();
         }
+    }
+
+    /**
+     * Load gallery-blocks.css via Grapes canvasStyles on first paint.
+     * Late JS inject alone races canvas:frame:load and leaves 1-col until a remount.
+     */
+    private function registerVoodbuilderCanvasStyles(): void
+    {
+        if (! class_exists(VoodbuilderPaths::class)) {
+            return;
+        }
+
+        $defaults = VoodbuilderPaths::editorCanvasStyleEntries();
+        $current = config('voodbuilder.editor.canvas_styles');
+        $base = is_array($current) && $current !== [] ? $current : $defaults;
+
+        config([
+            'voodbuilder.editor.canvas_styles' => array_values(array_unique([
+                ...$base,
+                '/vendor/vmedia/gallery-blocks.css',
+            ])),
+        ]);
     }
 
     private function ensureAssetPublished(string $source, string $target): void

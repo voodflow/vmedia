@@ -153,14 +153,34 @@
     function injectGalleryCanvasCss(editor) {
         var link = document.querySelector('link[data-vmedia-gallery-css]');
         var inline = document.querySelector('style[data-vmedia-gallery-css]');
-        var href = link ? link.href : null;
+        // Fallback when host <link> is missing / not yet pushed — same public asset as canvasStyles.
+        var href = link ? link.href : '/vendor/vmedia/gallery-blocks.css';
+
+        function docHasGallerySheet(doc) {
+            if (! doc || ! doc.head) {
+                return false;
+            }
+            if (doc.getElementById('vmedia-gallery-canvas-css')) {
+                return true;
+            }
+            if (doc.querySelector('link[data-vmedia-gallery-css]')) {
+                return true;
+            }
+            var links = doc.querySelectorAll('link[rel="stylesheet"][href]');
+            for (var i = 0; i < links.length; i += 1) {
+                if (String(links[i].getAttribute('href') || '').indexOf('gallery-blocks.css') !== -1) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         function into(doc) {
             if (! doc || ! doc.head) {
-                return;
+                return false;
             }
 
-            if (! doc.getElementById('vmedia-gallery-canvas-css')) {
+            if (! docHasGallerySheet(doc)) {
                 if (inline && inline.textContent) {
                     var style = doc.createElement('style');
                     style.id = 'vmedia-gallery-canvas-css';
@@ -183,20 +203,42 @@
                 override.textContent = EDITOR_COLUMN_OVERRIDE_CSS;
                 doc.head.appendChild(override);
             }
+
+            return true;
         }
 
-        into(document);
-        var frameDoc = editor && editor.Canvas && typeof editor.Canvas.getDocument === 'function'
-            ? editor.Canvas.getDocument()
-            : null;
-        into(frameDoc);
+        function frameDoc() {
+            try {
+                return editor && editor.Canvas && typeof editor.Canvas.getDocument === 'function'
+                    ? editor.Canvas.getDocument()
+                    : null;
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function apply(attempt) {
+            into(document);
+            var doc = frameDoc();
+            var ok = into(doc);
+            // Race: mount often runs before the canvas iframe has a document.
+            if (! ok && attempt < 40) {
+                window.setTimeout(function () {
+                    apply(attempt + 1);
+                }, 50);
+            }
+        }
+
+        apply(0);
 
         if (editor && typeof editor.on === 'function' && ! editor.__vmediaGalleryCssFrameBound) {
             editor.__vmediaGalleryCssFrameBound = true;
-            editor.on('canvas:frame:load', function () {
-                into(editor.Canvas.getDocument());
+            var onFrame = function () {
+                into(frameDoc());
                 rebakeAllGalleryCaptions(editor);
-            });
+            };
+            editor.on('canvas:frame:load', onFrame);
+            editor.on('canvas:frame:load:body', onFrame);
         }
     }
 
@@ -794,14 +836,18 @@
     }
 
     function mount(editor, context) {
-        if (editor.__vmediaBlockSettingsRegistered) {
-            return;
-        }
-
         editor.__voodbuilderVmedia = (context && context.vmedia)
             || editor.__voodbuilderVmedia
             || (typeof window !== 'undefined' ? window.__voodbuilderVmedia : null)
             || null;
+
+        // Always (re)inject — settings may have registered before the canvas iframe existed.
+        injectGalleryCanvasCss(editor);
+        bindGalleryCaptionLifecycle(editor);
+
+        if (editor.__vmediaBlockSettingsRegistered) {
+            return;
+        }
 
         var api = window.VoodbuilderEditor;
         var registerBlockSettings = api && typeof api.registerBlockSettings === 'function'
@@ -813,8 +859,6 @@
         }
 
         editor.__vmediaBlockSettingsRegistered = true;
-        injectGalleryCanvasCss(editor);
-        bindGalleryCaptionLifecycle(editor);
 
         if (typeof editor.on === 'function' && ! editor.__vmediaGalleryInsertCssBound) {
             editor.__vmediaGalleryInsertCssBound = true;
