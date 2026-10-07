@@ -1,8 +1,9 @@
 @php
     /** @var array<string, mixed> $config */
     /** @var array<string, string> $ui */
-    /** @var list<array{url: string, thumb: string, alt: string, caption: string}> $slides */
+    /** @var list<array{url: string, thumb: string, alt: string, caption: string, credits?: string}> $slides */
     $showCaptions = (bool) ($config['show_captions'] ?? false);
+    $captionPosition = (string) ($config['caption_position'] ?? 'below');
     $lightbox = (bool) ($config['lightbox'] ?? true);
     $heading = $config['heading'] ?? null;
     $itemGap = match ($config['gap'] ?? 'md') {
@@ -32,6 +33,10 @@
         >
             @foreach ($slides as $index => $slide)
                 <figure class="{{ $itemGap }} break-inside-avoid" data-voodbuilder-name="Gallery item">
+                    @if ($captionPosition === 'above')
+                        @include('vmedia::blocks.partials.slide-caption', compact('slide', 'showCaptions', 'captionPosition'))
+                    @endif
+
                     @if ($lightbox)
                         <button
                             type="button"
@@ -45,14 +50,15 @@
                     @else
                         <img src="{{ $slide['thumb'] }}" alt="{{ $slide['alt'] }}" loading="lazy" class="{{ $ui['roundedImg'] }} block h-auto w-full object-cover">
                     @endif
-                    @if ($showCaptions && filled($slide['caption'] ?? null))
-                        <figcaption class="mt-2 text-sm text-vp-text-2">{{ $slide['caption'] }}</figcaption>
+
+                    @if ($captionPosition !== 'above')
+                        @include('vmedia::blocks.partials.slide-caption', compact('slide', 'showCaptions', 'captionPosition'))
                     @endif
                 </figure>
             @endforeach
         </div>
 
-        @include('vmedia::blocks.partials.lightbox', compact('lightbox', 'slides', 'heading'))
+        @include('vmedia::blocks.partials.lightbox', compact('lightbox', 'slides', 'heading', 'captionPosition'))
     </div>
 </section>
 @endif

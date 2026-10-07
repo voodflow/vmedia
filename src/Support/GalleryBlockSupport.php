@@ -75,6 +75,12 @@ final class GalleryBlockSupport
             $direction = 'left';
         }
 
+        $captionPosition = (string) ($config['caption_position'] ?? 'below');
+
+        if (! in_array($captionPosition, ['above', 'below'], true)) {
+            $captionPosition = 'below';
+        }
+
         $galleryId = $config['gallery_id'] ?? null;
         $galleryId = is_numeric($galleryId) ? max(0, (int) $galleryId) : null;
 
@@ -93,6 +99,7 @@ final class GalleryBlockSupport
             'gap' => $gap,
             'aspect' => $aspect,
             'show_captions' => (bool) ($config['show_captions'] ?? false),
+            'caption_position' => $captionPosition,
             'lightbox' => (bool) ($config['lightbox'] ?? true),
             'speed' => max(8, min(120, (int) ($config['speed'] ?? 40))),
             'pause_on_hover' => (bool) ($config['pause_on_hover'] ?? true),
@@ -186,7 +193,7 @@ final class GalleryBlockSupport
 
     /**
      * @param  array<string, mixed>  $config
-     * @return list<array{url: string, thumb: string, alt: string, caption: string, type: string}>
+     * @return list<array{url: string, thumb: string, alt: string, caption: string, credits: string, type: string}>
      */
     public static function resolveSlides(array $config, bool $preview = false): array
     {
@@ -234,6 +241,7 @@ final class GalleryBlockSupport
                 'thumb' => $thumb !== '' ? $thumb : $url,
                 'alt' => (string) ($asset['alt'] ?? $asset['name'] ?? ''),
                 'caption' => (string) ($asset['caption'] ?? ''),
+                'credits' => (string) ($asset['credits'] ?? ''),
                 'type' => 'image',
             ];
         }
@@ -246,36 +254,37 @@ final class GalleryBlockSupport
     }
 
     /**
-     * @return list<array{url: string, thumb: string, alt: string, caption: string, type: string}>
+     * @return list<array{url: string, thumb: string, alt: string, caption: string, credits: string, type: string}>
      */
     public static function placeholderSlides(int $count = 8): array
     {
         $count = max(4, min(12, $count));
         $palettes = [
-            ['#0f172a', '#334155', 'Harbor light'],
-            ['#1c1917', '#78716c', 'Stone terrace'],
-            ['#042f2e', '#0d9488', 'Tide pool'],
-            ['#1e1b4b', '#6366f1', 'Indigo dusk'],
-            ['#431407', '#ea580c', 'Ember clay'],
-            ['#14532d', '#22c55e', 'Meadow edge'],
-            ['#4a044e', '#d946ef', 'Orchid glow'],
-            ['#083344', '#06b6d4', 'Cyan bay'],
-            ['#3f1d0b', '#f59e0b', 'Amber field'],
-            ['#111827', '#9ca3af', 'Graphite grain'],
-            ['#172554', '#3b82f6', 'Azure ridge'],
-            ['#3b0764', '#a855f7', 'Violet mist'],
+            ['#0f172a', '#334155', 'Harbor light', 'Studio North'],
+            ['#1c1917', '#78716c', 'Stone terrace', ''],
+            ['#042f2e', '#0d9488', 'Tide pool', '© Demo Archive'],
+            ['#1e1b4b', '#6366f1', 'Indigo dusk', ''],
+            ['#431407', '#ea580c', 'Ember clay', 'Photo desk'],
+            ['#14532d', '#22c55e', 'Meadow edge', ''],
+            ['#4a044e', '#d946ef', 'Orchid glow', ''],
+            ['#083344', '#06b6d4', 'Cyan bay', 'Field kit'],
+            ['#3f1d0b', '#f59e0b', 'Amber field', ''],
+            ['#111827', '#9ca3af', 'Graphite grain', ''],
+            ['#172554', '#3b82f6', 'Azure ridge', ''],
+            ['#3b0764', '#a855f7', 'Violet mist', ''],
         ];
 
         $slides = [];
 
         for ($i = 0; $i < $count; $i++) {
-            [$from, $to, $label] = $palettes[$i % count($palettes)];
+            [$from, $to, $label, $credits] = $palettes[$i % count($palettes)];
             $svg = self::placeholderSvg($from, $to, $label, $i + 1);
             $slides[] = [
                 'url' => $svg,
                 'thumb' => $svg,
                 'alt' => $label,
                 'caption' => $label,
+                'credits' => $credits,
                 'type' => 'image',
             ];
         }

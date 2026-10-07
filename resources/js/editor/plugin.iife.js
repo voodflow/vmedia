@@ -481,6 +481,21 @@
                     },
                 }));
 
+                if (isGridLike(blockId)) {
+                    form.fields.appendChild(createSelectField({
+                        label: label(gjsEditor, 'vmediaCaptionPosition', 'Caption position'),
+                        name: 'caption_position',
+                        value: String(config.caption_position || 'below'),
+                        options: [
+                            { value: 'below', label: label(gjsEditor, 'vmediaCaptionBelow', 'Below image') },
+                            { value: 'above', label: label(gjsEditor, 'vmediaCaptionAbove', 'Above image') },
+                        ],
+                        onChange: function (value) {
+                            patchConfigs(gjsEditor, root, { caption_position: value });
+                        },
+                    }));
+                }
+
                 form.fields.appendChild(createToggleField({
                     label: label(gjsEditor, 'vmediaRounded', 'Rounded corners'),
                     name: 'rounded',

@@ -1,3 +1,14 @@
+## [0.3.8] - 2026-10-07
+
+### Added
+
+- Gallery block setting: caption above or below the image (grid / masonry / featured)
+- Credits “i” control on grid items and in the lightbox when media has credits
+
+### Fixed
+
+- Lightbox closes when clicking the dimmed area outside the image (not only the ×)
+
 ## [0.3.7] - 2026-10-07
 
 ### Fixed

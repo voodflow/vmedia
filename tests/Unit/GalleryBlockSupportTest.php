@@ -95,4 +95,20 @@ final class GalleryBlockSupportTest extends OrchestraTestCase
         $this->assertStringContainsString('rounded-xl', $ui['rounded']);
         $this->assertStringContainsString('aspect-[4/3]', $ui['aspect']);
     }
+
+    #[Test]
+    public function it_normalizes_caption_position(): void
+    {
+        $above = GalleryBlockSupport::normalizeConfig([
+            'caption_position' => 'above',
+        ], GalleryBlockSupport::LAYOUT_GRID);
+
+        $this->assertSame('above', $above['caption_position']);
+
+        $fallback = GalleryBlockSupport::normalizeConfig([
+            'caption_position' => 'side',
+        ], GalleryBlockSupport::LAYOUT_GRID);
+
+        $this->assertSame('below', $fallback['caption_position']);
+    }
 }

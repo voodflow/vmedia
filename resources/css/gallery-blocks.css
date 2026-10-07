@@ -173,6 +173,12 @@
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
 }
 
+.vmedia-gallery-dialog__media {
+    position: relative;
+    display: block;
+    line-height: 0;
+}
+
 .vmedia-gallery-dialog__image {
     display: block;
     width: auto;
@@ -193,6 +199,71 @@
     color: #fff;
     background: rgba(0, 0, 0, 0.78);
     box-sizing: border-box;
+}
+
+.vmedia-gallery-dialog__credits {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    z-index: 2;
+}
+
+/* Credits “i” affordance (grid + lightbox) */
+.vmedia-gallery-credits {
+    position: relative;
+}
+
+.vmedia-gallery-credits__btn {
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--color-vp-text-2, #64748b) 45%, transparent);
+    background: color-mix(in srgb, var(--color-vp-bg, #fff) 88%, transparent);
+    color: var(--color-vp-text-1, #0f172a);
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-style: italic;
+    font-family: ui-serif, Georgia, serif;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+}
+
+.vmedia-gallery-credits__btn::-webkit-details-marker {
+    display: none;
+}
+
+.vmedia-gallery-credits__btn--on-dark {
+    border-color: rgba(255, 255, 255, 0.45);
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+}
+
+.vmedia-gallery-credits__panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.4rem);
+    z-index: 5;
+    min-width: 10rem;
+    max-width: min(18rem, 70vw);
+    padding: 0.65rem 0.75rem;
+    border-radius: 0.5rem;
+    background: rgba(15, 23, 42, 0.94);
+    color: #fff;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    font-weight: 500;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+    white-space: pre-wrap;
+}
+
+.vmedia-gallery-credits__panel--up {
+    top: auto;
+    bottom: calc(100% + 0.4rem);
 }
 
 .vmedia-gallery-dialog__caption[hidden] {

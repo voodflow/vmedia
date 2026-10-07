@@ -1,8 +1,9 @@
 @php
     /** @var array<string, mixed> $config */
     /** @var array<string, string> $ui */
-    /** @var list<array{url: string, thumb: string, alt: string, caption: string}> $slides */
+    /** @var list<array{url: string, thumb: string, alt: string, caption: string, credits?: string}> $slides */
     $showCaptions = (bool) ($config['show_captions'] ?? false);
+    $captionPosition = (string) ($config['caption_position'] ?? 'below');
     $lightbox = (bool) ($config['lightbox'] ?? true);
     $heading = $config['heading'] ?? null;
     $featured = $slides[0] ?? null;
@@ -34,6 +35,14 @@
         >
             @if ($featured)
                 <figure class="relative m-0 overflow-hidden {{ $ui['rounded'] }}" data-voodbuilder-name="Featured image">
+                    @if ($captionPosition === 'above')
+                        @include('vmedia::blocks.partials.slide-caption', [
+                            'slide' => $featured,
+                            'showCaptions' => $showCaptions,
+                            'captionPosition' => $captionPosition,
+                        ])
+                    @endif
+
                     @if ($lightbox)
                         <button
                             type="button"
@@ -58,8 +67,24 @@
                             class="{{ $ui['roundedImg'] }} block aspect-[21/9] w-full object-cover sm:aspect-video"
                         >
                     @endif
-                    @if ($showCaptions && filled($featured['caption'] ?? null))
-                        <figcaption class="absolute bottom-4 left-4 m-0 text-base font-semibold text-white drop-shadow">{{ $featured['caption'] }}</figcaption>
+
+                    @if ($captionPosition !== 'above' && $showCaptions && filled($featured['caption'] ?? null))
+                        <figcaption class="absolute bottom-4 left-4 m-0 max-w-[calc(100%-5rem)] text-base font-semibold text-white drop-shadow">{{ $featured['caption'] }}</figcaption>
+                    @endif
+                    @if ($captionPosition !== 'above' && filled($featured['credits'] ?? null))
+                        <details class="vmedia-gallery-credits absolute bottom-4 right-4 z-10">
+                            <summary
+                                class="vmedia-gallery-credits__btn vmedia-gallery-credits__btn--on-dark"
+                                data-voodbuilder-skip-cta="true"
+                                aria-label="{{ __('vmedia::admin.editor.credits') }}"
+                                title="{{ __('vmedia::admin.editor.credits') }}"
+                            >
+                                <span aria-hidden="true">i</span>
+                            </summary>
+                            <div class="vmedia-gallery-credits__panel vmedia-gallery-credits__panel--up" role="note">
+                                {{ $featured['credits'] }}
+                            </div>
+                        </details>
                     @endif
                 </figure>
             @endif
@@ -69,6 +94,10 @@
                     @foreach ($rest as $offset => $slide)
                         @php $index = $offset + 1; @endphp
                         <figure class="m-0 min-w-0" data-voodbuilder-name="Gallery item">
+                            @if ($captionPosition === 'above')
+                                @include('vmedia::blocks.partials.slide-caption', compact('slide', 'showCaptions', 'captionPosition'))
+                            @endif
+
                             @if ($lightbox)
                                 <button
                                     type="button"
@@ -82,8 +111,9 @@
                             @else
                                 <img src="{{ $slide['thumb'] }}" alt="{{ $slide['alt'] }}" loading="lazy" class="{{ $ui['image'] }}">
                             @endif
-                            @if ($showCaptions && filled($slide['caption'] ?? null))
-                                <figcaption class="mt-2 text-sm text-vp-text-2">{{ $slide['caption'] }}</figcaption>
+
+                            @if ($captionPosition !== 'above')
+                                @include('vmedia::blocks.partials.slide-caption', compact('slide', 'showCaptions', 'captionPosition'))
                             @endif
                         </figure>
                     @endforeach
@@ -91,7 +121,7 @@
             @endif
         </div>
 
-        @include('vmedia::blocks.partials.lightbox', compact('lightbox', 'slides', 'heading'))
+        @include('vmedia::blocks.partials.lightbox', compact('lightbox', 'slides', 'heading', 'captionPosition'))
     </div>
 </section>
 @endif
