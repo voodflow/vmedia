@@ -1,3 +1,9 @@
+## [0.3.23] - 2026-10-08
+
+### Changed
+
+- Lightbox credits strip: taller band and larger type (`clamp` to viewport/image), with the “i” button sized so it sits fully inside the black fascia
+
 ## [0.3.19] - 2026-10-07
 
 ### Fixed

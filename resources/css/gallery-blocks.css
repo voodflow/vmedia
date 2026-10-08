@@ -336,15 +336,32 @@
 
 .vmedia-gallery-dialog__credits {
     border-radius: 0;
+    /* Shared scale: band height = button + vertical padding so “i” sits fully inside. */
+    --vmedia-lb-credits-pad: clamp(0.55rem, 1.25vw + 0.3rem, 0.9rem);
+    --vmedia-lb-credits-btn: clamp(1.85rem, 2.6vw + 0.65rem, 2.4rem);
+    --vmedia-lb-credits-fs: clamp(0.875rem, 1.05vw + 0.5rem, 1.0625rem);
 }
 
-/* Lightbox: slightly larger credits “i” (top-right on the image) */
+/* Lightbox: larger credits band + type; “i” stays inside the black strip */
 .vmedia-gallery-dialog__credits .vmedia-gallery-credits__btn {
-    top: 0.65rem;
-    right: 0.65rem;
-    width: 2rem;
-    height: 2rem;
-    font-size: 0.95rem;
+    top: var(--vmedia-lb-credits-pad);
+    right: var(--vmedia-lb-credits-pad);
+    width: var(--vmedia-lb-credits-btn);
+    height: var(--vmedia-lb-credits-btn);
+    font-size: clamp(0.9rem, 1.15vw + 0.4rem, 1.125rem);
+}
+
+.vmedia-gallery-dialog__credits .vmedia-gallery-credits__panel {
+    padding: var(--vmedia-lb-credits-pad)
+        calc(var(--vmedia-lb-credits-btn) + var(--vmedia-lb-credits-pad) * 2)
+        var(--vmedia-lb-credits-pad)
+        clamp(0.85rem, 2vw, 1.35rem);
+    min-height: calc(var(--vmedia-lb-credits-btn) + var(--vmedia-lb-credits-pad) * 2);
+    display: flex;
+    align-items: center;
+    font-size: var(--vmedia-lb-credits-fs);
+    line-height: 1.45;
+    font-weight: 600;
 }
 
 .vmedia-gallery-dialog__close,
@@ -459,12 +476,27 @@
         right: 0.4rem;
     }
 
+    .vmedia-gallery-dialog__credits {
+        --vmedia-lb-credits-pad: 0.5rem;
+        --vmedia-lb-credits-btn: 1.9rem;
+        --vmedia-lb-credits-fs: 0.8125rem;
+    }
+
     .vmedia-gallery-dialog__credits .vmedia-gallery-credits__btn {
-        width: 1.85rem;
-        height: 1.85rem;
-        font-size: 0.9rem;
-        top: 0.5rem;
-        right: 0.5rem;
+        width: var(--vmedia-lb-credits-btn);
+        height: var(--vmedia-lb-credits-btn);
+        font-size: 0.95rem;
+        top: var(--vmedia-lb-credits-pad);
+        right: var(--vmedia-lb-credits-pad);
+    }
+
+    .vmedia-gallery-dialog__credits .vmedia-gallery-credits__panel {
+        padding: var(--vmedia-lb-credits-pad)
+            calc(var(--vmedia-lb-credits-btn) + var(--vmedia-lb-credits-pad) * 2)
+            var(--vmedia-lb-credits-pad)
+            0.7rem;
+        min-height: calc(var(--vmedia-lb-credits-btn) + var(--vmedia-lb-credits-pad) * 2);
+        font-size: var(--vmedia-lb-credits-fs);
     }
 
     .vmedia-gallery-credits__panel {
