@@ -9,7 +9,7 @@ return [
     | Own Filament navigation group (independent from page-builder settings).
     */
     'navigation' => [
-        'group' => env('VMEDIA_NAV_GROUP', 'VoodMedia'),
+        'group' => env('VMEDIA_NAV_GROUP', 'Voodmedia'),
         'sort' => (int) env('VMEDIA_NAV_SORT', 40),
     ],
 

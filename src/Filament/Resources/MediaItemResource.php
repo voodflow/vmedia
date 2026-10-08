@@ -64,7 +64,7 @@ class MediaItemResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return (string) config('vmedia.navigation.group', 'VoodMedia');
+        return (string) config('vmedia.navigation.group', 'Voodmedia');
     }
 
     public static function getNavigationSort(): ?int
