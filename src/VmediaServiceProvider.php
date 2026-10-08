@@ -22,11 +22,13 @@ use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaVault;
 use Voodflow\Vmedia\Policies\MediaGalleryPolicy;
 use Voodflow\Vmedia\Policies\MediaItemPolicy;
+use Voodflow\Vmedia\Portable\VmediaPortableBridge;
 use Voodflow\Vmedia\Support\CaptionBackground;
 use Voodflow\Vmedia\Support\VmediaEditorBlocks;
 use Voodflow\Vmedia\Support\VmediaEditorBridge;
 use Voodflow\Voodbuilder\Support\VoodbuilderPaths;
 use Voodflow\Voodbuilder\Voodbuilder;
+use Voodflow\Vportable\Vportable;
 
 class VmediaServiceProvider extends PackageServiceProvider
 {
@@ -76,6 +78,8 @@ class VmediaServiceProvider extends PackageServiceProvider
 
         config()->set('media-library.media_model', MediaItem::class);
 
+        $this->registerPortableBridge();
+
         Blade::directive('vmediaGallery', function (string $expression): string {
             return "<?php echo \\vmedia_gallery({$expression}); ?>";
         });
@@ -115,6 +119,15 @@ class VmediaServiceProvider extends PackageServiceProvider
             $this->registerEditorPluginScript();
             $this->registerPublicGalleryAssets();
         }
+    }
+
+    private function registerPortableBridge(): void
+    {
+        if (! class_exists(Vportable::class)) {
+            return;
+        }
+
+        Vportable::registerMediaBridge(new VmediaPortableBridge);
     }
 
     /**

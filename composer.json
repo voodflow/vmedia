@@ -1,7 +1,7 @@
 {
     "name": "voodflow/vmedia",
     "description": "Filament Media Vault (Filament 5 + Spatie Media Library). Standalone admin, HTTP API, galleries; plugins register their own vault roots.",
-    "version": "0.3.23",
+    "version": "0.3.24",
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -25,7 +25,8 @@
         "spatie/laravel-sluggable": "^3.0"
     },
     "suggest": {
-        "voodflow/voodbuilder": "Optional: page builder Asset Manager lists/uploads into galleries."
+        "voodflow/voodbuilder": "Optional: page builder Asset Manager lists/uploads into galleries.",
+        "voodflow/vportable": "Registers a MediaPortableBridge for uuid-stable media in content packs."
     },
     "autoload": {
         "psr-4": {
