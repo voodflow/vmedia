@@ -1,3 +1,12 @@
+## [Unreleased]
+
+## [0.3.26] - 2026-10-12
+
+### Added
+
+- Canvas loads `gallery-lightbox.js` so credits “i” toggles work in the editor iframe (standalone images + galleries)
+- Credits host z-index also applies to `.vb-image` / `[data-vb-image]` figures
+
 ## [0.3.23] - 2026-10-08
 
 ### Changed

@@ -99,7 +99,11 @@
 }
 
 .vmedia-gallery-item.is-credits-open,
-.vmedia-gallery-item:has(.vmedia-gallery-credits.is-open) {
+.vmedia-gallery-item:has(.vmedia-gallery-credits.is-open),
+.vb-image.is-credits-open,
+.vb-image:has(.vmedia-gallery-credits.is-open),
+[data-vb-image].is-credits-open,
+[data-vb-image]:has(.vmedia-gallery-credits.is-open) {
     z-index: 4;
     position: relative;
 }

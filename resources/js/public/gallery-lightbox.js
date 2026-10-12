@@ -5,6 +5,14 @@
 (function () {
     'use strict';
 
+    function creditsHost(root) {
+        return root
+            ? (root.closest('.vmedia-gallery-item')
+                || root.closest('.vb-image')
+                || root.closest('[data-vb-image]'))
+            : null;
+    }
+
     function closeCredits(root) {
         if (! root) {
             return;
@@ -12,7 +20,7 @@
         var panel = root.querySelector('[data-vmedia-credits-panel]');
         var toggle = root.querySelector('[data-vmedia-credits-toggle]');
         root.classList.remove('is-open');
-        var item = root.closest('.vmedia-gallery-item');
+        var item = creditsHost(root);
         if (item) {
             item.classList.remove('is-credits-open');
         }
@@ -36,7 +44,7 @@
         var panel = root.querySelector('[data-vmedia-credits-panel]');
         var toggle = root.querySelector('[data-vmedia-credits-toggle]');
         root.classList.add('is-open');
-        var item = root.closest('.vmedia-gallery-item');
+        var item = creditsHost(root);
         if (item) {
             item.classList.add('is-credits-open');
         }
@@ -312,6 +320,8 @@
         bindCredits(document);
         document.querySelectorAll('[data-vmedia-gallery-lightbox]').forEach(bindRoot);
     }
+
+    window.__vmediaBindCredits = bindCredits;
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', boot);

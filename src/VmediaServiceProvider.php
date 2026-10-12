@@ -133,6 +133,8 @@ class VmediaServiceProvider extends PackageServiceProvider
     /**
      * Load gallery-blocks.css via Grapes canvasStyles on first paint.
      * Late JS inject alone races canvas:frame:load and leaves 1-col until a remount.
+     * Also inject lightbox/credits script so the “i” badge works inside the canvas iframe
+     * (standalone images + galleries).
      */
     private function registerVoodbuilderCanvasStyles(): void
     {
@@ -144,10 +146,17 @@ class VmediaServiceProvider extends PackageServiceProvider
         $current = config('voodbuilder.editor.canvas_styles');
         $base = is_array($current) && $current !== [] ? $current : $defaults;
 
+        $scriptCurrent = config('voodbuilder.editor.canvas_scripts');
+        $scriptBase = is_array($scriptCurrent) ? $scriptCurrent : [];
+
         config([
             'voodbuilder.editor.canvas_styles' => array_values(array_unique([
                 ...$base,
                 '/vendor/vmedia/gallery-blocks.css',
+            ])),
+            'voodbuilder.editor.canvas_scripts' => array_values(array_unique([
+                ...$scriptBase,
+                '/vendor/vmedia/gallery-lightbox.js',
             ])),
         ]);
     }
