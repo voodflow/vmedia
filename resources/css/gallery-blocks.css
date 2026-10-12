@@ -287,8 +287,9 @@
     height: 1.5rem;
     padding: 0;
     border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 45%, transparent);
-    background: color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 88%, var(--color-vp-bg, #fff));
+    border: 1px solid color-mix(in srgb, #fff 40%, var(--color-vp-brand-1, #3451b2));
+    /* Brand accent on the “i” — small enough that contrast on the badge stays ok. */
+    background: color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 78%, #000);
     color: #fff;
     font-size: 0.75rem;
     font-weight: 700;
@@ -297,13 +298,13 @@
     line-height: 1;
     cursor: pointer;
     user-select: none;
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 35%, transparent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
 }
 
 .vmedia-gallery-credits__btn--on-dark,
 .vmedia-gallery-credits--on-dark .vmedia-gallery-credits__btn {
-    border-color: color-mix(in srgb, #fff 35%, var(--color-vp-brand-1, #3451b2));
-    background: color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 82%, #000);
+    border-color: rgba(255, 255, 255, 0.45);
+    background: color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 72%, #000);
     color: #fff;
 }
 
@@ -320,15 +321,18 @@
     box-sizing: border-box;
     padding: 0.5rem 2.4rem 0.5rem 0.75rem;
     border-radius: 0;
-    /* Theme brand strip (readable on photos; links use brand-2 / light mix). */
-    background: color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 88%, var(--color-vp-bg, #0b1220));
+    /*
+     * Dark strip + light brand tint — keeps white text/links readable on any
+     * theme brand (coral, yellow, lime, …). Brand remains as a subtle hue only.
+     */
+    background: color-mix(in srgb, #0b1220 78%, var(--color-vp-brand-1, #3451b2));
     color: #fff;
     font-size: 0.75rem;
     line-height: 1.4;
     font-weight: 600;
     letter-spacing: 0.01em;
-    text-shadow: 0 1px 2px color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 55%, transparent);
-    box-shadow: 0 4px 14px color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 28%, transparent);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
     white-space: normal;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -339,9 +343,9 @@
 }
 
 .vmedia-gallery-credits__panel a {
-    color: color-mix(in srgb, #fff 42%, var(--color-vp-brand-2, var(--color-vp-brand-3, #a8b1ff)));
+    color: #fff;
     text-decoration: underline;
-    text-decoration-color: color-mix(in srgb, #fff 55%, var(--color-vp-brand-1, #3451b2));
+    text-decoration-color: rgba(255, 255, 255, 0.72);
     text-underline-offset: 0.14em;
 }
 
