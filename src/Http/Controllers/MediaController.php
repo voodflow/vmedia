@@ -203,7 +203,7 @@ class MediaController extends Controller
             'uuid' => ['required', 'uuid', 'exists:' . (new MediaItem)->getTable() . ',uuid'],
             'caption' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'alt' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'credits' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'credits' => ['sometimes', 'nullable', 'string', 'max:5000'],
         ]);
 
         $media = MediaItem::query()->where('uuid', $validated['uuid'])->firstOrFail();

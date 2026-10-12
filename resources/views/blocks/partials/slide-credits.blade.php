@@ -1,10 +1,13 @@
 @php
+    use Voodflow\Vmedia\Support\CreditsHtml;
+
     /** @var array{url?: string, thumb?: string, alt?: string, caption?: string, credits?: string} $slide */
     $credits = trim((string) ($slide['credits'] ?? ''));
+    $creditsHtml = CreditsHtml::sanitize($credits);
     $onDark = (bool) ($onDark ?? false);
 @endphp
 
-@if ($credits !== '')
+@if ($creditsHtml !== '')
     <div class="vmedia-gallery-credits{{ $onDark ? ' vmedia-gallery-credits--on-dark' : '' }}" data-vmedia-credits>
         <button
             type="button"
@@ -18,7 +21,7 @@
             <span aria-hidden="true">i</span>
         </button>
         <div class="vmedia-gallery-credits__panel" data-vmedia-credits-panel hidden role="note">
-            {{ $credits }}
+            {!! $creditsHtml !!}
         </div>
     </div>
 @endif

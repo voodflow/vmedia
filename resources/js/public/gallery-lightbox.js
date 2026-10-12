@@ -1,9 +1,83 @@
 /**
- * Public lightbox + credits popovers for VoodMedia gallery blocks.
+ * Public lightbox + credits popovers for VoodMedia gallery blocks
+ * and standalone VoodBuilder images (`data-vb-lightbox`).
  * Loaded on VoodBuilder layouts — not via @push from block HTML (Grapes/DOM hydrate drop scripts).
  */
 (function () {
     'use strict';
+
+    /**
+     * Allow plain text + http(s) <a> only (Unsplash credit HTML).
+     *
+     * @param {string} raw
+     * @returns {string}
+     */
+    function sanitizeCreditsHtml(raw) {
+        var text = String(raw == null ? '' : raw).trim();
+        if (text === '') {
+            return '';
+        }
+        if (text.indexOf('<') === -1) {
+            var esc = document.createElement('div');
+            esc.textContent = text;
+            return esc.innerHTML;
+        }
+
+        var template = document.createElement('template');
+        template.innerHTML = text;
+        var out = document.createElement('div');
+
+        function walk(node, parent) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                parent.appendChild(document.createTextNode(node.textContent || ''));
+                return;
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE) {
+                return;
+            }
+            var el = /** @type {Element} */ (node);
+            var tag = el.tagName.toLowerCase();
+            if (tag === 'a') {
+                var href = String(el.getAttribute('href') || '').trim();
+                if (/^https?:\/\//i.test(href)) {
+                    var a = document.createElement('a');
+                    a.href = href;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    Array.prototype.forEach.call(el.childNodes, function (child) {
+                        walk(child, a);
+                    });
+                    parent.appendChild(a);
+                    return;
+                }
+            }
+            Array.prototype.forEach.call(el.childNodes, function (child) {
+                walk(child, parent);
+            });
+        }
+
+        Array.prototype.forEach.call(template.content.childNodes, function (child) {
+            walk(child, out);
+        });
+
+        return out.innerHTML;
+    }
+
+    /**
+     * @param {Element|null} el
+     * @param {string} raw
+     */
+    function setCreditsContent(el, raw) {
+        if (! el) {
+            return;
+        }
+        var html = sanitizeCreditsHtml(raw);
+        if (html.indexOf('<') !== -1) {
+            el.innerHTML = html;
+        } else {
+            el.textContent = String(raw == null ? '' : raw).trim();
+        }
+    }
 
     function creditsHost(root) {
         return root
@@ -170,11 +244,10 @@
                 closeCredits(creditsRoot);
                 if (credits !== '') {
                     creditsRoot.hidden = false;
-                    if (creditsText) {
-                        creditsText.textContent = credits;
-                    }
+                    setCreditsContent(creditsText, credits);
                 } else {
                     creditsRoot.hidden = true;
+                    setCreditsContent(creditsText, '');
                 }
             }
         }
@@ -316,12 +389,190 @@
         });
     }
 
+    /**
+     * Shared dialog for standalone page images (`figure[data-vb-lightbox="1"]`).
+     *
+     * @param {Document} doc
+     * @returns {HTMLDialogElement|null}
+     */
+    function ensureStandaloneDialog(doc) {
+        var existing = doc.querySelector('[data-vb-image-lightbox-dialog]');
+        if (existing) {
+            return /** @type {HTMLDialogElement} */ (existing);
+        }
+
+        var dialog = doc.createElement('dialog');
+        dialog.className = 'vmedia-gallery-dialog';
+        dialog.setAttribute('data-vb-image-lightbox-dialog', '');
+        dialog.setAttribute('data-voodbuilder-skip-cta', 'true');
+        dialog.setAttribute('aria-label', 'Image');
+        dialog.innerHTML = ''
+            + '<div class="vmedia-gallery-dialog__viewport" data-vb-image-lightbox-backdrop>'
+            +   '<button type="button" class="vmedia-gallery-dialog__close" data-vb-image-lightbox-close data-voodbuilder-skip-cta="true" aria-label="Close">&times;</button>'
+            +   '<div class="vmedia-gallery-dialog__row">'
+            +     '<div class="vmedia-gallery-dialog__stage" style="grid-column: 1 / -1; max-width: min(96vw, 72rem); margin-inline: auto;">'
+            +       '<div class="vmedia-gallery-dialog__media">'
+            +         '<img src="" alt="" class="vmedia-gallery-dialog__image" data-vb-image-lightbox-image style="opacity:1">'
+            +         '<div class="vmedia-gallery-credits vmedia-gallery-credits--on-dark vmedia-gallery-dialog__credits" data-vmedia-credits data-vb-image-lightbox-credits hidden>'
+            +           '<button type="button" class="vmedia-gallery-credits__btn vmedia-gallery-credits__btn--on-dark" data-vmedia-credits-toggle data-voodbuilder-skip-cta="true" aria-expanded="false" aria-label="Credits" title="Credits"><span aria-hidden="true">i</span></button>'
+            +           '<div class="vmedia-gallery-credits__panel" data-vmedia-credits-panel data-vb-image-lightbox-credits-text hidden role="note"></div>'
+            +         '</div>'
+            +       '</div>'
+            +       '<p class="vmedia-gallery-dialog__caption" data-vb-image-lightbox-caption hidden></p>'
+            +     '</div>'
+            +   '</div>'
+            + '</div>';
+
+        doc.body.appendChild(dialog);
+
+        var closeBtn = dialog.querySelector('[data-vb-image-lightbox-close]');
+        var imageEl = dialog.querySelector('[data-vb-image-lightbox-image]');
+        var creditsRoot = dialog.querySelector('[data-vb-image-lightbox-credits]');
+
+        function closeDialog() {
+            if (creditsRoot) {
+                closeCredits(creditsRoot);
+            }
+            if (typeof dialog.close === 'function' && dialog.open) {
+                dialog.close();
+            }
+            if (imageEl) {
+                imageEl.removeAttribute('src');
+                imageEl.alt = '';
+            }
+        }
+
+        closeBtn && closeBtn.addEventListener('click', closeDialog);
+        dialog.addEventListener('click', function (event) {
+            var target = event.target;
+            if (target === dialog || (target && target.hasAttribute && target.hasAttribute('data-vb-image-lightbox-backdrop'))) {
+                closeDialog();
+            }
+        });
+        dialog.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeDialog();
+            }
+        });
+
+        bindCredits(dialog);
+
+        return dialog;
+    }
+
+    /**
+     * @param {HTMLElement} figure
+     * @param {HTMLImageElement} img
+     */
+    function openStandaloneLightbox(figure, img) {
+        var doc = figure.ownerDocument || document;
+        var dialog = ensureStandaloneDialog(doc);
+        if (! dialog) {
+            return;
+        }
+
+        var imageEl = dialog.querySelector('[data-vb-image-lightbox-image]');
+        var captionEl = dialog.querySelector('[data-vb-image-lightbox-caption]');
+        var creditsRoot = dialog.querySelector('[data-vb-image-lightbox-credits]');
+        var creditsText = dialog.querySelector('[data-vb-image-lightbox-credits-text]');
+
+        if (! imageEl) {
+            return;
+        }
+
+        imageEl.src = img.currentSrc || img.src || '';
+        imageEl.alt = img.alt || '';
+
+        var caption = '';
+        var figcaption = figure.querySelector('figcaption');
+        if (figcaption) {
+            caption = String(figcaption.textContent || '').trim();
+        }
+        if (caption === '') {
+            caption = String(img.getAttribute('data-vb-caption') || img.getAttribute('data-vb-media-caption') || '').trim();
+        }
+        if (captionEl) {
+            captionEl.textContent = caption;
+            captionEl.hidden = caption === '';
+        }
+
+        var credits = String(
+            img.getAttribute('data-vb-credits')
+            || img.getAttribute('data-vb-media-credits')
+            || '',
+        ).trim();
+        if (creditsRoot) {
+            closeCredits(creditsRoot);
+            if (credits !== '') {
+                creditsRoot.hidden = false;
+                setCreditsContent(creditsText, credits);
+            } else {
+                creditsRoot.hidden = true;
+                setCreditsContent(creditsText, '');
+            }
+        }
+
+        if (typeof dialog.showModal === 'function' && ! dialog.open) {
+            dialog.showModal();
+        }
+    }
+
+    /**
+     * Click-to-zoom for standalone images. Skipped inside the Grapes canvas iframe.
+     *
+     * @param {ParentNode|Document|null} scope
+     */
+    function bindStandaloneLightbox(scope) {
+        var root = scope || document;
+        var doc = root.nodeType === 9 ? root : (root.ownerDocument || document);
+
+        if (doc.documentElement && doc.documentElement.classList.contains('voodbuilder-canvas-ready')) {
+            return;
+        }
+
+        doc.querySelectorAll('figure.vb-image[data-vb-lightbox="1"], figure[data-vb-image][data-vb-lightbox="1"]').forEach(function (figure) {
+            if (figure.__vbLightboxBound) {
+                return;
+            }
+            var img = figure.querySelector('img');
+            if (! img) {
+                return;
+            }
+            figure.__vbLightboxBound = true;
+            img.style.cursor = 'zoom-in';
+            if (! img.hasAttribute('tabindex')) {
+                img.setAttribute('tabindex', '0');
+            }
+            img.setAttribute('role', 'button');
+            img.setAttribute('aria-label', img.alt ? (img.alt + ' (enlarge)') : 'Enlarge image');
+
+            var open = function (event) {
+                if (event.target && event.target.closest && event.target.closest('[data-vmedia-credits]')) {
+                    return;
+                }
+                event.preventDefault();
+                event.stopPropagation();
+                openStandaloneLightbox(figure, img);
+            };
+
+            img.addEventListener('click', open);
+            img.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    open(event);
+                }
+            });
+        });
+    }
+
     function boot() {
         bindCredits(document);
+        bindStandaloneLightbox(document);
         document.querySelectorAll('[data-vmedia-gallery-lightbox]').forEach(bindRoot);
     }
 
     window.__vmediaBindCredits = bindCredits;
+    window.__vmediaBindStandaloneLightbox = bindStandaloneLightbox;
+    window.__vmediaSanitizeCreditsHtml = sanitizeCreditsHtml;
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', boot);

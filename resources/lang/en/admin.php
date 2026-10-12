@@ -14,7 +14,7 @@ return [
         'alt' => 'Alt text',
         'alt_help' => 'Accessibility alternative text for images.',
         'credits' => 'Credits',
-        'credits_help' => 'Optional attribution / copyright line.',
+        'credits_help' => 'Optional attribution / copyright. HTML links allowed (e.g. Unsplash credit markup).',
         'focal_x' => 'Focus X %',
         'focal_y' => 'Focus Y %',
         'focal_help' => 'CSS object-position focus point (0–100).',

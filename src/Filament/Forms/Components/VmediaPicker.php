@@ -186,8 +186,10 @@ class VmediaPicker extends Field
                         ->visible($isImage)
                         ->placeholder($vaultAlt ?: __('vmedia::admin.picker.override_placeholder'))
                         ->helperText(__('vmedia::admin.picker.override_alt_help')),
-                    TextInput::make('credits')
+                    Textarea::make('credits')
                         ->label(__('vmedia::admin.library.credits'))
+                        ->rows(3)
+                        ->maxLength(5000)
                         ->placeholder($vaultCredits ?: __('vmedia::admin.picker.override_placeholder'))
                         ->helperText(__('vmedia::admin.picker.override_credits_help')),
                 ];

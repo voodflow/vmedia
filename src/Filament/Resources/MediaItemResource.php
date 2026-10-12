@@ -469,9 +469,10 @@ class MediaItemResource extends Resource
                 ->rows(2)
                 ->maxLength(1000)
                 ->helperText(__('vmedia::admin.library.caption_help')),
-            TextInput::make('credits')
+            Textarea::make('credits')
                 ->label(__('vmedia::admin.library.credits'))
-                ->maxLength(255)
+                ->rows(3)
+                ->maxLength(5000)
                 ->helperText(__('vmedia::admin.library.credits_help')),
             Select::make('poster_uuid')
                 ->label(__('vmedia::admin.library.poster'))
