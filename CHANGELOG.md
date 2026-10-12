@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [0.3.31] - 2026-10-12
+
+### Fixed
+
+- Vmedia Settings page requires Filament Shield `View:VmediaSettingsPage` (no longer open to every panel user)
+
 ## [0.3.30] - 2026-10-12
 
 ### Fixed

@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Artisan;
 use Throwable;
 use Voodflow\Vmedia\Models\VmediaSettings;
 use Voodflow\Vmedia\Support\ConversionLadder;
+use Voodflow\Vmedia\Support\MediaAuthorization;
 
 /**
  * @property-read Schema $form
@@ -54,6 +55,16 @@ class VmediaSettingsPage extends Page
     public static function getNavigationLabel(): string
     {
         return __('vmedia::admin.settings.navigation');
+    }
+
+    public static function canAccess(): bool
+    {
+        return MediaAuthorization::allows(auth()->user(), 'View:VmediaSettingsPage');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess() && parent::shouldRegisterNavigation();
     }
 
     public function getTitle(): string | Htmlable
