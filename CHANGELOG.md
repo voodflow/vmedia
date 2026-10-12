@@ -1,10 +1,16 @@
 ## [Unreleased]
 
-## [0.3.29] - 2026-10-12
+## [0.3.30] - 2026-10-12
 
 ### Fixed
 
 - Credits strip uses a dark bar with a light brand tint (not full brand fill) so white text/links stay readable on any theme color; links are solid white
+
+## [0.3.29] - 2026-10-12
+
+### Changed
+
+- Package metadata / prior credits chrome iteration
 
 ## [0.3.28] - 2026-10-12
 
