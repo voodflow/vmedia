@@ -1,5 +1,19 @@
 ## [Unreleased]
 
+## [0.3.28] - 2026-10-12
+
+### Changed
+
+- Gallery / image credits strip and “i” badge use theme brand colors; credit links use a brand-tinted highlight instead of plain white
+
+## [0.3.27] - 2026-10-12
+
+### Added
+
+- `CreditsHtml` sanitizer for Unsplash-style credit markup (safe `http(s)` links only); gallery/slide credits panels render sanitized HTML
+- Standalone image lightbox via `data-vb-lightbox` (shared dialog + click binding in `gallery-lightbox.js`)
+- Library / picker Credits fields are textareas up to 5000 characters (API max aligned)
+
 ## [0.3.26] - 2026-10-12
 
 ### Added

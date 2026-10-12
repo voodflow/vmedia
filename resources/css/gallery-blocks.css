@@ -287,9 +287,9 @@
     height: 1.5rem;
     padding: 0;
     border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--color-vp-text-2, #64748b) 45%, transparent);
-    background: color-mix(in srgb, var(--color-vp-bg, #fff) 88%, transparent);
-    color: var(--color-vp-text-1, #0f172a);
+    border: 1px solid color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 45%, transparent);
+    background: color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 88%, var(--color-vp-bg, #fff));
+    color: #fff;
     font-size: 0.75rem;
     font-weight: 700;
     font-style: italic;
@@ -297,13 +297,13 @@
     line-height: 1;
     cursor: pointer;
     user-select: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 35%, transparent);
 }
 
 .vmedia-gallery-credits__btn--on-dark,
 .vmedia-gallery-credits--on-dark .vmedia-gallery-credits__btn {
-    border-color: rgba(255, 255, 255, 0.45);
-    background: rgba(0, 0, 0, 0.55);
+    border-color: color-mix(in srgb, #fff 35%, var(--color-vp-brand-1, #3451b2));
+    background: color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 82%, #000);
     color: #fff;
 }
 
@@ -320,15 +320,15 @@
     box-sizing: border-box;
     padding: 0.5rem 2.4rem 0.5rem 0.75rem;
     border-radius: 0;
-    background: #0b1220;
-    background: color-mix(in srgb, #0b1220 92%, transparent);
+    /* Theme brand strip (readable on photos; links use brand-2 / light mix). */
+    background: color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 88%, var(--color-vp-bg, #0b1220));
     color: #fff;
     font-size: 0.75rem;
     line-height: 1.4;
     font-weight: 600;
     letter-spacing: 0.01em;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+    text-shadow: 0 1px 2px color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 55%, transparent);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--color-vp-brand-1, #3451b2) 28%, transparent);
     white-space: normal;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -336,6 +336,18 @@
 
 .vmedia-gallery-credits__panel[hidden] {
     display: none !important;
+}
+
+.vmedia-gallery-credits__panel a {
+    color: color-mix(in srgb, #fff 42%, var(--color-vp-brand-2, var(--color-vp-brand-3, #a8b1ff)));
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, #fff 55%, var(--color-vp-brand-1, #3451b2));
+    text-underline-offset: 0.14em;
+}
+
+.vmedia-gallery-credits__panel a:hover {
+    color: #fff;
+    text-decoration-color: #fff;
 }
 
 .vmedia-gallery-dialog__credits {
