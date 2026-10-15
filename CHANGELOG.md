@@ -1,5 +1,18 @@
 ## [Unreleased]
 
+## [0.3.32] - 2026-10-15
+
+### Added
+
+- **Media explorer**: a Livewire-backed VoodBuilder block that lets a published page browse the vault — server-side search on name / file name / caption / alt, type tabs with real counts, public-album filter, Load more and a real total. The existing gallery blocks are static markup, so until now a page could not search a large library or page through it without shipping every item to the browser
+- The explorer component is registered with Livewire as soon as Livewire is present, not only when VoodBuilder is installed, so `<livewire:vmedia-media-explorer />` also works in apps without a page builder
+- Canvas preview follows the dynamic-block contract: same markup and classes as the published component, with inert controls and no `wire:*` attributes, and a footer count taken from a real query
+- English / Italian strings for the block and its declarative Content fields
+
+### Changed
+
+- `VmediaEditorBlocks` keeps only the VoodBuilder registrations; the Livewire component moved to the service provider so the soft dependency on `voodflow/voodbuilder` stays untouched
+
 ## [0.3.31] - 2026-10-12
 
 ### Fixed

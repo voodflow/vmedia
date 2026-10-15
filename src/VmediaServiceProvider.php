@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
+use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Voodflow\Vmedia\Console\EnsurePluginVaultRootsCommand;
@@ -17,6 +18,7 @@ use Voodflow\Vmedia\Console\PruneOrphansCommand;
 use Voodflow\Vmedia\Console\RegenerateConversionsCommand;
 use Voodflow\Vmedia\Console\StatsCommand;
 use Voodflow\Vmedia\Http\Controllers\PublicGalleryController;
+use Voodflow\Vmedia\Livewire\MediaExplorer;
 use Voodflow\Vmedia\Models\MediaGallery;
 use Voodflow\Vmedia\Models\MediaItem;
 use Voodflow\Vmedia\Models\MediaVault;
@@ -89,6 +91,14 @@ class VmediaServiceProvider extends PackageServiceProvider
         });
 
         $this->registerPublicRoutes();
+
+        // The explorer component is a plain VoodMedia feature: it is registered with
+        // Livewire whenever Livewire is around, independently of the page builder, so
+        // a Blade page can mount it with <livewire:vmedia-media-explorer /> even in an
+        // app that never installed VoodBuilder. Only the editor block is gated below.
+        if (class_exists(Livewire::class)) {
+            Livewire::component(MediaExplorer::NAME, MediaExplorer::class);
+        }
 
         if (class_exists(Voodbuilder::class)) {
             Voodbuilder::reservePathPrefix(
