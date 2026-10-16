@@ -1,5 +1,18 @@
 ## [Unreleased]
 
+## [0.3.33] - 2026-10-16
+
+### Added
+
+- **Media explorer lightbox**: clicking a tile now opens an in-page photo viewer instead of a new tab. The selection is Livewire state (`activeMediaId` + `openMedia` / `closeMedia` / `nextMedia` / `previousMedia`), so the image, title and credit line always come from the same filtered window the grid renders — previous/next move only inside the current search / type / album results plus the public-album boundary, and an id outside that window is refused
+- The lightbox closes on the ×, a backdrop click, `Esc`, and navigates with the ← / → keys or the arrow buttons; `role="dialog"`, `aria-modal`, focus moved to the close button, a simple Tab trap and a body scroll lock while open
+- Credit line under the image, shown only when the media actually carries attribution: `custom_properties.credits` when set, otherwise the caption (the descriptive field the library exposes as `caption`), rendered through `CreditsHtml` so text is escaped and only `http(s)` links survive. No placeholder is invented when both are empty
+- Tiles are now `<button>`s, so the canvas preview keeps the same markup and classes with inert controls and no `wire:*` attributes
+
+### Changed
+
+- The lightbox markup is emitted in the canvas preview too (inside a `hidden` wrapper) so its Tailwind utilities are compiled into the published page stylesheet
+
 ## [0.3.32] - 2026-10-15
 
 ### Added

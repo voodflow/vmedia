@@ -199,6 +199,38 @@ final class MediaExplorerTest extends TestCase
         $this->assertSame(7, MediaExplorer::normalizeAlbumId('7'));
     }
 
+    public function test_credit_line_prefers_credits_then_caption_and_never_invents_text(): void
+    {
+        $this->assertSame(
+            'Photo by Jane Doe on Pixabay',
+            MediaExplorer::creditSource(['caption' => ' Photo by Jane Doe on Pixabay ']),
+        );
+
+        $this->assertSame(
+            'Photo by Jane Doe on Pixabay',
+            MediaExplorer::creditSource([
+                'credits' => 'Photo by Jane Doe on Pixabay',
+                'caption' => 'Another caption',
+            ]),
+        );
+
+        // Empty caption / credits (or none at all) means no credit line, not a default.
+        $this->assertSame('', MediaExplorer::creditSource(['caption' => '   ', 'credits' => null]));
+        $this->assertSame('', MediaExplorer::creditSource([]));
+        $this->assertSame('', MediaExplorer::creditHtml(['caption' => '']));
+
+        // Plain text is escaped, http(s) links survive, anything else is dropped.
+        $this->assertSame('A &amp; B', MediaExplorer::creditHtml(['caption' => 'A & B']));
+
+        $html = MediaExplorer::creditHtml([
+            'caption' => 'Photo by <a href="https://pixabay.com/photos/1/" onclick="x()">Jane</a>',
+        ]);
+
+        $this->assertStringContainsString('href="https://pixabay.com/photos/1/"', $html);
+        $this->assertStringContainsString('rel="noopener noreferrer"', $html);
+        $this->assertStringNotContainsString('onclick', $html);
+    }
+
     private function album(string $name, bool $isPublic): MediaGallery
     {
         return MediaGallery::query()->create([

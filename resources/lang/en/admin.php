@@ -297,6 +297,7 @@ return [
         'explorer_count' => 'Showing :shown of :total item(s)',
         'explorer_load_more' => 'Load more',
         'explorer_empty' => 'No media found.',
+        'explorer_lightbox' => 'Photo viewer',
         'blocks' => [
             'grid' => 'Gallery · simple grid',
             'masonry' => 'Gallery · masonry',

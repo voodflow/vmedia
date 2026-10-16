@@ -47,6 +47,15 @@ final class MediaExplorer extends Component
 
     public int $limit = 0;
 
+    /**
+     * Lightbox state: the id of the media the visitor opened, or null when closed.
+     *
+     * Part of the snapshot on purpose — selection, navigation and the image/caption
+     * all come from the same filtered window the grid renders, and the modal survives
+     * a Livewire morph because it lives inside this component's root.
+     */
+    public ?int $activeMediaId = null;
+
     public function mount(
         string $heading = '',
         int $perPage = MediaExplorerQuery::DEFAULT_PER_PAGE,
@@ -66,22 +75,26 @@ final class MediaExplorer extends Component
     {
         // A new query invalidates the items already loaded.
         $this->resetWindow();
+        $this->closeMedia();
     }
 
     public function updatedType(): void
     {
         $this->resetWindow();
+        $this->closeMedia();
     }
 
     public function updatedAlbumId(): void
     {
         $this->resetWindow();
+        $this->closeMedia();
     }
 
     public function setType(string $type): void
     {
         $this->type = $type;
         $this->resetWindow();
+        $this->closeMedia();
     }
 
     public function loadMore(): void
@@ -92,15 +105,46 @@ final class MediaExplorer extends Component
         );
     }
 
+    /**
+     * Open the lightbox on one media of the *currently visible* window.
+     *
+     * Ids outside the active search / type / album scope are ignored, so the public
+     * endpoint cannot be used to reveal a media the filters (or the public-album
+     * boundary) excluded.
+     */
+    public function openMedia(int $mediaId): void
+    {
+        if (! in_array($mediaId, $this->visibleMediaIds(), true)) {
+            return;
+        }
+
+        $this->activeMediaId = $mediaId;
+    }
+
+    public function closeMedia(): void
+    {
+        $this->activeMediaId = null;
+    }
+
+    public function nextMedia(): void
+    {
+        $this->stepMedia(1);
+    }
+
+    public function previousMedia(): void
+    {
+        $this->stepMedia(-1);
+    }
+
     public function render(): View
     {
-        $search = $this->showSearch ? trim($this->search) : '';
-        $type = $this->showTypeFilter ? MediaExplorerQuery::normalizeType($this->type) : null;
-        $albumId = $this->showAlbumFilter ? MediaExplorerQuery::normalizeAlbumId($this->albumId) : null;
+        [$type, $albumId, $search, $window] = $this->queryScope();
         $perPage = MediaExplorerQuery::normalizePerPage($this->perPage);
-        $window = MediaExplorerQuery::normalizeWindow($this->limit, $perPage);
 
         $result = MediaExplorerQuery::paginate($type, $albumId, $search, 1, $window);
+
+        $assets = $result['data'];
+        $activeIndex = $this->activeIndexIn($assets);
 
         return view('vmedia::blocks.media-explorer', [
             'heading' => $this->heading,
@@ -113,7 +157,10 @@ final class MediaExplorer extends Component
             'type' => $type ?? '',
             'albumId' => $albumId,
             'perPage' => $perPage,
-            'assets' => $result['data'],
+            'assets' => $assets,
+            'activeAsset' => $activeIndex === null ? null : $assets[$activeIndex],
+            'hasPrevious' => $activeIndex !== null && $activeIndex > 0,
+            'hasNext' => $activeIndex !== null && $activeIndex < count($assets) - 1,
             'total' => $result['meta']['total'],
             'hasMore' => $result['meta']['has_more'],
             'typeCounts' => $this->showTypeFilter ? MediaExplorerQuery::typeCounts($albumId, $search) : [],
@@ -124,5 +171,76 @@ final class MediaExplorer extends Component
     private function resetWindow(): void
     {
         $this->limit = MediaExplorerQuery::normalizePerPage($this->perPage);
+    }
+
+    /**
+     * Filters that actually drive the query, plus the loaded window size. The controls
+     * the block hides are ignored here exactly like they are in `render()`.
+     *
+     * @return array{0: ?string, 1: ?int, 2: string, 3: int}
+     */
+    private function queryScope(): array
+    {
+        $perPage = MediaExplorerQuery::normalizePerPage($this->perPage);
+
+        return [
+            $this->showTypeFilter ? MediaExplorerQuery::normalizeType($this->type) : null,
+            $this->showAlbumFilter ? MediaExplorerQuery::normalizeAlbumId($this->albumId) : null,
+            $this->showSearch ? trim($this->search) : '',
+            MediaExplorerQuery::normalizeWindow($this->limit, $perPage),
+        ];
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function visibleMediaIds(): array
+    {
+        [$type, $albumId, $search, $window] = $this->queryScope();
+
+        return array_values(array_map(
+            static fn (array $asset): int => (int) ($asset['id'] ?? 0),
+            MediaExplorerQuery::paginate($type, $albumId, $search, 1, $window)['data'],
+        ));
+    }
+
+    /**
+     * Move one step inside the visible window, clamped at both ends: the arrows never
+     * wrap into media the current filters hide.
+     */
+    private function stepMedia(int $delta): void
+    {
+        $ids = $this->visibleMediaIds();
+        $index = $this->activeMediaId === null
+            ? false
+            : array_search($this->activeMediaId, $ids, true);
+
+        if ($index === false) {
+            $this->activeMediaId = null;
+
+            return;
+        }
+
+        $target = $ids[$index + $delta] ?? null;
+
+        if ($target === null) {
+            return;
+        }
+
+        $this->activeMediaId = $target;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $assets
+     */
+    private function activeIndexIn(array $assets): ?int
+    {
+        if ($this->activeMediaId === null) {
+            return null;
+        }
+
+        $index = array_search($this->activeMediaId, array_column($assets, 'id'), true);
+
+        return $index === false ? null : (int) $index;
     }
 }

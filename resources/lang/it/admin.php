@@ -297,6 +297,7 @@ return [
         'explorer_count' => 'Mostrati :shown di :total elementi',
         'explorer_load_more' => 'Carica altri',
         'explorer_empty' => 'Nessun media trovato.',
+        'explorer_lightbox' => 'Visore foto',
         'blocks' => [
             'grid' => 'Galleria · griglia semplice',
             'masonry' => 'Galleria · masonry',

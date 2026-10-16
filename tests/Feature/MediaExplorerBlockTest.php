@@ -163,6 +163,140 @@ final class MediaExplorerBlockTest extends TestCase
             ->assertSet('limit', 24);
     }
 
+    public function test_the_lightbox_opens_and_closes_on_livewire_state(): void
+    {
+        $album = $this->album();
+        $first = $this->image('photo-1', $album);
+        $this->image('photo-2', $album);
+
+        Livewire::test(MediaExplorerComponent::class)
+            ->assertSet('activeMediaId', null)
+            ->call('openMedia', (int) $first->getKey())
+            ->assertSet('activeMediaId', (int) $first->getKey())
+            // The live mount wires the tile to the component, and the dialog is modal.
+            ->assertSee('wire:click="openMedia(' . $first->getKey() . ')"', false)
+            ->assertSee('role="dialog"', false)
+            ->assertSee('aria-modal="true"', false)
+            ->call('closeMedia')
+            ->assertSet('activeMediaId', null)
+            ->assertDontSee('role="dialog"', false);
+    }
+
+    public function test_the_lightbox_never_opens_a_media_outside_the_visible_window(): void
+    {
+        $public = $this->album();
+        $private = MediaGallery::query()->create([
+            'name' => 'Private album',
+            'kind' => MediaGallery::KIND_ALBUM,
+            'is_default' => false,
+            'is_public' => false,
+            'sort_order' => 2,
+            'parent_key' => 0,
+        ]);
+
+        $hidden = $this->image('hidden', $private);
+        $this->image('arduino-board', $public);
+        $this->image('sunrise', $public);
+
+        $component = Livewire::test(MediaExplorerComponent::class);
+
+        // A private-album media is not in the visible window at all.
+        $component->call('openMedia', (int) $hidden->getKey())
+            ->assertSet('activeMediaId', null);
+
+        // Nor is a media the active search filtered out.
+        $visible = MediaItem::query()->where('name', 'arduino-board')->firstOrFail();
+
+        $component->set('search', 'sunrise')
+            ->call('openMedia', (int) $visible->getKey())
+            ->assertSet('activeMediaId', null);
+    }
+
+    public function test_the_lightbox_navigates_within_the_filtered_window_only(): void
+    {
+        $album = $this->album();
+        $this->image('arduino-board', $album);
+        $this->image('arduino-patch', $album);
+        $this->image('sunrise', $album);
+
+        $component = Livewire::test(MediaExplorerComponent::class)
+            ->set('search', 'arduino'); // window = the two "arduino" media
+
+        $ids = MediaItem::query()
+            ->whereIn('name', ['arduino-board', 'arduino-patch'])
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $component->call('openMedia', max($ids))
+            ->assertSet('activeMediaId', max($ids))
+            // Clamped at the top of the window: never steps into the filtered-out "sunrise".
+            ->call('previousMedia')
+            ->assertSet('activeMediaId', max($ids))
+            ->call('nextMedia')
+            ->assertSet('activeMediaId', min($ids))
+            // Clamped at the bottom too.
+            ->call('nextMedia')
+            ->assertSet('activeMediaId', min($ids))
+            ->assertSee('wire:click="previousMedia"', false)
+            ->assertSee('wire:click="nextMedia"', false);
+
+        // Changing the filters closes the lightbox instead of leaving it on a stale id.
+        $component->call('closeMedia')->set('search', '')->call('openMedia', max($ids))
+            ->assertSet('activeMediaId', max($ids))
+            ->set('search', 'sunrise')
+            ->assertSet('activeMediaId', null);
+    }
+
+    public function test_the_lightbox_shows_a_credit_line_only_when_the_media_has_one(): void
+    {
+        $album = $this->album();
+        $credited = $this->image('pixabay-photo', $album);
+        $credited->setCaption('Photo by Jane Doe on Pixabay')->save();
+        $this->image('bare-photo', $album);
+
+        $component = Livewire::test(MediaExplorerComponent::class)
+            ->call('openMedia', (int) $credited->getKey())
+            ->assertSee('Photo by Jane Doe on Pixabay');
+
+        $bare = MediaItem::query()->where('name', 'bare-photo')->firstOrFail();
+
+        $component->call('openMedia', (int) $bare->getKey())
+            ->assertDontSee('Photo by Jane Doe on Pixabay');
+    }
+
+    public function test_the_lightbox_prefers_the_dedicated_credits_field_over_the_caption(): void
+    {
+        $album = $this->album();
+        $media = $this->image('credited-photo', $album);
+        $media->setCaption('Caption text')->setCredits('Photo by Jane Doe on Pixabay')->save();
+
+        Livewire::test(MediaExplorerComponent::class)
+            ->call('openMedia', (int) $media->getKey())
+            ->assertSee('Photo by Jane Doe on Pixabay')
+            ->assertDontSee('Caption text');
+    }
+
+    public function test_the_canvas_preview_has_an_inert_lightbox_without_livewire(): void
+    {
+        $album = $this->album();
+        $this->image('photo-1', $album);
+
+        $html = MediaExplorerBlock::toPreviewHtml(['heading' => 'Archive'], []);
+
+        // The lightbox markup is shipped (so its utilities reach the compiled page CSS)
+        // inside a `hidden` wrapper, and none of its controls are live.
+        $this->assertStringContainsString('data-vmedia-explorer-lightbox', $html);
+        $this->assertStringContainsString('data-vmedia-explorer-lightbox-root', $html);
+        $this->assertStringContainsString('class="hidden"', $html);
+        $this->assertStringContainsString('role="dialog"', $html);
+        $this->assertStringContainsString('aria-modal="true"', $html);
+        $this->assertStringNotContainsString('wire:', $html);
+        $this->assertStringNotContainsString('openMedia(', $html);
+        $this->assertStringContainsString('data-voodbuilder-skip-cta="true"', $html);
+        $this->assertStringContainsString('max-h-[90vh]', $html);
+    }
+
     private function album(): MediaGallery
     {
         return MediaGallery::query()->create([

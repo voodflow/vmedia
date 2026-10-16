@@ -170,17 +170,23 @@
                 @if ($live) wire:key="vmedia-media-{{ $asset['id'] ?? $loop->index }}" @endif
             >
                 {{--
-                    The tile is an <a>, not a <button>: opening the full asset in a new tab is
-                    the only per-item action, and anchors are not morphed to CTAs here because
-                    `looksLikeButton()` needs own padding, which this anchor does not carry;
-                    `data-voodbuilder-skip-cta` keeps it out of the text-link pass anyway.
+                    The tile is a <button>, not an <a>: on the published page the only
+                    per-item action is opening the in-page lightbox, whose state is
+                    Livewire (`openMedia`, see the lightbox partial below). On the canvas
+                    the same tag and classes render inert — `data-voodbuilder-skip-cta`
+                    keeps it out of the editor's CTA pass, and the editor never mounts
+                    Livewire, so the click does nothing.
                 --}}
-                <a
-                    href="{{ $asset['display'] ?? $asset['src'] ?? '#' }}"
-                    target="_blank"
-                    rel="noopener"
+                <button
+                    type="button"
+                    @if ($live)
+                        wire:click="openMedia({{ (int) ($asset['id'] ?? 0) }})"
+                    @else
+                        disabled
+                        aria-disabled="true"
+                    @endif
                     data-voodbuilder-skip-cta="true"
-                    class="group block overflow-hidden rounded-xl border border-vp-divider bg-vp-bg"
+                    class="group block w-full cursor-pointer overflow-hidden rounded-xl border border-vp-divider bg-vp-bg text-left"
                 >
                     <img
                         src="{{ $asset['thumb'] ?? $asset['src'] ?? '' }}"
@@ -192,7 +198,7 @@
                         <span class="block truncate text-sm font-medium text-vp-text-1">{{ $asset['name'] ?? '' }}</span>
                         <span class="mt-0.5 block text-xs text-vp-text-3">{{ $asset['icon_label'] ?? '' }}</span>
                     </span>
-                </a>
+                </button>
             </li>
         @empty
             <li class="col-span-full rounded-xl border border-vp-divider bg-vp-bg p-6 text-center text-sm text-vp-text-2">
@@ -228,4 +234,35 @@
             @endif
         @endif
     </div>
+
+    @if ($live)
+        {{--
+            Scroll lock for the lightbox. Kept on a stable child of the mount root (the
+            root's own attributes are frozen by `wire:ignore.self`) and driven by the
+            Livewire property, so the lock is released by the same morph that removes
+            the modal. `x-effect` writes the runtime `overflow` on <body>: no class has
+            to be compiled for it and nothing is persisted.
+        --}}
+        <div
+            hidden
+            aria-hidden="true"
+            x-effect="document.body.style.overflow = ($wire.activeMediaId != null) ? 'hidden' : ''"
+        ></div>
+
+        @if (! empty($activeAsset))
+            @include('vmedia::blocks.partials.explorer-lightbox', [
+                'live' => true,
+                'asset' => $activeAsset,
+                'hasPrevious' => (bool) ($hasPrevious ?? false),
+                'hasNext' => (bool) ($hasNext ?? false),
+            ])
+        @endif
+    @else
+        @include('vmedia::blocks.partials.explorer-lightbox', [
+            'live' => false,
+            'asset' => [],
+            'hasPrevious' => true,
+            'hasNext' => true,
+        ])
+    @endif
 </section>

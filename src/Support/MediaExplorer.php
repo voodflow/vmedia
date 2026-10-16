@@ -128,6 +128,38 @@ final class MediaExplorer
     }
 
     /**
+     * Raw attribution string for one asset payload, or '' when the media has none.
+     *
+     * The media row carries no dedicated credit / attribution / source column: the
+     * only text stores are `custom_properties.credits` (rich HTML, the same source the
+     * gallery credits strip uses) and `custom_properties.caption` (the descriptive
+     * field the payload exposes as `caption`, where attribution is normally written).
+     * Credits win when both are set; nothing is invented when both are empty.
+     *
+     * @param  array<string, mixed>  $asset
+     */
+    public static function creditSource(array $asset): string
+    {
+        $credits = trim((string) ($asset['credits'] ?? ''));
+
+        if ($credits !== '') {
+            return $credits;
+        }
+
+        return trim((string) ($asset['caption'] ?? ''));
+    }
+
+    /**
+     * Sanitized credit line (plain text + http(s) links only), '' when absent.
+     *
+     * @param  array<string, mixed>  $asset
+     */
+    public static function creditHtml(array $asset): string
+    {
+        return CreditsHtml::sanitize(self::creditSource($asset));
+    }
+
+    /**
      * Public albums that hold at least one media item — the visitor's album filter.
      *
      * @return list<array{id: int, name: string, count: int}>
