@@ -69,6 +69,8 @@ class VmediaServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        $this->configureLivewireTemporaryUploads();
+
         // Canonical morph aliases for Spatie media ownership.
         Relation::morphMap([
             'vmedia_gallery' => MediaGallery::class,
@@ -129,6 +131,43 @@ class VmediaServiceProvider extends PackageServiceProvider
             $this->registerEditorPluginScript();
             $this->registerPublicGalleryAssets();
         }
+    }
+
+    /**
+     * Livewire validates temp uploads on its own (`temporary_file_upload.rules`,
+     * 12 MB by default) before any Filament/VoodMedia rule runs. Left alone, a photo
+     * the vault would happily accept is rejected by the transport with a generic
+     * "may not be greater than 12288 kilobytes" error.
+     */
+    private function configureLivewireTemporaryUploads(): void
+    {
+        if (! class_exists(Livewire::class)) {
+            return;
+        }
+
+        $current = config('livewire.temporary_file_upload.rules');
+        $maxKb = max(
+            (int) config('vmedia.upload.image_max_kb', 40960),
+            (int) config('vmedia.upload.video_max_kb', 204800),
+            (int) config('vmedia.upload.file_max_kb', 40960),
+        );
+
+        // Respect an explicitly published value that is already larger.
+        if (is_array($current) && $current !== []) {
+            foreach ($current as $rule) {
+                if (is_string($rule) && preg_match('/^max:(\d+)$/', $rule, $matches) === 1) {
+                    $maxKb = max($maxKb, (int) $matches[1]);
+                }
+            }
+        }
+
+        config([
+            'livewire.temporary_file_upload.rules' => [
+                'required',
+                'file',
+                'max:' . $maxKb,
+            ],
+        ]);
     }
 
     private function registerPortableBridge(): void

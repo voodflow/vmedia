@@ -19,9 +19,9 @@ return [
     'disk' => env('VMEDIA_DISK', 'public'),
 
     'upload' => [
-        'image_max_kb' => (int) env('VMEDIA_IMAGE_MAX_KB', 12288),
-        'video_max_kb' => (int) env('VMEDIA_VIDEO_MAX_KB', 51200),
-        'file_max_kb' => (int) env('VMEDIA_FILE_MAX_KB', 20480),
+        'image_max_kb' => (int) env('VMEDIA_IMAGE_MAX_KB', 40960),
+        'video_max_kb' => (int) env('VMEDIA_VIDEO_MAX_KB', 204800),
+        'file_max_kb' => (int) env('VMEDIA_FILE_MAX_KB', 40960),
         'allowed_image_mimes' => [
             'image/jpeg',
             'image/png',

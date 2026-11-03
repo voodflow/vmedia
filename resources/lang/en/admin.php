@@ -48,6 +48,8 @@ return [
         'upload_help' => 'Photos, videos, and documents. Stored once in the vault; membership is per gallery. After upload you can tweak titles and captions.',
         'upload_galleries_help' => 'Assign this upload to one or more albums (folders cannot hold media).',
         'uploaded' => 'Media uploaded',
+        'upload_failed' => 'Nothing was uploaded. The file was rejected before reaching the vault — usually it is larger than the server accepts. Server limit: :size. Check the PHP `upload_max_filesize` / `post_max_size` settings if you expected a bigger file to fit.',
+        'upload_failed_too_large' => 'The file is too large: :size maximum. Increase the limit in VoodMedia settings or in the server PHP configuration.',
         'deleted' => 'Media deleted',
         'delete_detach_confirm' => 'This file is used on :count record(s). It will be removed from those records (e.g. exhibitor galleries) and moved to trash. The records themselves are not deleted.',
         'delete_detach_bulk_confirm' => ':count of :total selected file(s) are in use. They will be detached from domain records and moved to trash.',

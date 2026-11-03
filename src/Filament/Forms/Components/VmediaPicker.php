@@ -19,6 +19,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Number;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -410,6 +411,9 @@ class VmediaPicker extends Field
             ->panelLayout('compact')
             ->live()
             ->acceptedFileTypes($mimes)
+            // Client-side guard: PHP silently drops a body over post_max_size and the
+            // modal used to close with the file simply gone, no message.
+            ->maxSize($maxKb)
             ->rules([
                 File::types($extensions)->max($maxKb),
             ])
@@ -422,6 +426,13 @@ class VmediaPicker extends Field
 
                 if ($uploadUuids === []) {
                     $set('upload_files', []);
+
+                    Notification::make()
+                        ->danger()
+                        ->title(__('vmedia::admin.library.upload_failed', [
+                            'size' => Number::fileSize($maxKb * 1024),
+                        ]))
+                        ->send();
 
                     return;
                 }

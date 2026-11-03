@@ -48,6 +48,8 @@ return [
         'upload_help' => 'Foto, video e documenti. Salvati una volta nel vault; l’appartenenza è per galleria. Dopo il caricamento puoi ritoccare titoli e metadati.',
         'upload_galleries_help' => 'Assegna questo upload a uno o più album (le cartelle non possono contenere media).',
         'uploaded' => 'Media caricati',
+        'upload_failed' => 'Non è stato caricato nulla: il file è stato rifiutato prima di arrivare al vault, quasi sempre perché supera il limite del server. Limite attuale: :size. Se ti aspettavi che un file più grande passasse, controlla `upload_max_filesize` e `post_max_size` di PHP.',
+        'upload_failed_too_large' => 'Il file è troppo grande: massimo :size. Alza il limite nelle impostazioni VoodMedia o nella configurazione PHP del server.',
         'deleted' => 'Media eliminato',
         'delete_detach_confirm' => 'Questo file è usato in :count record. Verrà rimosso da quei record (es. gallery espositore) e spostato nel cestino. I record (espositore, ecc.) non vengono eliminati.',
         'delete_detach_bulk_confirm' => ':count su :total file selezionati sono in uso. Verranno disassociati dai record e spostati nel cestino.',

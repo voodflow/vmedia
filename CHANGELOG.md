@@ -1,5 +1,15 @@
 ## [Unreleased]
 
+## [0.3.34] - 2026-11-03
+
+### Changed
+
+- **Bigger uploads by default.** `image_max_kb` 12 MB → 40 MB, `file_max_kb` 20 MB → 40 MB, `video_max_kb` 50 MB → 200 MB (all still overridable through `VMEDIA_*_MAX_KB`). Filament's upload fields now get `maxSize()` as well, so the browser rejects an oversized file immediately instead of posting it and letting the server drop it.
+- Livewire's temporary upload rules are raised to the VoodMedia ceiling in the service provider: its 12 MB default used to reject files the vault would have accepted, with a transport-level message that named neither the file nor the real limit.
+
+### Fixed
+
+- **Oversized uploads now say why.** The library upload action and the picker modal show a danger notification when nothing was stored, naming the effective limit (the smallest of the VoodMedia config and PHP's `upload_max_filesize` / `post_max_size`) instead of returning silently.
 ## [0.3.33] - 2026-10-16
 
 ### Added

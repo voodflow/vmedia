@@ -35,6 +35,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Number;
 use Illuminate\Validation\Rules\File;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -679,6 +680,47 @@ class MediaItemResource extends Resource
         return $stored;
     }
 
+    /**
+     * Human-readable size of the smallest hard limit between PHP and VoodMedia, so the
+     * error message names the number the author actually has to raise.
+     */
+    public static function humanUploadLimit(): string
+    {
+        $candidates = [
+            (int) config('vmedia.upload.image_max_kb', 40960) * 1024,
+            (int) config('vmedia.upload.file_max_kb', 40960) * 1024,
+        ];
+
+        foreach (['upload_max_filesize', 'post_max_size'] as $ini) {
+            $bytes = self::iniBytes((string) ini_get($ini));
+
+            if ($bytes > 0) {
+                $candidates[] = $bytes;
+            }
+        }
+
+        return Number::fileSize(min($candidates));
+    }
+
+    private static function iniBytes(string $value): int
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return 0;
+        }
+
+        $unit = strtolower(substr($value, -1));
+        $number = (int) $value;
+
+        return match ($unit) {
+            'g' => $number * 1024 * 1024 * 1024,
+            'm' => $number * 1024 * 1024,
+            'k' => $number * 1024,
+            default => (int) $value,
+        };
+    }
+
     public static function uploadAction(): Action
     {
         $imageMaxKb = (int) config('vmedia.upload.image_max_kb', 8192);
@@ -710,6 +752,9 @@ class MediaItemResource extends Resource
                     ->storeFiles(false)
                     ->imagePreviewHeight('120')
                     ->acceptedFileTypes($mimes)
+                    // Client-side too: a file over the server's post_max_size is dropped
+                    // by PHP before any rule runs, and the author saw no feedback at all.
+                    ->maxSize(max($imageMaxKb, $videoMaxKb, $fileMaxKb))
                     ->rules([
                         File::types($extensions)->max(max($imageMaxKb, $videoMaxKb, $fileMaxKb)),
                     ])
@@ -719,6 +764,13 @@ class MediaItemResource extends Resource
                 $stored = static::storeUploadedFiles($data);
 
                 if ($stored === []) {
+                    Notification::make()
+                        ->danger()
+                        ->title(__('vmedia::admin.library.upload_failed', [
+                            'size' => static::humanUploadLimit(),
+                        ]))
+                        ->send();
+
                     return;
                 }
 
