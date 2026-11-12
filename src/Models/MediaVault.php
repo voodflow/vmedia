@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Voodflow\Vmedia\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Image\Enums\Constraint;
 use Spatie\ImageOptimizer\OptimizerChain;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -71,14 +72,22 @@ class MediaVault extends Model implements HasMedia
         $optimize = (bool) config('vmedia.conversions.optimize', true);
         $queued = (bool) config('vmedia.conversions.queued', false);
 
+        /*
+         * Ladder widths are maximum targets, never upscale instructions.
+         * Without `DoNotUpsize`, a 1536px original is blown up to the `xl` 4096px
+         * canvas: GD then allocates ~90MB for the bitmap plus a similar buffer for
+         * the encoder, which OOMs the request on the default 128M memory_limit.
+         */
+        $constraints = [Constraint::PreserveAspectRatio, Constraint::DoNotUpsize];
+
         foreach (ConversionLadder::definitions() as $definition) {
             $conversion = $this->addMediaConversion($definition['key'])
-                ->width(max(1, $definition['width']))
+                ->width(max(1, $definition['width']), $constraints)
                 ->format($definition['format'])
                 ->performOnCollections(MediaGallery::COLLECTION_IMAGES);
 
             if ($definition['height'] > 0) {
-                $conversion->height($definition['height']);
+                $conversion->height($definition['height'], $constraints);
             }
 
             if ($optimize && class_exists(OptimizerChain::class)) {

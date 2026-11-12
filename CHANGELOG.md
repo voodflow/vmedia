@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [0.3.35] - 2026-11-12
+
+### Fixed
+
+- **Conversions never upscale the original.** `registerMediaConversions()` now passes `Constraint::DoNotUpsize` (plus `PreserveAspectRatio`) to every ladder size, so a ladder entry acts as a *maximum* width instead of a target. Previously `xl` forced any upload — even a 400×300 icon — onto a 4096px-wide canvas; GD allocated ~90 MB for the bitmap and a similar buffer for the WebP encoder, which blew the default 128 MB `memory_limit` and failed the whole Livewire upload request with `Allowed memory size of 134217728 bytes exhausted` at `GdDriver::save()`. A 1536×2048 photo now yields `thumb`/`sm`/`md` as before, and `lg`/`xl` are capped at the original size instead of being enlarged.
+
 ## [0.3.34] - 2026-11-03
 
 ### Changed
